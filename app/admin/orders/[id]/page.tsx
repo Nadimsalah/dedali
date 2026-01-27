@@ -184,101 +184,137 @@ export default function OrderDetailsPage() {
                         </div>
 
                         {/* Professional Invoice Layout (Print Only) */}
-                        <div className="hidden print:block bg-white text-black p-0 min-h-screen">
+                        <div className="hidden print:block bg-white text-black p-0 min-h-screen" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
+                            <style dangerouslySetInnerHTML={{
+                                __html: `
+                                @media print {
+                                    @page { margin: 10mm; }
+                                    body { -webkit-print-color-adjust: exact !important; }
+                                }
+                            `}} />
+
                             {/* Invoice Header */}
-                            <div className="flex justify-between items-start border-b-2 border-primary pb-8 mb-8">
+                            <div className="flex justify-between items-start border-b-2 border-[#1a1a1a] pb-8 mb-8">
                                 <div>
-                                    <div className="relative w-48 h-20 mb-4">
+                                    <div className="relative w-56 h-24 mb-4">
                                         <Image
                                             src="/logo.webp"
                                             alt="Diar Argan Logo"
                                             fill
                                             className="object-contain object-left"
+                                            priority
                                         />
                                     </div>
-                                    <p className="text-sm font-bold text-primary">Diar Argan</p>
-                                    <p className="text-xs text-black/60">Leader des produits cosmétiques</p>
-                                    <p className="text-xs text-black/60">Casablanca, Morocco</p>
+                                    <div className="space-y-0.5">
+                                        <p className="text-sm font-black text-[#1a1a1a]">Diar Argan</p>
+                                        <p className="text-xs text-black/70 italic">L'excellence de l'Argan Bio</p>
+                                        <p className="text-xs text-black/60">Casablanca, Morocco</p>
+                                        <p className="text-xs text-black/60">Email: contact@diarargan.com</p>
+                                    </div>
                                 </div>
                                 <div className="text-right">
-                                    <h1 className="text-4xl font-black text-primary uppercase mb-1">Invoice</h1>
-                                    <p className="text-sm font-bold text-black/80">{order.order_number}</p>
-                                    <p className="text-xs text-black/60 mt-2">Date: {new Date(order.created_at).toLocaleDateString()}</p>
-                                    <p className="text-xs text-black/60">Status: <span className="uppercase font-bold">{order.status}</span></p>
+                                    <h1 className="text-5xl font-black text-[#1a1a1a] uppercase mb-2 tracking-tighter">FACTURE</h1>
+                                    <div className="space-y-1">
+                                        <p className="text-sm font-bold text-black/90">N° Commande: {order.order_number}</p>
+                                        <p className="text-xs text-black/60">Date: {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                        <p className="text-xs text-black/60">Statut: <span className="uppercase font-bold text-green-600">{order.status}</span></p>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Billing & Shipping Info */}
-                            <div className="grid grid-cols-2 gap-12 mb-12">
-                                <div>
-                                    <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3 border-b border-primary/20 pb-1">Bill To</h3>
-                                    <p className="font-bold text-lg">{order.customer_name}</p>
-                                    <p className="text-sm text-black/80">{order.customer_email}</p>
-                                    <p className="text-sm text-black/80">{order.customer_phone}</p>
+                            <div className="grid grid-cols-2 gap-16 mb-12">
+                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                                    <h3 className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mb-4">Facturé à</h3>
+                                    <div className="space-y-1">
+                                        <p className="font-black text-lg text-[#1a1a1a]">{order.customer_name}</p>
+                                        <p className="text-sm text-black/80">{order.customer_email}</p>
+                                        <p className="text-sm text-black/80">{order.customer_phone}</p>
+                                    </div>
                                 </div>
-                                <div className="text-right">
-                                    <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3 border-b border-primary/20 pb-1 text-right">Ship To</h3>
-                                    <p className="font-bold text-lg">{order.customer_name}</p>
-                                    <p className="text-sm text-black/80">{order.address_line1}</p>
-                                    {order.address_line2 && <p className="text-sm text-black/80">{order.address_line2}</p>}
-                                    <p className="text-sm text-black/80">{order.city}, {order.governorate}</p>
-                                    {order.postal_code && <p className="text-sm text-black/80">{order.postal_code}</p>}
+                                <div className="p-6">
+                                    <h3 className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mb-4 text-right">Adresse de livraison</h3>
+                                    <div className="text-right space-y-1">
+                                        <p className="font-black text-lg text-[#1a1a1a]">{order.customer_name}</p>
+                                        <p className="text-sm text-black/80">{order.address_line1}</p>
+                                        {order.address_line2 && <p className="text-sm text-black/80">{order.address_line2}</p>}
+                                        <p className="text-sm text-black/80 font-bold">{order.city}, {order.governorate}</p>
+                                        {order.postal_code && <p className="text-sm text-black/80">{order.postal_code}</p>}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Items Table */}
-                            <table className="w-full mb-12 border-collapse">
-                                <thead>
-                                    <tr className="bg-primary text-white">
-                                        <th className="py-3 px-4 text-left text-xs uppercase font-black">Description & SKU</th>
-                                        <th className="py-3 px-4 text-center text-xs uppercase font-black w-24">QTY</th>
-                                        <th className="py-3 px-4 text-right text-xs uppercase font-black w-32">Unit Price</th>
-                                        <th className="py-3 px-4 text-right text-xs uppercase font-black w-32">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {order.order_items.map((item, i) => (
-                                        <tr key={i} className="border-b border-black/10">
-                                            <td className="py-4 px-4 text-sm">
-                                                <p className="font-bold text-black">{item.product_title}</p>
-                                                <p className="text-[10px] text-black/40 font-mono tracking-tighter uppercase">{item.product_sku}</p>
-                                                {item.variant_name && <p className="text-[10px] text-black/60 italic mt-0.5">{item.variant_name}</p>}
-                                            </td>
-                                            <td className="py-4 px-4 text-sm text-center font-bold text-black/80">{item.quantity}</td>
-                                            <td className="py-4 px-4 text-sm text-right font-medium text-black/80">EGP {item.price.toFixed(2)}</td>
-                                            <td className="py-4 px-4 text-sm text-right font-black text-black">EGP {item.subtotal.toFixed(2)}</td>
+                            <div className="mb-12">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="border-b-2 border-black">
+                                            <th className="py-4 px-2 text-left text-[10px] uppercase font-black tracking-wider w-[50%]">Produit & Description</th>
+                                            <th className="py-4 px-2 text-center text-[10px] uppercase font-black tracking-wider w-[15%]">Quantité</th>
+                                            <th className="py-4 px-2 text-right text-[10px] uppercase font-black tracking-wider w-[15%]">Prix Unitaire</th>
+                                            <th className="py-4 px-2 text-right text-[10px] uppercase font-black tracking-wider w-[20%]">Total HT</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {order.order_items.map((item, i) => (
+                                            <tr key={i} className="border-b border-gray-100">
+                                                <td className="py-5 px-2">
+                                                    <p className="font-bold text-sm text-[#1a1a1a]">{item.product_title}</p>
+                                                    <p className="text-[10px] text-black/40 font-mono mt-1">SKU: {item.product_sku || 'N/A'}</p>
+                                                    {item.variant_name && <p className="text-[10px] text-black/60 italic mt-1 bg-gray-50 inline-block px-2 py-0.5 rounded-md">{item.variant_name}</p>}
+                                                </td>
+                                                <td className="py-5 px-2 text-center font-bold text-sm">{item.quantity}</td>
+                                                <td className="py-5 px-2 text-right text-sm">{(item.price || 0).toLocaleString('fr-FR')} EGP</td>
+                                                <td className="py-5 px-2 text-right font-black text-sm">{(item.subtotal || 0).toLocaleString('fr-FR')} EGP</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
 
                             {/* Footer Summary */}
-                            <div className="flex justify-end">
-                                <div className="w-80">
-                                    <div className="flex justify-between py-2 border-b border-black/5">
-                                        <span className="text-sm font-bold text-black/60">Subtotal</span>
-                                        <span className="text-sm font-medium text-black">EGP {order.subtotal.toFixed(2)}</span>
+                            <div className="flex justify-end mb-20">
+                                <div className="w-96 space-y-3">
+                                    <div className="flex justify-between items-center py-2 border-b border-gray-100 px-2">
+                                        <span className="text-xs font-bold text-black/60">Sous-total</span>
+                                        <span className="text-sm font-medium">{(order.subtotal || 0).toLocaleString('fr-FR')} EGP</span>
                                     </div>
-                                    <div className="flex justify-between py-2 border-b border-black/5">
-                                        <span className="text-sm font-bold text-black/60">Shipping</span>
-                                        <span className="text-sm font-medium text-black">EGP {order.shipping_cost.toFixed(2)}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-gray-100 px-2">
+                                        <span className="text-xs font-bold text-black/60">Frais de livraison</span>
+                                        <span className="text-sm font-medium">{(order.shipping_cost || 0).toLocaleString('fr-FR')} EGP</span>
                                     </div>
-                                    <div className="flex justify-between py-4 bg-primary/5 px-2 mt-2">
-                                        <span className="text-base font-black text-primary uppercase">Total Due</span>
-                                        <span className="text-xl font-black text-primary font-mono">EGP {order.total.toFixed(2)}</span>
+                                    <div className="flex justify-between items-center py-4 bg-[#1a1a1a] text-white rounded-xl px-6 shadow-xl">
+                                        <span className="text-sm font-black uppercase tracking-wider">Total à payer</span>
+                                        <span className="text-2xl font-black font-mono">{(order.total || 0).toLocaleString('fr-FR')} EGP</span>
                                     </div>
+                                    {order.status !== 'delivered' && (
+                                        <div className="text-right pt-2">
+                                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-tight">Paiement à la livraison (COD)</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Notes / Legal */}
-                            <div className="mt-20 pt-8 border-t border-black/10">
-                                <p className="text-[10px] font-bold text-black/40 uppercase tracking-widest mb-2">Terms & Conditions</p>
-                                <p className="text-[9px] text-black/40 leading-relaxed max-w-2xl">
-                                    Please keep this invoice for your records. All beauty and cosmetic products are non-refundable for hygiene reasons once opened. If you received a damaged item, please contact support within 24 hours of delivery.
-                                </p>
-                                <div className="mt-8 text-center bg-black py-4">
-                                    <p className="text-[10px] text-white font-black uppercase tracking-[0.2em]">Thank you for choosing Diar Argan</p>
+                            <div className="grid grid-cols-2 gap-12 pt-12 border-t border-black/10">
+                                <div>
+                                    <h4 className="text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest mb-4">Informations Importantes</h4>
+                                    <p className="text-[10px] text-black/50 leading-relaxed">
+                                        Merci de conserver cette facture. Pour toute question concernant votre commande,
+                                        veuillez nous contacter par téléphone au (+212) 6 00 00 00 00 ou par email.
+                                        Les retours sont acceptés sous 15 jours si l'emballage n'est pas ouvert.
+                                    </p>
                                 </div>
+                                <div className="flex flex-col items-end justify-center">
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-black/40 font-black uppercase tracking-[0.3em] mb-4">Cachet & Signature</p>
+                                        <div className="w-48 h-24 border-2 border-dashed border-gray-200 rounded-2xl"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="fixed bottom-10 left-0 right-0 text-center">
+                                <p className="text-[10px] text-black/30 font-bold uppercase tracking-[0.2em]">Diar Argan SARL — RC: 123456 — ICE: 0000000000000000</p>
                             </div>
                         </div>
 
