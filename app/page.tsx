@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useCart } from "@/components/cart-provider"
 import { useLanguage } from "@/components/language-provider"
-import { getProducts, getHeroCarouselItems, type Product } from "@/lib/supabase-api"
+import { getProducts, getHeroCarouselItems, getCategories, getAdminSettings, type Product } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 import Link from "next/link"
@@ -42,10 +42,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
-import { GlassCarousel3D } from "@/components/glass-carousel-3d"
+import { ModernHeroCarousel } from "@/components/modern-hero-carousel"
+import { WhatsAppSubscription } from "@/components/whatsapp-subscription"
 
 // Countdown Timer Component
 function CountdownTimer() {
+  const { t } = useLanguage()
   const [timeLeft, setTimeLeft] = useState({
     days: 3,
     hours: 12,
@@ -88,7 +90,9 @@ function CountdownTimer() {
               {value.toString().padStart(2, "0")}
             </span>
           </div>
-          <span className="text-xs text-muted-foreground mt-1 capitalize">{unit}</span>
+          <span className="text-xs text-muted-foreground mt-1 capitalize">
+            {t(`timer.${unit}`)}
+          </span>
         </div>
       ))}
     </div>
@@ -103,7 +107,8 @@ function CartCount() {
 
 // Product Card Component
 function ProductCard(product: Product) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const isArabic = language === 'ar'
   const rating = 5 // Default rating since it's not in DB yet
   return (
     <Link href={`/product/${product.id}`} className="group glass rounded-3xl p-4 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 block">
@@ -111,7 +116,7 @@ function ProductCard(product: Product) {
         {product.images && product.images.length > 0 ? (
           <Image
             src={product.images[0]}
-            alt={product.title}
+            alt={isArabic && product.title_ar ? product.title_ar : product.title}
             fill
             className="object-cover"
           />
@@ -122,8 +127,12 @@ function ProductCard(product: Product) {
         )}
       </div>
       <div className="space-y-2">
-        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{product.title}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+          {isArabic && product.title_ar ? product.title_ar : product.title}
+        </h3>
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {isArabic && product.description_ar ? product.description_ar : product.description}
+        </p>
         <div className="flex items-center gap-1">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
@@ -134,7 +143,7 @@ function ProductCard(product: Product) {
           <span className="text-xs text-muted-foreground ml-1">({rating}.0)</span>
         </div>
         <div className="flex items-center justify-between pt-2">
-          <span className="text-lg font-bold text-foreground">EGP {product.price}</span>
+          <span className="text-lg font-bold text-foreground">{t('common.currency')} {product.price}</span>
           <Button size="sm" className="rounded-full text-xs pointer-events-none">
             {t('product.add_to_cart')}
           </Button>
@@ -176,7 +185,8 @@ function CollectionCard({
 
 // Hero Carousel Component - Brand Showcase
 function HeroCarousel({ products }: { products: Product[] }) {
-  const [carouselItems, setCarouselItems] = useState<Array<{ image: string; title: string; subtitle: string }>>([])
+  const { t, language } = useLanguage()
+  const [carouselItems, setCarouselItems] = useState<Array<{ image: string; title: string; subtitle: string; link?: string | null }>>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -188,42 +198,78 @@ function HeroCarousel({ products }: { products: Product[] }) {
         setCarouselItems(items.map(item => ({
           image: item.image_url,
           title: item.title,
-          subtitle: item.subtitle || ''
+          subtitle: item.subtitle || '',
+          link: item.link
         })))
       } else {
         // Fallback to default showcase items
-        setCarouselItems([
-          {
-            image: '/hero-showcase-1.jpg',
-            title: 'The Secret of Moroccan Beauty',
-            subtitle: 'Pure • Natural • Timeless'
-          },
-          {
-            image: '/hero-showcase-2.jpg',
-            title: 'Handcrafted Excellence',
-            subtitle: 'From Morocco with Love'
-          },
-          {
-            image: '/hero-showcase-3.jpg',
-            title: 'Liquid Gold',
-            subtitle: 'Cold Pressed Argan Oil'
-          },
-          {
-            image: '/hero-showcase-4.jpg',
-            title: 'Natural Radiance',
-            subtitle: '100% Organic • Certified'
-          },
-          {
-            image: '/hero-showcase-5.jpg',
-            title: 'Beauty Ritual',
-            subtitle: 'Ancient Wisdom • Modern Care'
-          },
-          {
-            image: '/hero-showcase-6.jpg',
-            title: 'Diar Argan',
-            subtitle: 'Authentic Moroccan Skincare'
-          }
-        ])
+        if (language === 'ar') {
+          setCarouselItems([
+            {
+              image: '/hero-showcase-1.jpg',
+              title: 'سر الجمال المغربي',
+              subtitle: 'نقي • طبيعي • خالد'
+            },
+            {
+              image: '/hero-showcase-2.jpg',
+              title: 'تميز مصنوع يدوياً',
+              subtitle: 'من المغرب بكل حب'
+            },
+            {
+              image: '/hero-showcase-3.jpg',
+              title: 'الذهب السائل',
+              subtitle: 'زيت الأرغان المعصور على البارد'
+            },
+            {
+              image: '/hero-showcase-4.jpg',
+              title: 'إشراقة طبيعية',
+              subtitle: 'عضوي ١٠٠٪ • معتمد'
+            },
+            {
+              image: '/hero-showcase-5.jpg',
+              title: 'طقوس الجمال',
+              subtitle: 'حكمة قديمة • عناية حديثة'
+            },
+            {
+              image: '/hero-showcase-6.jpg',
+              title: 'ديار أرغان',
+              subtitle: 'عناية مغربية أصيلة بالبشرة'
+            }
+          ])
+        } else {
+          setCarouselItems([
+            {
+              image: '/hero-showcase-1.jpg',
+              title: 'The Secret of Moroccan Beauty',
+              subtitle: 'Pure • Natural • Timeless'
+            },
+            {
+              image: '/hero-showcase-2.jpg',
+              title: 'Handcrafted Excellence',
+              subtitle: 'From Morocco with Love'
+            },
+            {
+              image: '/hero-showcase-3.jpg',
+              title: 'Liquid Gold',
+              subtitle: 'Cold Pressed Argan Oil'
+            },
+            {
+              image: '/hero-showcase-4.jpg',
+              title: 'Natural Radiance',
+              subtitle: '100% Organic • Certified'
+            },
+            {
+              image: '/hero-showcase-5.jpg',
+              title: 'Beauty Ritual',
+              subtitle: 'Ancient Wisdom • Modern Care'
+            },
+            {
+              image: '/hero-showcase-6.jpg',
+              title: 'Diar Argan',
+              subtitle: 'Authentic Moroccan Skincare'
+            }
+          ])
+        }
       }
 
       setLoading(false)
@@ -235,12 +281,12 @@ function HeroCarousel({ products }: { products: Product[] }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[500px]">
-        <div className="animate-pulse text-muted-foreground">Loading carousel...</div>
+        <div className="animate-pulse text-muted-foreground">{t('timer.loading')}</div>
       </div>
     )
   }
 
-  return <GlassCarousel3D items={carouselItems} autoPlayInterval={3000} />
+  return <ModernHeroCarousel items={carouselItems} />
 }
 
 export default function HomePage() {
@@ -270,27 +316,25 @@ export default function HomePage() {
 
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [categories, setCategories] = useState<{ id: string, name: string, slug: string }[]>([])
+  const [categories, setCategories] = useState<{ id: string, name: string, slug: string, name_ar?: string }[]>([])
+  const [settings, setSettings] = useState<Record<string, string>>({})
 
-  // Fetch products from Supabase
+  // Fetch data from Supabase
   useEffect(() => {
-    async function loadProducts() {
+    async function loadData() {
       setLoading(true)
-      const data = await getProducts({ status: 'active', limit: 20 })
-      setProducts(data)
+      const [productsData, categoriesData, settingsData] = await Promise.all([
+        getProducts({ status: 'active', limit: 20 }),
+        getCategories(),
+        getAdminSettings()
+      ])
+
+      setProducts(productsData || [])
+      setCategories(categoriesData || [])
+      setSettings(settingsData || {})
       setLoading(false)
     }
-    async function loadCategories() {
-      const { data } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name')
-      if (data) {
-        setCategories(data)
-      }
-    }
-    loadProducts()
-    loadCategories()
+    loadData()
   }, [])
 
   const allCategories = ["All", ...categories.map(c => c.slug)]
@@ -298,7 +342,12 @@ export default function HomePage() {
   const getCategoryLabel = (cat: string) => {
     if (cat === "All") return t('section.all_categories')
     const category = categories.find(c => c.slug === cat)
-    if (category) return category.name
+    if (category) {
+      if (language === 'ar' && category.name_ar) {
+        return category.name_ar
+      }
+      return category.name
+    }
     // Fallback to translation keys for default categories
     const categoryMap: Record<string, string> = {
       face: t('header.face_care'),
@@ -335,7 +384,12 @@ export default function HomePage() {
 
       {/* Announcement Bar */}
       <div className="bg-primary text-primary-foreground py-2 text-center text-sm">
-        <p>Free shipping on orders over EGP 500 | Use code <span className="font-semibold">ARGAN20</span> for 20% off</p>
+        <p>
+          {language === 'ar'
+            ? (settings.announcement_bar_ar || settings.announcement_bar || "شحن مجاني للطلبات فوق ٥٠٠ ج.م | استخدم كود ARGAN20 لخصم ٢٠٪")
+            : (settings.announcement_bar || "Free shipping on orders over EGP 500 | Use code ARGAN20 for 20% off")
+          }
+        </p>
       </div>
 
       {/* Header */}
@@ -359,80 +413,80 @@ export default function HomePage() {
             {/* Desktop Navigation - Modern Mega Menu */}
             <NavigationMenu className="hidden lg:flex" delayDuration={0}>
               <NavigationMenuList className="gap-1">
-                {/* Shop Dropdown */}
+                {/* Categories Dropdown */}
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary hover:bg-primary/5 data-[state=open]:bg-primary/5 data-[state=open]:text-primary font-medium px-4 py-2 rounded-full transition-all duration-200">
-                    {t('nav.shop')}
+                    {t('header.categories')}
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
-                    <div className="glass-liquid w-[600px] p-2 rounded-[2rem] overflow-hidden">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-6">
-                          <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider flex items-center gap-2">
-                            <Sparkles className="w-4 h-4" /> {t('header.categories')}
+                    <div className="glass-liquid w-[800px] p-4 rounded-[2.5rem] overflow-hidden border border-white/20 shadow-2xl backdrop-blur-3xl bg-white/10">
+                      <div className="grid grid-cols-12 gap-6">
+                        {/* Categories List */}
+                        <div className="col-span-7 p-4">
+                          <h3 className="text-sm font-bold text-primary mb-6 uppercase tracking-widest flex items-center gap-2 px-2">
+                            <Sparkles className="w-4 h-4 text-primary animate-pulse" /> {t('header.browse_by_category')}
                           </h3>
-                          <div className="space-y-2">
-                            {[
-                              { name: t('header.face_care'), desc: t('header.face_care_desc') },
-                              { name: t('header.hair_care'), desc: t('header.hair_care_desc') },
-                              { name: t('header.body_care'), desc: t('header.body_care_desc') },
-                              { name: t('header.gift_sets'), desc: t('header.gift_sets_desc') },
-                            ].map((item) => (
-                              <NavigationMenuLink key={item.name} asChild>
-                                <Link
+                          <div className="grid grid-cols-2 gap-3">
+                            {categories.map((cat) => (
+                              <NavigationMenuLink key={cat.id} asChild>
+                                <a
                                   href="#shop"
-                                  className="block p-3 rounded-2xl hover:bg-white/20 transition-all duration-300 group"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    setSelectedCategory(cat.slug)
+                                    document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+                                  }}
+                                  className="group relative flex flex-col justify-end p-4 h-24 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/20 hover:bg-white/10 transition-all duration-500 overflow-hidden cursor-pointer"
                                 >
-                                  <span className="font-semibold text-foreground group-hover:text-primary transition-colors text-base">{item.name}</span>
-                                  <p className="text-sm text-foreground/60">{item.desc}</p>
-                                </Link>
+                                  {/* Hover Gradient */}
+                                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                  <div className="absolute top-0 right-0 p-3 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all duration-500">
+                                    <ArrowRight className="w-4 h-4 text-primary" />
+                                  </div>
+
+                                  <span className="relative z-10 font-bold text-foreground group-hover:text-primary transition-colors text-base leading-tight">
+                                    {cat.name}
+                                  </span>
+                                  {cat.name_ar && language === 'en' && (
+                                    <span className="relative z-10 text-[10px] text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity delay-100 font-arabic text-left">
+                                      {cat.name_ar}
+                                    </span>
+                                  )}
+                                </a>
                               </NavigationMenuLink>
                             ))}
                           </div>
                         </div>
-                        <div className="bg-gradient-to-br from-primary/10 via-secondary/20 to-primary/5 p-6 rounded-[1.5rem] flex flex-col justify-between m-2 border border-white/20">
-                          <div>
-                            <span className="inline-block px-3 py-1 bg-white/50 backdrop-blur-md text-primary text-xs font-bold rounded-full mb-4 shadow-sm border border-white/20">{t('header.new_arrival')}</span>
-                            <h4 className="font-bold text-foreground text-xl mb-2">{t('header.argan_elixir')}</h4>
-                            <p className="text-sm text-foreground/70 mb-6 leading-relaxed">{t('header.argan_elixir_desc')}</p>
-                          </div>
-                          <Button size="sm" className="rounded-full w-full shadow-lg shadow-primary/20">{t('nav.shop_now')}</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
 
-                {/* Collections Dropdown */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger className="bg-transparent text-foreground/80 hover:text-primary hover:bg-primary/5 data-[state=open]:bg-primary/5 data-[state=open]:text-primary font-medium px-4 py-2 rounded-full transition-all duration-200">
-                    {t('nav.collections')}
-                  </NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="glass-liquid w-[500px] p-2 rounded-[2rem] overflow-hidden">
-                      <div className="grid grid-cols-3 gap-2 p-2">
-                        {[
-                          { name: t('header.signature'), icon: Sparkles, color: "from-primary/10 to-primary/5" },
-                          { name: t('header.essentials'), icon: Leaf, color: "from-secondary to-secondary/50" },
-                          { name: t('header.premium'), icon: Award, color: "from-primary/5 to-secondary/10" },
-                        ].map((item) => (
-                          <NavigationMenuLink key={item.name} asChild>
-                            <Link
-                              href="#collections"
-                              className="flex flex-col items-center text-center p-4 rounded-[1.5rem] hover:bg-white/20 transition-all duration-300 group hover:-translate-y-1"
+                        {/* Featured Section */}
+                        <div className="col-span-5 relative group overflow-hidden rounded-[2rem] border border-white/10">
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-primary/5 active:scale-105 transition-transform duration-1000" />
+                          <div className="absolute inset-0 bg-[url('/hero-showcase-3.jpg')] bg-cover bg-center opacity-30 mix-blend-overlay group-hover:opacity-40 transition-opacity duration-700" />
+
+                          <div className="relative h-full flex flex-col justify-between p-6 bg-gradient-to-b from-transparent to-black/40">
+                            <div>
+                              <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-full border border-white/20 mb-4 shadow-lg">
+                                <Star className="w-3 h-3 fill-current" /> {t('header.new_arrival')}
+                              </span>
+                              <h4 className="font-bold text-white text-2xl leading-tight mb-2 drop-shadow-lg">
+                                {t('header.argan_elixir')}
+                              </h4>
+                              <p className="text-sm text-white/80 line-clamp-3 leading-relaxed drop-shadow-md">
+                                {t('header.argan_elixir_desc')}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="rounded-xl w-full bg-white/20 hover:bg-white text-white hover:text-primary border border-white/30 backdrop-blur-md shadow-xl transition-all font-bold mt-4 h-10"
+                              onClick={() => {
+                                setSelectedCategory("All")
+                                document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+                              }}
                             >
-                              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-inner border border-white/20`}>
-                                <item.icon className="w-6 h-6 text-primary" />
-                              </div>
-                              <span className="font-bold text-foreground group-hover:text-primary transition-colors">{item.name}</span>
-                            </Link>
-                          </NavigationMenuLink>
-                        ))}
-                      </div>
-                      <div className="p-4 border-t border-white/10 bg-white/5 mx-2 mb-2 rounded-[1.25rem]">
-                        <Link href="#collections" className="flex items-center justify-center gap-2 text-sm text-primary font-bold hover:gap-3 transition-all uppercase tracking-wide">
-                          {t('nav.view_all_collections')} <ArrowRight className="w-4 h-4" />
-                        </Link>
+                              {t('nav.shop_now')}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </NavigationMenuContent>
@@ -465,9 +519,11 @@ export default function HomePage() {
 
             {/* Right Actions */}
             <div className="flex items-center gap-1 sm:gap-2">
-              <Button variant="ghost" size="icon" className="hidden sm:flex rounded-full hover:bg-primary/5 hover:text-primary transition-all">
-                <Search className="w-5 h-5" />
-              </Button>
+              <Link href="/search">
+                <Button variant="ghost" size="icon" className="hidden sm:flex rounded-full hover:bg-primary/5 hover:text-primary transition-all">
+                  <Search className="w-5 h-5" />
+                </Button>
+              </Link>
 
               <Link href="/cart">
                 <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/5 hover:text-primary transition-all group">
@@ -507,41 +563,29 @@ export default function HomePage() {
                     {/* Mobile Menu Content */}
                     <div className="flex-1 overflow-y-auto p-6">
                       <nav className="space-y-2">
-                        {/* Shop Section */}
+                        {/* Categories Section */}
                         <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="shop" className="border-0">
+                          <AccordionItem value="categories" className="border-0">
                             <AccordionTrigger className="py-4 text-lg font-medium text-foreground hover:text-primary hover:no-underline">
-                              Shop
+                              {t('header.categories')}
                             </AccordionTrigger>
                             <AccordionContent className="pb-4">
                               <div className="space-y-2 pl-4">
-                                {["Face Care", "Hair Care", "Body Care", "Gift Sets"].map((item) => (
-                                  <Link
-                                    key={item}
+                                {categories.map((cat) => (
+                                  <a
+                                    key={cat.id}
                                     href="#shop"
-                                    className="block py-2 text-muted-foreground hover:text-primary transition-colors"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      setSelectedCategory(cat.slug)
+                                      document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+                                      // Optional: close sheet if we had access to the state, but native behavior might be fine for now or user can close it.
+                                      // Ideally we'd toggle the sheet close trigger programmatically or use a controlled component.
+                                    }}
+                                    className="block py-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                                   >
-                                    {item}
-                                  </Link>
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-
-                          <AccordionItem value="collections" className="border-0">
-                            <AccordionTrigger className="py-4 text-lg font-medium text-foreground hover:text-primary hover:no-underline">
-                              Collections
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-4">
-                              <div className="space-y-2 pl-4">
-                                {["Signature", "Essentials", "Premium"].map((item) => (
-                                  <Link
-                                    key={item}
-                                    href="#collections"
-                                    className="block py-2 text-muted-foreground hover:text-primary transition-colors"
-                                  >
-                                    {item}
-                                  </Link>
+                                    {cat.name}
+                                  </a>
                                 ))}
                               </div>
                             </AccordionContent>
@@ -565,8 +609,15 @@ export default function HomePage() {
                       {/* Mobile Promo Card */}
                       <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/20">
                         <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-2">Limited Offer</span>
-                        <p className="font-medium text-foreground">20% off your first order</p>
-                        <p className="text-sm text-muted-foreground mt-1">Use code ARGAN20</p>
+                        <p className="font-medium text-foreground">
+                          {language === 'ar'
+                            ? (settings.promo_title_ar || settings.promo_title || "خصم ٢٠٪ على طلبك الأول")
+                            : (settings.promo_title || "20% off your first order")
+                          }
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {language === 'ar' ? "استخدم كود" : "Use code"} {settings.promo_code || "ARGAN20"}
+                        </p>
                       </div>
                     </div>
 
@@ -601,10 +652,25 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
-                {t('hero.title_prefix')} <span className="text-primary">{t('hero.title_suffix')}</span>
+                {language === 'ar' ? (
+                  settings.hero_title_ar || settings.hero_title || (
+                    <>
+                      {t('hero.title_prefix')} <span className="text-primary">{t('hero.title_suffix')}</span>
+                    </>
+                  )
+                ) : (
+                  settings.hero_title || (
+                    <>
+                      {t('hero.title_prefix')} <span className="text-primary">{t('hero.title_suffix')}</span>
+                    </>
+                  )
+                )}
               </h1>
               <p className="text-lg text-muted-foreground max-w-lg">
-                {t('hero.subtitle')}
+                {language === 'ar'
+                  ? (settings.hero_subtitle_ar || settings.hero_subtitle || t('hero.subtitle'))
+                  : (settings.hero_subtitle || t('hero.subtitle'))
+                }
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" className="rounded-full text-base px-8">
@@ -643,7 +709,7 @@ export default function HomePage() {
                       <div className="w-32 h-32 mx-auto rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
                         <Sparkles className="w-16 h-16 text-primary" />
                       </div>
-                      <p className="text-xl font-semibold text-foreground">Loading Products...</p>
+                      <p className="text-xl font-semibold text-foreground">{t('timer.loading')}</p>
                     </div>
                   </div>
                 </div>
@@ -703,84 +769,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Value Proposition */}
-      <section className="py-16 sm:py-20 relative">
-        <div className="container mx-auto px-4">
-          <div className="glass rounded-[2rem] p-8 sm:p-12 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/10" />
-            <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground text-center mb-12">
-                {t('section.why_choose')}
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {[
-                  { icon: Leaf, title: t('section.organic'), desc: t('section.organic_desc') },
-                  { icon: Award, title: t('section.award_winning'), desc: t('section.award_winning_desc') },
-                  { icon: Heart, title: t('section.cruelty_free'), desc: t('section.cruelty_free_desc') },
-                  { icon: Sparkles, title: t('section.handcrafted'), desc: t('section.handcrafted_desc') },
-                ].map((item, i) => (
-                  <div key={i} className="text-center">
-                    <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                      <item.icon className="w-7 h-7 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-foreground mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-
-      {/* Promo Banner */}
-      <section className="py-16 sm:py-20 relative">
-        <div className="container mx-auto px-4">
-          <div className="glass rounded-[2rem] p-8 sm:p-12 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-secondary/10" />
-            <div className="relative space-y-6">
-              <span className="inline-block px-4 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                {t('section.limited_offer')}
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-                {t('section.promo_title')}
-              </h2>
-              <p className="text-muted-foreground max-w-xl mx-auto">
-                {t('section.promo_desc')}
-              </p>
-              <div className="flex justify-center py-4">
-                <CountdownTimer />
-              </div>
-              <Button size="lg" className="rounded-full text-base px-8">
-                {t('section.get_offer')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="py-16 sm:py-20 relative">
+      {/* FAQ Section */}
+      <section id="faq" className="py-16 sm:py-20 bg-secondary/5">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">{t('faq.title')}</h2>
-            <p className="text-muted-foreground">
-              {t('faq.subtitle')}
-            </p>
+            <h2 className="text-3xl text-foreground sm:text-4xl font-bold mb-4">{t('faq.title')}</h2>
+            <p className="text-muted-foreground">{t('faq.subtitle')}</p>
           </div>
           <Accordion type="single" collapsible className="space-y-4">
             {faqs.map((faq, i) => (
-              <AccordionItem
-                key={i}
-                value={`item-${i}`}
-                className="glass rounded-2xl px-6 border-none"
-              >
-                <AccordionTrigger className="text-left font-medium hover:no-underline">
+              <AccordionItem key={i} value={`item-${i}`} className="glass rounded-2xl px-6 border-0 data-[state=open]:shadow-lg transition-all duration-300">
+                <AccordionTrigger className="text-lg font-medium hover:no-underline py-6">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
+                <AccordionContent className="text-muted-foreground pb-6 text-base leading-relaxed">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
@@ -789,88 +791,124 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Newsletter */}
+      {/* WhatsApp Subscription */}
       <section className="py-16 sm:py-20 relative">
         <div className="container mx-auto px-4 max-w-2xl">
-          <div className="glass rounded-[2rem] p-8 sm:p-12 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/10" />
-            <div className="relative space-y-6">
-              <h2 className="text-3xl sm:text-4xl font-bold text-foreground">{t('newsletter.title')}</h2>
-              <p className="text-muted-foreground">
-                {t('newsletter.desc')}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <Input
-                  type="email"
-                  placeholder={t('newsletter.placeholder')}
-                  className="rounded-full h-12 px-6 bg-background/80"
+          <WhatsAppSubscription />
+        </div>
+      </section>
+
+      {/* Certifications */}
+      <section className="py-10 relative overflow-hidden bg-secondary/5 border-t border-border/50">
+        <div className="relative flex overflow-x-hidden group" dir="ltr">
+          <div className="animate-marquee whitespace-nowrap flex items-center gap-12 sm:gap-20 px-4">
+            {/* Original Set */}
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="relative w-24 h-24 sm:w-32 sm:h-32 grayscale hover:grayscale-0 transition-all duration-500 opacity-70 hover:opacity-100 flex-shrink-0">
+                <Image
+                  src={`/certifications/${i}.png`}
+                  alt={`Certification ${i}`}
+                  fill
+                  className="object-contain"
                 />
-                <Button className="rounded-full h-12 px-8">{t('newsletter.subscribe')}</Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t('newsletter.disclaimer')}
-              </p>
-            </div>
+            ))}
+            {/* Duplicate Set for smooth infinite scroll */}
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={`dup-${i}`} className="relative w-24 h-24 sm:w-32 sm:h-32 grayscale hover:grayscale-0 transition-all duration-500 opacity-70 hover:opacity-100 flex-shrink-0">
+                <Image
+                  src={`/certifications/${i}.png`}
+                  alt={`Certification ${i}`}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="absolute top-0 flex w-full h-full pointer-events-none">
+            <div className={`w-1/6 h-full bg-gradient-to-r ${language === 'ar' ? 'bg-gradient-to-l ml-auto' : 'from-background'} to-transparent`}></div>
+            <div className={`w-1/6 h-full bg-gradient-to-l ${language === 'ar' ? 'bg-gradient-to-r mr-auto' : 'from-background ml-auto'} to-transparent`}></div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-16 relative">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">{t('footer.company')}</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.our_story')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.sustainability')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.press')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.careers')}</Link></li>
-              </ul>
+      <footer className="bg-background border-t border-border/40 py-16 sm:py-20 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+
+            {/* Brand Column */}
+            <div className="md:col-span-4 lg:col-span-5 space-y-6">
+              <Link href="/" className="inline-block">
+                <Image
+                  src="/logo.webp"
+                  alt="Diar Argan"
+                  width={150}
+                  height={60}
+                  className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                />
+              </Link>
+              <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm">
+                {t('footer.about_desc')}
+              </p>
+              <div className="flex gap-3">
+                {/* Modern Social Icons */}
+                {['Instagram', 'Facebook', 'Twitter'].map((social, i) => (
+                  <a key={social} href="#" className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-300 group" aria-label={social}>
+                    <Sparkles className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </a>
+                ))}
+              </div>
             </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">{t('footer.support')}</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.contact_us')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('nav.faq')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.shipping_info')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.track_order')}</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4">{t('footer.legal')}</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.privacy_policy')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.terms')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.refund_policy')}</Link></li>
-                <li><Link href="#" className="hover:text-primary transition-colors">{t('footer.cookies')}</Link></li>
-              </ul>
+
+            {/* Links Columns */}
+            <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+              <div>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.company')}</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="#about" className="hover:text-primary transition-colors block py-1">{t('footer.our_story')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.sustainability')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.press')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.careers')}</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.support')}</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.contact_us')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.shipping_info')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.track_order')}</Link></li>
+                  <li><Link href="#faq" className="hover:text-primary transition-colors block py-1">{t('nav.faq')}</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.legal')}</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.privacy_policy')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.terms')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.refund_policy')}</Link></li>
+                  <li><Link href="#" className="hover:text-primary transition-colors block py-1">{t('footer.cookies')}</Link></li>
+                </ul>
+              </div>
             </div>
           </div>
-          <div className="border-t border-border/50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Image
-              src="/logo.webp"
-              alt="Diar Argan"
-              width={100}
-              height={50}
-              className="h-10 w-auto"
-            />
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Diar Argan. All rights reserved.
-            </p>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+            <p>© {new Date().getFullYear()} Diar Argan. {t('footer.rights')}</p>
+            <div className="flex items-center gap-6">
+              <Link href="#" className="hover:text-foreground transition-colors">{t('footer.privacy_short')}</Link>
+              <Link href="#" className="hover:text-foreground transition-colors">{t('footer.terms_short')}</Link>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/50 border border-border/50">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-medium text-[10px] uppercase tracking-wider">{t('footer.system_status')}</span>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
-
-      {/* Back to Top Button */}
-      <button
-        onClick={scrollToTop}
-        className={`fixed bottom-6 right-6 glass-strong rounded-full p-3 shadow-lg transition-all duration-300 z-50 hover:scale-110 ${showBackToTop ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
-          }`}
-        aria-label="Back to top"
-      >
-        <ChevronUp className="w-5 h-5 text-foreground" />
-      </button>
     </div>
   )
 }

@@ -3,7 +3,9 @@ import { supabase } from './supabase'
 export interface Product {
     id: string
     title: string
+    title_ar: string | null
     description: string | null
+    description_ar: string | null
     sku: string
     category: string
     price: number
@@ -12,8 +14,11 @@ export interface Product {
     status: string
     images: string[]
     benefits: string[] | null
+    benefits_ar: string[] | null
     ingredients: string | null
+    ingredients_ar: string | null
     how_to_use: string | null
+    how_to_use_ar: string | null
     sales_count: number
     created_at: string
     updated_at: string
@@ -71,6 +76,7 @@ export interface OrderItem {
 export async function getProducts(filters?: {
     category?: string
     status?: string
+    search?: string
     limit?: number
     offset?: number
 }) {
@@ -89,7 +95,6 @@ export async function getProducts(filters?: {
         // Default to active products only
         query = query.eq('status', 'active')
     }
-
     if (filters?.limit) {
         query = query.limit(filters.limit)
     }
@@ -98,10 +103,51 @@ export async function getProducts(filters?: {
         query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
     }
 
+    if (filters?.search) {
+        const searchTerm = `%${filters.search}%`
+        const mainOrQuery = `title.ilike."${searchTerm}",title_ar.ilike."${searchTerm}",description.ilike."${searchTerm}",description_ar.ilike."${searchTerm}"`
+
+        const { data, error: searchError } = await query.or(mainOrQuery)
+
+        if (searchError) {
+            // If Arabic columns are missing, fallback to English only search
+            if (searchError.message?.includes('column "title_ar" does not exist') ||
+                searchError.message?.includes('column "description_ar" does not exist')) {
+                console.warn('Bilingual columns missing, falling back to English search.')
+
+                // Re-build clean query for fallback
+                let fallbackQueryBuilder = supabase
+                    .from('products')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+
+                if (filters?.category) fallbackQueryBuilder = fallbackQueryBuilder.eq('category', filters.category)
+                if (filters?.status) fallbackQueryBuilder = fallbackQueryBuilder.eq('status', filters.status)
+                else fallbackQueryBuilder = fallbackQueryBuilder.eq('status', 'active')
+
+                if (filters?.limit) fallbackQueryBuilder = fallbackQueryBuilder.limit(filters.limit)
+                if (filters?.offset) fallbackQueryBuilder = fallbackQueryBuilder.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
+
+                const { data: fbData, error: fbError } = await fallbackQueryBuilder.or(`title.ilike."${searchTerm}",description.ilike."${searchTerm}"`)
+
+                if (fbError) {
+                    console.error('Search failed even with fallback:', fbError.message)
+                    return []
+                }
+                return fbData as Product[]
+            }
+
+            console.error('Error fetching products:', searchError.message || searchError)
+            return []
+        }
+
+        return data as Product[]
+    }
+
     const { data, error } = await query
 
     if (error) {
-        console.error('Error fetching products:', error)
+        console.error('Error fetching products:', error.message || error)
         return []
     }
 
@@ -116,7 +162,11 @@ export async function getProductById(id: string) {
         .single()
 
     if (error) {
-        console.error('Error fetching product:', error)
+        if (error.code === 'PGRST116') {
+            console.warn(`Product with ID ${id} not found`)
+            return null
+        }
+        console.error(`Error fetching product ${id}:`, error)
         return null
     }
 
@@ -455,6 +505,7 @@ export interface HeroCarouselItem {
     image_url: string
     title: string
     subtitle: string | null
+    link: string | null
     is_active: boolean
     created_at: string
     updated_at: string
@@ -463,15 +514,25 @@ export interface HeroCarouselItem {
 /**
  * Get all hero carousel items ordered by position
  */
-export async function getHeroCarouselItems(): Promise<HeroCarouselItem[]> {
-    const { data, error } = await supabase
+export async function getHeroCarouselItems(admin = false): Promise<HeroCarouselItem[]> {
+    let query = supabase
         .from('hero_carousel')
         .select('*')
-        .eq('is_active', true)
         .order('position', { ascending: true })
 
+    if (!admin) {
+        query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
+
     if (error) {
-        console.error('Error fetching hero carousel items:', error)
+        console.error('Error fetching hero carousel items:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+        })
         return []
     }
 
@@ -483,7 +544,7 @@ export async function getHeroCarouselItems(): Promise<HeroCarouselItem[]> {
  */
 export async function updateHeroCarouselItem(
     id: string,
-    updates: Partial<Pick<HeroCarouselItem, 'title' | 'subtitle' | 'image_url' | 'is_active'>>
+    updates: Partial<Pick<HeroCarouselItem, 'title' | 'subtitle' | 'image_url' | 'is_active' | 'link'>>
 ): Promise<{ success: boolean; error?: string }> {
     const { error } = await supabase
         .from('hero_carousel')
@@ -492,6 +553,51 @@ export async function updateHeroCarouselItem(
 
     if (error) {
         console.error('Error updating hero carousel item:', error)
+        return { success: false, error: error.message }
+    }
+
+    return { success: true }
+}
+
+/**
+ * Add a new hero carousel item
+ */
+export async function addHeroCarouselItem(item: {
+    title: string;
+    subtitle?: string;
+    image_url: string;
+    link?: string;
+    position: number;
+    is_active?: boolean;
+}): Promise<{ success: boolean; data?: HeroCarouselItem; error?: string }> {
+    const { data, error } = await supabase
+        .from('hero_carousel')
+        .insert({
+            ...item,
+            is_active: item.is_active ?? true
+        })
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error adding hero carousel item:', error)
+        return { success: false, error: error.message }
+    }
+
+    return { success: true, data: data as HeroCarouselItem }
+}
+
+/**
+ * Delete a hero carousel item
+ */
+export async function deleteHeroCarouselItem(id: string): Promise<{ success: boolean; error?: string }> {
+    const { error } = await supabase
+        .from('hero_carousel')
+        .delete()
+        .eq('id', id)
+
+    if (error) {
+        console.error('Error deleting hero carousel item:', error)
         return { success: false, error: error.message }
     }
 
@@ -511,7 +617,7 @@ export async function uploadHeroCarouselImage(
         const filePath = `hero-carousel/${fileName}`
 
         const { error: uploadError } = await supabase.storage
-            .from('products')
+            .from('product-images')
             .upload(filePath, file, { upsert: true })
 
         if (uploadError) {
@@ -520,7 +626,7 @@ export async function uploadHeroCarouselImage(
         }
 
         const { data: { publicUrl } } = supabase.storage
-            .from('products')
+            .from('product-images')
             .getPublicUrl(filePath)
 
         return { success: true, url: publicUrl }
@@ -557,4 +663,18 @@ export async function reorderHeroCarousel(
         console.error('Error reordering carousel:', error)
         return { success: false, error: 'Failed to reorder carousel' }
     }
+}
+
+export async function getCategories() {
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name')
+
+    if (error) {
+        console.error('Error fetching categories:', error)
+        return []
+    }
+
+    return data as { id: string, name: string, slug: string, name_ar?: string }[]
 }

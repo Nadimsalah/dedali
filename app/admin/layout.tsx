@@ -36,7 +36,11 @@ export default function AdminLayout({
     // If authenticated, render children
     // Otherwise render nothing (while redirecting)
     if (pathname === "/admin/login" || isAuthorized) {
-        return <>{children}</>
+        return (
+            <div dir="ltr" className="min-h-screen bg-background">
+                {children}
+            </div>
+        )
     }
 
     return null

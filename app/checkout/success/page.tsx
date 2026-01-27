@@ -19,7 +19,7 @@ interface OrderData {
 
 export default function CheckoutSuccessPage() {
     const { clearCart } = useCart()
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const [order, setOrder] = useState<OrderData | null>(null)
 
     useEffect(() => {
@@ -110,7 +110,7 @@ export default function CheckoutSuccessPage() {
                                     <div className="relative w-14 h-14 bg-muted rounded-xl overflow-hidden flex-shrink-0 border border-border/50">
                                         <Image
                                             src={item.image || "/placeholder.svg"}
-                                            alt={item.name}
+                                            alt={language === 'ar' && item.nameAr ? item.nameAr : item.name}
                                             fill
                                             className="object-cover"
                                         />
@@ -120,11 +120,13 @@ export default function CheckoutSuccessPage() {
                                     </div>
                                     <div className="flex-1 min-w-0 flex justify-between items-center">
                                         <div>
-                                            <h4 className="font-medium text-sm text-foreground line-clamp-1">{item.name}</h4>
+                                            <h4 className="font-medium text-sm text-foreground line-clamp-1">
+                                                {language === 'ar' && item.nameAr ? item.nameAr : item.name}
+                                            </h4>
                                             {item.size && <p className="text-xs text-muted-foreground">{item.size}</p>}
                                         </div>
                                         <p className="text-sm font-semibold text-primary">
-                                            EGP {(item.price * item.quantity).toFixed(2)}
+                                            {t('common.currency')} {(item.price * item.quantity).toFixed(2)}
                                         </p>
                                     </div>
                                 </div>
@@ -136,17 +138,17 @@ export default function CheckoutSuccessPage() {
                         <div className="space-y-3 text-sm">
                             <div className="flex justify-between text-muted-foreground">
                                 <span>{t('cart.subtotal')}</span>
-                                <span className="font-medium text-foreground">EGP {order.subtotal.toFixed(2)}</span>
+                                <span className="font-medium text-foreground">{t('common.currency')} {order.subtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-muted-foreground">
                                 <span>{t('cart.shipping')}</span>
                                 <span className="font-medium text-foreground">
-                                    {order.shipping === 0 ? t('cart.free') : `EGP ${order.shipping}`}
+                                    {order.shipping === 0 ? t('cart.free') : `${t('common.currency')} ${order.shipping}`}
                                 </span>
                             </div>
                             <div className="flex justify-between text-lg font-bold text-foreground pt-3 border-t border-border/50">
                                 <span>{t('cart.total')}</span>
-                                <span>EGP {order.total.toFixed(2)}</span>
+                                <span>{t('common.currency')} {order.total.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>

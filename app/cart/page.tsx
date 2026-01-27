@@ -38,7 +38,7 @@ export default function CartPage() {
   const [promoCode, setPromoCode] = useState("")
   const [promoApplied, setPromoApplied] = useState(false)
   const { items: cartItems, removeItem, updateQuantity } = useCart()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   // Cart calculations
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -159,7 +159,9 @@ export default function CartPage() {
                     <div className="flex-1 min-w-0 flex flex-col">
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-foreground text-base sm:text-lg mb-1 line-clamp-2">{item.name}</h3>
+                          <h3 className="font-semibold text-foreground text-base sm:text-lg mb-1 line-clamp-2">
+                            {language === 'ar' && item.nameAr ? item.nameAr : item.name}
+                          </h3>
                           {item.size && <p className="text-xs sm:text-sm text-muted-foreground">Size: {item.size}</p>}
                         </div>
                         <Button
@@ -197,8 +199,8 @@ export default function CartPage() {
 
                         {/* Price */}
                         <div className="text-right">
-                          <p className="text-base sm:text-lg font-bold text-foreground">EGP {(item.price * item.quantity).toFixed(2)}</p>
-                          <p className="text-xs sm:text-sm text-muted-foreground">EGP {item.price.toFixed(2)} each</p>
+                          <p className="text-base sm:text-lg font-bold text-foreground">{t('common.currency')} {(item.price * item.quantity).toFixed(2)}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{t('common.currency')} {item.price.toFixed(2)} each</p>
                         </div>
                       </div>
                     </div>
@@ -245,21 +247,21 @@ export default function CartPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-foreground/80">
                     <span>{t('cart.subtotal')}</span>
-                    <span className="font-medium">EGP {subtotal.toFixed(2)}</span>
+                    <span className="font-medium">{t('common.currency')} {subtotal.toFixed(2)}</span>
                   </div>
                   {promoApplied && (
                     <div className="flex items-center justify-between text-primary">
                       <span>Discount (20%)</span>
-                      <span className="font-medium">-EGP {discount.toFixed(2)}</span>
+                      <span className="font-medium">-{t('common.currency')} {discount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-foreground/80">
                     <span>{t('cart.shipping')}</span>
-                    <span className="font-medium">{shipping === 0 ? t('cart.free') : `EGP ${shipping.toFixed(2)}`}</span>
+                    <span className="font-medium">{shipping === 0 ? t('cart.free') : `${t('common.currency')} ${shipping.toFixed(2)}`}</span>
                   </div>
                   {subtotal < 750 && (
                     <p className="text-xs text-muted-foreground">
-                      {t('cart.add_more_shipping')} EGP {(750 - subtotal).toFixed(2)}
+                      {t('cart.add_more_shipping')} {t('common.currency')} {(750 - subtotal).toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -269,7 +271,7 @@ export default function CartPage() {
                 {/* Total */}
                 <div className="flex items-center justify-between text-lg font-bold text-foreground">
                   <span>{t('cart.total')}</span>
-                  <span>EGP {total.toFixed(2)}</span>
+                  <span>{t('common.currency')} {total.toFixed(2)}</span>
                 </div>
 
                 {/* Checkout Button */}
@@ -343,7 +345,7 @@ export default function CartPage() {
                     </div>
                     <h3 className="font-semibold text-foreground text-sm sm:text-base mb-2 line-clamp-2">{product.name}</h3>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <span className="text-base sm:text-lg font-bold text-primary">EGP {product.price.toFixed(2)}</span>
+                      <span className="text-base sm:text-lg font-bold text-primary">{t('common.currency')} {product.price.toFixed(2)}</span>
                       <Button size="sm" variant="outline" className="rounded-full bg-transparent w-full sm:w-auto text-xs sm:text-sm pointer-events-none">
                         View
                       </Button>

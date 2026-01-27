@@ -1,0 +1,185 @@
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { useLanguage } from "@/components/language-provider"
+import { getProducts, type Product } from "@/lib/supabase-api"
+import Image from "next/image"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Search, ArrowRight, X, ChevronLeft, Loader2, ShoppingBag } from "lucide-react"
+
+export default function SearchPage() {
+    const { t, language } = useLanguage()
+    const [query, setQuery] = useState("")
+    const [results, setResults] = useState<Product[]>([])
+    const [loading, setLoading] = useState(false)
+    const [isSearching, setIsSearching] = useState(false)
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.focus()
+        }
+    }, [])
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(async () => {
+            if (query.trim()) {
+                setLoading(true)
+                setIsSearching(true)
+                try {
+                    const data = await getProducts({ search: query })
+                    setResults(data)
+                } catch (error) {
+                    console.error("Search failed:", error)
+                } finally {
+                    setLoading(false)
+                }
+            } else {
+                setResults([])
+                setIsSearching(false)
+            }
+        }, 500)
+
+        return () => clearTimeout(delayDebounceFn)
+    }, [query])
+
+    const isArabic = language === 'ar'
+
+    return (
+        <div className="min-h-screen bg-background relative overflow-hidden">
+            {/* Liquid Background Orbs */}
+            <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary/20 rounded-full blur-[120px] animate-pulse delay-1000" />
+            </div>
+
+            {/* Header / Search Input Area */}
+            <div className="container mx-auto px-4 pt-12 pb-8 relative z-10">
+                <div className="flex items-center gap-4 mb-12">
+                    <Link href="/">
+                        <Button variant="ghost" size="icon" className="rounded-full glass hover:bg-white/20 transition-all">
+                            {isArabic ? <ArrowRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+                        </Button>
+                    </Link>
+                    <Image src="/logo.webp" alt="Diar Argan" width={120} height={60} className="h-10 w-auto" />
+                </div>
+
+                <div className="max-w-3xl mx-auto relative group">
+                    <div className="absolute inset-0 bg-primary/20 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000 -z-10" />
+                    <div className="relative glass-liquid p-2 sm:p-4 rounded-[3rem] border border-white/20 shadow-2xl backdrop-blur-3xl bg-white/5 transition-all duration-500 group-focus-within:bg-white/10 group-focus-within:border-primary/30">
+                        <div className="flex items-center px-4 gap-4">
+                            <Search className={`w-6 h-6 ${isSearching ? 'text-primary' : 'text-muted-foreground'} transition-colors duration-300`} />
+                            <Input
+                                ref={inputRef}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder={isArabic ? "ابحث عن منتجك المفضل..." : "Search for your favorite products..."}
+                                className="bg-transparent border-0 focus-visible:ring-0 text-xl sm:text-2xl h-14 sm:h-16 placeholder:text-muted-foreground/50 transition-all font-medium"
+                                dir={isArabic ? "rtl" : "ltr"}
+                            />
+                            {query && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="rounded-full hover:bg-white/10"
+                                    onClick={() => setQuery("")}
+                                >
+                                    <X className="w-6 h-6 text-muted-foreground" />
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Results Area */}
+            <div className="container mx-auto px-4 pb-20 relative z-10">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                        <p className="text-muted-foreground animate-pulse font-medium">{isArabic ? "جاري البحث..." : "Searching products..."}</p>
+                    </div>
+                ) : results.length > 0 ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        {results.map((product) => (
+                            <Link
+                                key={product.id}
+                                href={`/product/${product.id}`}
+                                className="group glass-liquid rounded-[2.5rem] p-4 sm:p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 border border-white/10 hover:border-primary/20 bg-white/5 hover:bg-white/10 flex flex-col h-full overflow-hidden relative"
+                            >
+                                {/* Glow Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                                <div className="aspect-square rounded-3xl overflow-hidden mb-6 relative">
+                                    <Image
+                                        src={product.images[0] || "/placeholder.svg"}
+                                        alt={isArabic && product.title_ar ? product.title_ar : product.title}
+                                        fill
+                                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                    />
+                                    {product.compare_at_price && (
+                                        <div className="absolute top-4 left-4 bg-primary/95 text-primary-foreground text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg">
+                                            -{Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)}%
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3 relative z-10">
+                                    <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-base sm:text-lg leading-tight line-clamp-2">
+                                        {isArabic && product.title_ar ? product.title_ar : product.title}
+                                    </h3>
+                                    <div className="flex items-center justify-between gap-2 pt-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-lg sm:text-xl font-black text-primary">
+                                                {t('common.currency')} {product.price}
+                                            </span>
+                                            {product.compare_at_price && (
+                                                <span className="text-xs text-muted-foreground line-through opacity-70">
+                                                    {t('common.currency')} {product.compare_at_price}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-black/5 group-hover:shadow-primary/40">
+                                            <ShoppingBag className="w-5 h-5 sm:w-6 h-6" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                ) : query && !loading ? (
+                    <div className="text-center py-20 animate-in fade-in duration-500">
+                        <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Search className="w-10 h-10 text-muted-foreground" />
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2 text-foreground">{isArabic ? "لم يتم العثور على نتائج" : "No results found"}</h2>
+                        <p className="text-muted-foreground max-w-sm mx-auto">
+                            {isArabic
+                                ? `لم نجد أي منتجات تطابق "${query}". حاول استخدام كلمات بحث مختلفة.`
+                                : `We couldn't find any products matching "${query}". Try using different keywords.`}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="max-w-2xl mx-auto py-20 text-center animate-in fade-in duration-700">
+                        <h3 className="text-muted-foreground font-medium mb-8 uppercase tracking-widest text-sm opacity-50">
+                            {isArabic ? "عمليات البحث الشائعة" : "Popular Searches"}
+                        </h3>
+                        <div className="flex flex-wrap justify-center gap-3">
+                            {["Argan Oil", "Face Cream", "Serum", "Natural"].map((term) => (
+                                <button
+                                    key={term}
+                                    onClick={() => setQuery(term)}
+                                    className="px-6 py-3 rounded-full glass-subtle hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 text-sm font-semibold"
+                                >
+                                    {term}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { getOrders, type Order } from "@/lib/supabase-api"
+import { Notifications } from "@/components/admin/notifications"
 import {
     Search,
     Filter,
@@ -90,6 +91,7 @@ export default function AdminOrdersPage() {
                             <span className="hidden sm:inline">Create Order</span>
                             <span className="sm:hidden">+</span>
                         </Button>
+                        <Notifications />
                     </div>
                 </header>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
@@ -29,21 +29,18 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 // Mock Data for "You May Also Like"
-const relatedProducts = [
-    { id: "1", name: "Pure Argan Oil", image: "/placeholder.svg?height=40&width=40" },
-    { id: "2", name: "Body Butter", image: "/placeholder.svg?height=40&width=40" },
-    { id: "3", name: "Hair Mask", image: "/placeholder.svg?height=40&width=40" },
-    { id: "4", name: "Face Serum", image: "/placeholder.svg?height=40&width=40" },
-    { id: "5", name: "Lip Balm", image: "/placeholder.svg?height=40&width=40" },
-]
+// replaced by DB call
 
 export default function NewProductPage() {
     const [title, setTitle] = useState("")
+    const [titleAr, setTitleAr] = useState("")
     const [sku, setSku] = useState("")
     const [images, setImages] = useState<string[]>([])
     const [uploading, setUploading] = useState(false)
     const [benefits, setBenefits] = useState<string[]>([])
+    const [benefitsAr, setBenefitsAr] = useState<string[]>([])
     const [newBenefit, setNewBenefit] = useState("")
+    const [newBenefitAr, setNewBenefitAr] = useState("")
     const [selectedRelated, setSelectedRelated] = useState<string[]>([])
     const [status, setStatus] = useState("Active")
     const [category, setCategory] = useState("")
@@ -53,11 +50,129 @@ export default function NewProductPage() {
 
     // Form fields
     const [description, setDescription] = useState("")
+    const [descriptionAr, setDescriptionAr] = useState("")
     const [price, setPrice] = useState("")
     const [compareAtPrice, setCompareAtPrice] = useState("")
     const [stock, setStock] = useState("")
     const [ingredients, setIngredients] = useState("")
+    const [ingredientsAr, setIngredientsAr] = useState("")
     const [howToUse, setHowToUse] = useState("")
+    const [howToUseAr, setHowToUseAr] = useState("")
+    const [categories, setCategories] = useState<any[]>([])
+
+    // AI Rewrite State
+    const [rewriting, setRewriting] = useState<string | null>(null)
+    const [relatedProducts, setRelatedProducts] = useState<any[]>([])
+
+    // Fetch related products & categories
+    useEffect(() => {
+        const fetchData = async () => {
+            // Products for cross-sell
+            const { data: prodData } = await supabase
+                .from('products')
+                .select('id, title, images')
+                .eq('status', 'active')
+                .limit(10)
+
+            if (prodData) setRelatedProducts(prodData)
+
+            // Categories
+            const { data: catData } = await supabase
+                .from('categories')
+                .select('id, name, slug')
+                .order('name')
+
+            if (catData) setCategories(catData)
+        }
+        fetchData()
+    })
+
+    const handleRewrite = async (field: string, currentText: string, setter: (val: string) => void) => {
+        if (!currentText.trim()) return
+
+        setRewriting(field)
+        try {
+            const res = await fetch('/api/admin/products/rewrite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: currentText, field })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                // Smart Error Handling
+                if (data.error_code === "RATE_LIMIT_DAILY") {
+                    alert("⚠️ Daily Free AI Quota Exceeded\n\nPlease wait until tomorrow or add your own OpenRouter key in settings.")
+                    return
+                }
+                throw new Error(data.message || data.error || "Unknown error")
+            }
+
+            if (data.text) {
+                setter(data.text)
+            }
+        } catch (error: any) {
+            console.error('Rewrite error:', error)
+            // Only show alert for non-rate-limit errors if truly needed, or keep silent for better UX
+            if (error.message !== "Unknown error") {
+                alert(`AI Assistant: ${error.message}`)
+            }
+        } finally {
+            setRewriting(null)
+        }
+    }
+
+    const handleTranslate = async (text: string, setter: (val: string) => void, field: string) => {
+        if (!text.trim()) return
+        setRewriting(field)
+        try {
+            const res = await fetch('/api/admin/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, targetLang: 'ar' })
+            })
+            const data = await res.json()
+            if (data.translatedText) {
+                setter(data.translatedText)
+            }
+        } catch (error) {
+            console.error('Translation error:', error)
+        } finally {
+            setRewriting(null)
+        }
+    }
+
+    const handleAutoRecommend = async () => {
+        if (!title && !description) {
+            alert("Please add a title or description first so AI can understand the product.")
+            return
+        }
+
+        setRewriting('recommend')
+        try {
+            const res = await fetch('/api/admin/products/recommend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title,
+                    description,
+                    category,
+                    availableProducts: relatedProducts
+                })
+            })
+
+            const data = await res.json()
+            if (data.recommendedIds && Array.isArray(data.recommendedIds)) {
+                setSelectedRelated(data.recommendedIds)
+            }
+        } catch (error) {
+            console.error(error)
+            alert("Failed to get recommendations")
+        } finally {
+            setRewriting(null)
+        }
+    }
 
     const handlePublish = async () => {
         // Validation
@@ -85,7 +200,9 @@ export default function NewProductPage() {
                 .from('products')
                 .insert({
                     title,
+                    title_ar: titleAr,
                     description,
+                    description_ar: descriptionAr,
                     sku,
                     category,
                     price: parseFloat(price),
@@ -94,8 +211,11 @@ export default function NewProductPage() {
                     status: status.toLowerCase(),
                     images,
                     benefits,
+                    benefits_ar: benefitsAr,
                     ingredients,
-                    how_to_use: howToUse
+                    ingredients_ar: ingredientsAr,
+                    how_to_use: howToUse,
+                    how_to_use_ar: howToUseAr
                 })
                 .select()
 
@@ -165,12 +285,15 @@ export default function NewProductPage() {
     const addBenefit = () => {
         if (newBenefit.trim()) {
             setBenefits([...benefits, newBenefit])
+            setBenefitsAr([...benefitsAr, newBenefitAr || newBenefit])
             setNewBenefit("")
+            setNewBenefitAr("")
         }
     }
 
     const removeBenefit = (index: number) => {
         setBenefits(benefits.filter((_, i) => i !== index))
+        setBenefitsAr(benefitsAr.filter((_, i) => i !== index))
     }
 
     const toggleRelated = (id: string) => {
@@ -211,6 +334,8 @@ export default function NewProductPage() {
                             <p className="text-xs text-gray-500 font-medium">New Arrival</p>
                         </div>
                     </div>
+
+
 
                     <div className="flex items-center gap-3">
                         <Link href="/admin/products">
@@ -279,21 +404,91 @@ export default function NewProductPage() {
                             <div className="p-6 space-y-6">
                                 <div className="space-y-3">
                                     <label className="text-sm font-semibold text-gray-700">Product Title</label>
-                                    <Input
-                                        value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="e.g. Rateb's Pure Argan Oil"
-                                        className="bg-white border-gray-200 h-12 text-lg focus:ring-blue-500/20 focus:border-blue-500 rounded-xl shadow-sm text-gray-900 placeholder:text-gray-400"
-                                    />
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="relative">
+                                            <Input
+                                                value={title || ""}
+                                                onChange={(e) => setTitle(e.target.value)}
+                                                placeholder="e.g. Rateb's Pure Argan Oil"
+                                                className="bg-white border-gray-200 h-12 text-base focus:ring-blue-500/20 focus:border-blue-500 rounded-xl shadow-sm text-gray-900 placeholder:text-gray-400 pr-20"
+                                            />
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                {title.trim() && (
+                                                    <button
+                                                        onClick={() => handleRewrite('title', title, setTitle)}
+                                                        disabled={rewriting === 'title'}
+                                                        className="text-purple-400 hover:text-purple-600 p-1 rounded-full transition-all"
+                                                        title="Improve with AI"
+                                                    >
+                                                        {rewriting === 'title' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                                    </button>
+                                                )}
+                                                {title.trim() && (
+                                                    <button
+                                                        onClick={() => handleTranslate(title, setTitleAr, 'title_ar')}
+                                                        disabled={rewriting === 'title_ar'}
+                                                        className="text-blue-400 hover:text-blue-600 p-1 rounded-full transition-all"
+                                                        title="Translate to Arabic"
+                                                    >
+                                                        {rewriting === 'title_ar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <Input
+                                                value={titleAr || ""}
+                                                onChange={(e) => setTitleAr(e.target.value)}
+                                                placeholder="اسم المنتج بالعربية"
+                                                dir="rtl"
+                                                className="bg-white border-gray-200 h-12 text-base focus:ring-blue-500/20 focus:border-blue-500 rounded-xl shadow-sm text-gray-900 placeholder:text-gray-400 font-arabic"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-sm font-semibold text-gray-700">Description</label>
-                                    <textarea
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full min-h-[180px] rounded-xl bg-white border border-gray-200 p-4 text-base focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-y placeholder:text-gray-400 transition-all shadow-sm"
-                                        placeholder="Tell the story of your product..."
-                                    />
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="relative">
+                                            <textarea
+                                                value={description}
+                                                onChange={(e) => setDescription(e.target.value)}
+                                                className="w-full min-h-[180px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none placeholder:text-gray-400 transition-all shadow-sm"
+                                                placeholder="Description in English"
+                                            />
+                                            <div className="absolute right-2 top-2 flex flex-col gap-2">
+                                                {description.trim() && (
+                                                    <button
+                                                        onClick={() => handleRewrite('description', description, setDescription)}
+                                                        disabled={rewriting === 'description'}
+                                                        className="text-purple-400 hover:text-purple-600 p-1 rounded-full transition-all bg-white/50 backdrop-blur-sm shadow-sm"
+                                                        title="Improve with AI"
+                                                    >
+                                                        {rewriting === 'description' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                                    </button>
+                                                )}
+                                                {description.trim() && (
+                                                    <button
+                                                        onClick={() => handleTranslate(description, setDescriptionAr, 'description_ar')}
+                                                        disabled={rewriting === 'description_ar'}
+                                                        className="text-blue-400 hover:text-blue-600 p-1 rounded-full transition-all bg-white/50 backdrop-blur-sm shadow-sm"
+                                                        title="Translate to Arabic"
+                                                    >
+                                                        {rewriting === 'description_ar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="relative">
+                                            <textarea
+                                                value={descriptionAr}
+                                                onChange={(e) => setDescriptionAr(e.target.value)}
+                                                dir="rtl"
+                                                className="w-full min-h-[180px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none placeholder:text-gray-400 transition-all shadow-sm font-arabic"
+                                                placeholder="وصف المنتج بالعربية"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -347,26 +542,55 @@ export default function NewProductPage() {
                                 {/* Key Benefits */}
                                 <div>
                                     <label className="text-sm font-semibold text-gray-700 block mb-3">Key Benefits</label>
-                                    <div className="flex gap-2 mb-4">
-                                        <Input
-                                            value={newBenefit}
-                                            onChange={(e) => setNewBenefit(e.target.value)}
-                                            placeholder="Add a key benefit..."
-                                            className="bg-white border-gray-200 h-11 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
-                                            onKeyDown={(e) => e.key === 'Enter' && addBenefit()}
-                                        />
-                                        <Button onClick={addBenefit} className="h-11 w-11 p-0 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200"><Plus className="w-5 h-5" /></Button>
+                                    <div className="flex flex-col md:flex-row gap-2 mb-4">
+                                        <div className="relative flex-1">
+                                            <Input
+                                                value={newBenefit || ""}
+                                                onChange={(e) => setNewBenefit(e.target.value)}
+                                                placeholder="Benefit description (English)"
+                                                className="bg-white border-gray-200 h-11 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm pr-10"
+                                                onKeyDown={(e) => e.key === 'Enter' && addBenefit()}
+                                            />
+                                            {newBenefit.trim() && (
+                                                <button
+                                                    onClick={() => handleTranslate(newBenefit, setNewBenefitAr, 'benefit_ar')}
+                                                    disabled={rewriting === 'benefit_ar'}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-600 p-1 rounded-full transition-all"
+                                                    title="Translate to Arabic"
+                                                >
+                                                    {rewriting === 'benefit_ar' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="relative flex-1">
+                                            <Input
+                                                value={newBenefitAr || ""}
+                                                onChange={(e) => setNewBenefitAr(e.target.value)}
+                                                placeholder="وصف الميزة بالعربية"
+                                                dir="rtl"
+                                                className="bg-white border-gray-200 h-11 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm font-arabic"
+                                                onKeyDown={(e) => e.key === 'Enter' && addBenefit()}
+                                            />
+                                        </div>
+                                        <Button onClick={addBenefit} className="h-11 md:w-11 w-full bg-blue-600 hover:bg-blue-700 text-white shrink-0 shadow-sm">
+                                            <Plus className="w-5 h-5" />
+                                        </Button>
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 gap-3">
                                         {benefits.map((benefit, i) => (
-                                            <div key={i} className="flex items-center justify-between p-3 px-4 rounded-xl bg-gray-50 border border-gray-200 group hover:border-gray-300 transition-colors">
+                                            <div key={i} className="flex flex-col gap-1 p-3 px-4 rounded-xl bg-gray-50 border border-gray-200 group hover:border-gray-300 transition-colors relative">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                                                         <Check className="w-3 h-3 text-emerald-600" />
                                                     </div>
-                                                    <span className="text-sm text-gray-700">{benefit}</span>
+                                                    <span className="text-sm text-gray-700 flex-1">{benefit}</span>
                                                 </div>
-                                                <button onClick={() => removeBenefit(i)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                                {benefitsAr[i] && (
+                                                    <div className="pr-9 italic text-xs text-muted-foreground font-arabic text-right dir-rtl">
+                                                        {benefitsAr[i]}
+                                                    </div>
+                                                )}
+                                                <button onClick={() => removeBenefit(i)} className="absolute top-3 right-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -376,20 +600,94 @@ export default function NewProductPage() {
                                 </div>
 
                                 {/* Ingredients */}
-                                <div className="grid md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="text-sm font-semibold text-gray-700 block mb-3">Ingredients</label>
-                                        <textarea
-                                            className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none placeholder:text-gray-400 shadow-sm"
-                                            placeholder="Comma separated list..."
-                                        />
+                                {/* Ingredients & How to Use */}
+                                <div className="space-y-8">
+                                    {/* Ingredients section */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Ingredients</label>
+                                            <div className="flex items-center gap-2">
+                                                {ingredients.trim() && (
+                                                    <button
+                                                        onClick={() => handleRewrite('ingredients', ingredients, setIngredients)}
+                                                        disabled={rewriting === 'ingredients'}
+                                                        className="text-xs flex items-center gap-1 text-purple-500 hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded-md"
+                                                    >
+                                                        {rewriting === 'ingredients' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                                        <span>Polish</span>
+                                                    </button>
+                                                )}
+                                                {ingredients.trim() && (
+                                                    <button
+                                                        onClick={() => handleTranslate(ingredients, setIngredientsAr, 'ingredients_ar')}
+                                                        disabled={rewriting === 'ingredients_ar'}
+                                                        className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 px-2 py-1 rounded-md"
+                                                    >
+                                                        {rewriting === 'ingredients_ar' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                                                        <span>Translate</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <textarea
+                                                value={ingredients || ""}
+                                                onChange={(e) => setIngredients(e.target.value)}
+                                                className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none shadow-sm"
+                                                placeholder="Comma separated ingredients (English)"
+                                            />
+                                            <textarea
+                                                value={ingredientsAr || ""}
+                                                onChange={(e) => setIngredientsAr(e.target.value)}
+                                                dir="rtl"
+                                                className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none shadow-sm font-arabic"
+                                                placeholder="المكونات بالعربية"
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="text-sm font-semibold text-gray-700 block mb-3">How to Use</label>
-                                        <textarea
-                                            className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none placeholder:text-gray-400 shadow-sm"
-                                            placeholder="Step by step instructions..."
-                                        />
+
+                                    {/* How to Use section */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center px-1">
+                                            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">How to Use</label>
+                                            <div className="flex items-center gap-2">
+                                                {howToUse.trim() && (
+                                                    <button
+                                                        onClick={() => handleRewrite('how_to_use', howToUse, setHowToUse)}
+                                                        disabled={rewriting === 'how_to_use'}
+                                                        className="text-xs flex items-center gap-1 text-purple-500 hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded-md"
+                                                    >
+                                                        {rewriting === 'how_to_use' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                                        <span>Polish</span>
+                                                    </button>
+                                                )}
+                                                {howToUse.trim() && (
+                                                    <button
+                                                        onClick={() => handleTranslate(howToUse, setHowToUseAr, 'how_to_use_ar')}
+                                                        disabled={rewriting === 'how_to_use_ar'}
+                                                        className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-700 transition-colors bg-blue-50 px-2 py-1 rounded-md"
+                                                    >
+                                                        {rewriting === 'how_to_use_ar' ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                                                        <span>Translate</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <textarea
+                                                value={howToUse || ""}
+                                                onChange={(e) => setHowToUse(e.target.value)}
+                                                className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none shadow-sm"
+                                                placeholder="Step by step instructions (English)"
+                                            />
+                                            <textarea
+                                                value={howToUseAr || ""}
+                                                onChange={(e) => setHowToUseAr(e.target.value)}
+                                                dir="rtl"
+                                                className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none shadow-sm font-arabic"
+                                                placeholder="طريقة الاستخدام بالعربية"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -422,14 +720,13 @@ export default function NewProductPage() {
                                     <label className="text-sm font-semibold text-gray-700">Category</label>
                                     <div className="relative">
                                         <select
-                                            value={category}
+                                            value={category || ""}
                                             onChange={(e) => setCategory(e.target.value)}
-                                            defaultValue="" className="w-full h-12 rounded-xl border border-gray-200 bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 appearance-none shadow-sm">
+                                            className="w-full h-12 rounded-xl border border-gray-200 bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 appearance-none shadow-sm">
                                             <option value="" disabled>Select Category</option>
-                                            <option value="face">Face Care</option>
-                                            <option value="body">Body Care</option>
-                                            <option value="hair">Hair Care</option>
-                                            <option value="gift">Gift Sets</option>
+                                            {categories.map((cat) => (
+                                                <option key={cat.id} value={cat.slug || cat.id}>{cat.name}</option>
+                                            ))}
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                     </div>
@@ -460,7 +757,7 @@ export default function NewProductPage() {
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">EGP</span>
                                         <Input
                                             type="number"
-                                            value={price}
+                                            value={price || ""}
                                             onChange={(e) => setPrice(e.target.value)}
                                             placeholder="0.00"
                                             className="bg-white border-gray-200 h-12 pl-14 text-lg font-mono rounded-xl shadow-sm focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
@@ -473,7 +770,7 @@ export default function NewProductPage() {
                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">EGP</span>
                                         <Input
                                             type="number"
-                                            value={compareAtPrice}
+                                            value={compareAtPrice || ""}
                                             onChange={(e) => setCompareAtPrice(e.target.value)}
                                             placeholder="0.00"
                                             className="bg-white border-gray-200 h-12 pl-14 text-lg font-mono rounded-xl shadow-sm focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
@@ -496,7 +793,7 @@ export default function NewProductPage() {
                                     <label className="text-sm font-semibold text-gray-700">Stock</label>
                                     <Input
                                         type="number"
-                                        value={stock}
+                                        value={stock || ""}
                                         onChange={(e) => setStock(e.target.value)}
                                         placeholder="0" className="bg-white border-gray-200 h-12 text-lg font-mono rounded-xl shadow-sm focus:ring-blue-500/20 focus:border-blue-500 text-gray-900" />
                                 </div>
@@ -504,7 +801,7 @@ export default function NewProductPage() {
                                     <label className="text-sm font-semibold text-gray-700">SKU</label>
                                     <div className="flex gap-2">
                                         <Input
-                                            value={sku}
+                                            value={sku || ""}
                                             onChange={(e) => setSku(e.target.value)}
                                             placeholder="Auto-generated"
                                             className="bg-white border-gray-200 h-12 text-base font-mono rounded-xl uppercase tracking-wider shadow-sm focus:ring-blue-500/20 focus:border-blue-500 text-gray-900"
@@ -519,17 +816,26 @@ export default function NewProductPage() {
 
                         {/* Cross-Sell */}
                         <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="p-6 border-b border-gray-50 bg-gray-50/30">
+                            <div className="p-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
                                 <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800">
                                     <RefreshCw className="w-4 h-4 text-pink-500" />
                                     Cross-Sells
                                 </h3>
+                                <button
+                                    onClick={handleAutoRecommend}
+                                    disabled={rewriting === 'recommend'}
+                                    className="text-xs flex items-center gap-1 text-pink-600 hover:text-pink-700 font-medium px-2 py-1 rounded-lg hover:bg-pink-50 transition-colors"
+                                >
+                                    {rewriting === 'recommend' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                    Auto-Select
+                                </button>
                             </div>
                             <div className="p-6">
-                                <p className="text-xs text-gray-500 mb-4">Recommended products.</p>
+                                <p className="text-xs text-gray-500 mb-4">Recommended products based on description.</p>
                                 <div className="space-y-2 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
                                     {relatedProducts.map(prod => {
                                         const isSelected = selectedRelated.includes(prod.id)
+                                        const imgUrl = prod.images?.[0] || null
                                         return (
                                             <div
                                                 key={prod.id}
@@ -537,9 +843,13 @@ export default function NewProductPage() {
                                                 className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isSelected ? "bg-blue-50 border-blue-200" : "bg-gray-50 hover:bg-gray-100 border-transparent"}`}
                                             >
                                                 <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-100 shadow-sm">
-                                                    <div className="absolute inset-0 bg-gray-100" />
+                                                    {imgUrl ? (
+                                                        <Image src={imgUrl} alt={prod.title} fill className="object-cover" />
+                                                    ) : (
+                                                        <div className="absolute inset-0 bg-gray-100" />
+                                                    )}
                                                 </div>
-                                                <span className={`text-sm flex-1 font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>{prod.name}</span>
+                                                <span className={`text-sm flex-1 font-medium ${isSelected ? 'text-blue-700' : 'text-gray-700'}`}>{prod.title}</span>
                                                 {isSelected && <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>}
                                             </div>
                                         )

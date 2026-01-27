@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createOrder } from "@/lib/supabase-api"
+import { sendPushNotification } from "@/lib/push-notifications"
 
 export async function POST(request: Request) {
     try {
@@ -43,6 +44,14 @@ export async function POST(request: Request) {
                 { status: 500 }
             )
         }
+
+        // Async push notification (don't block response)
+        sendPushNotification({
+            title: "New Order! 🛍️",
+            body: `Order ${order.order_number} received from ${customer.fullName} for EGP ${cart.total}`,
+            url: `/admin/orders/${order.id}`,
+            tag: 'new-order'
+        }).catch(err => console.error("Push notify failed:", err))
 
         return NextResponse.json({
             redirectUrl: "/checkout/success",

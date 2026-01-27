@@ -13,9 +13,15 @@ export function RecentOrders() {
 
     useEffect(() => {
         async function loadRecentOrders() {
-            const data = await getOrders({ limit: 5 })
-            setOrders(data)
-            setLoading(false)
+            try {
+                const response = await getOrders({ limit: 5 })
+                // getOrders returns { data, count }
+                setOrders(response.data || [])
+            } catch (error) {
+                console.error("Failed to load recent orders:", error)
+            } finally {
+                setLoading(false)
+            }
         }
         loadRecentOrders()
     }, [])

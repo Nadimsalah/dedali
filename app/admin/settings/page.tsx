@@ -1,240 +1,271 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-    Save,
-    Globe,
-    Lock,
-    Store,
-    Bell,
-    Mail,
-    Shield,
-    Smartphone,
-    Eye,
-    EyeOff,
-    Upload,
-    Image as ImageIcon,
-    Settings
-} from "lucide-react"
-import { Switch } from "@/components/ui/switch"
-import { getAdminSettings, updateAdminSettings } from "@/lib/supabase-api"
+import { Save, Loader2, RotateCcw, Globe, Bell, Mail, Shield, Smartphone } from "lucide-react"
 import { toast } from "sonner"
+import { getAdminSettings, updateAdminSettings } from "@/lib/supabase-api"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState("general")
-    const [showPin, setShowPin] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
+    const [settings, setSettings] = useState<Record<string, string>>({})
     const [loading, setLoading] = useState(true)
-
-    // Settings state
-    const [storeName, setStoreName] = useState("")
-    const [supportEmail, setSupportEmail] = useState("")
-    const [currency, setCurrency] = useState("EGP")
-    const [adminPin, setAdminPin] = useState("")
-    const [newPin, setNewPin] = useState("")
-    const [confirmPin, setConfirmPin] = useState("")
+    const [saving, setSaving] = useState(false)
 
     useEffect(() => {
-        async function loadSettings() {
-            setLoading(true)
-            const settings = await getAdminSettings()
-            setStoreName(settings.store_name || "")
-            setSupportEmail(settings.support_email || "")
-            setCurrency(settings.currency || "EGP")
-            setAdminPin(settings.admin_pin || "")
-            setLoading(false)
-        }
         loadSettings()
     }, [])
 
-    const handleSave = async () => {
-        setIsLoading(true)
+    async function loadSettings() {
+        setLoading(true)
+        const data = await getAdminSettings()
+        setSettings(data)
+        setLoading(false)
+    }
 
-        const updates: Record<string, string> = {
-            store_name: storeName,
-            support_email: supportEmail,
-            currency: currency,
-        }
-
-        // Only update PIN if new one is provided
-        if (newPin && newPin === confirmPin) {
-            updates.admin_pin = newPin
-            setAdminPin(newPin)
-            setNewPin("")
-            setConfirmPin("")
-        } else if (newPin && newPin !== confirmPin) {
-            toast.error("PINs do not match!")
-            setIsLoading(false)
-            return
-        }
-
-        const result = await updateAdminSettings(updates)
-
+    async function handleSave() {
+        setSaving(true)
+        const result = await updateAdminSettings(settings)
         if (result.success) {
-            toast.success("Settings saved successfully!")
+            toast.success("Settings updated successfully")
         } else {
-            toast.error("Failed to save settings")
+            toast.error("Failed to update settings")
         }
+        setSaving(false)
+    }
 
-        setIsLoading(false)
+    const handleChange = (key: string, value: string) => {
+        setSettings(prev => ({ ...prev, [key]: value }))
     }
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                    <p className="text-muted-foreground animate-pulse">Loading settings...</p>
-                </div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden">
+        <div className="flex min-h-screen bg-background">
             <AdminSidebar />
 
-            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10">
-                {/* Header */}
-                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sticky top-4 z-40 glass-strong p-4 rounded-3xl border border-white/5 shadow-lg shadow-black/5">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                            <Settings className="w-5 h-5 text-primary" />
-                        </div>
+            <main className="flex-1 lg:ml-72 p-4 sm:p-8">
+                <div className="max-w-4xl mx-auto space-y-8">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Settings</h1>
-                            <p className="text-xs text-muted-foreground">Manage your store configuration</p>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                Store Settings
+                            </h1>
+                            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                                Manage your store information, promotional text, and system configurations.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={loadSettings}
+                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                Reset
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center justify-center gap-2 text-sm font-semibold shadow-lg shadow-primary/20"
+                            >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                Save Changes
+                            </button>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Button
-                            onClick={handleSave}
-                            disabled={isLoading}
-                            className="rounded-full px-6 shadow-lg shadow-primary/20"
-                        >
-                            {isLoading ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
-                        </Button>
-                    </div>
-                </header>
-
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-                    {/* Sidebar Navigation */}
-                    <div className="lg:col-span-1 space-y-2">
-                        {[
-                            { id: 'general', label: 'General', icon: Store },
-                            { id: 'security', label: 'Security & Login', icon: Shield },
-                        ].map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => setActiveTab(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === item.id
-                                    ? 'glass-strong text-primary shadow-sm border border-white/10'
-                                    : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
-                                    }`}
-                            >
-                                <item.icon className="w-5 h-5" />
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-3 space-y-6">
-
-                        {activeTab === 'general' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                {/* Store Details */}
-                                <section className="glass-strong rounded-3xl border border-white/5 shadow-sm p-6 space-y-6">
-                                    <h3 className="text-lg font-bold text-foreground border-b border-white/5 pb-4">Store Details</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-foreground">Store Name</label>
-                                            <Input
-                                                value={storeName}
-                                                onChange={(e) => setStoreName(e.target.value)}
-                                                className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-foreground">Support Email</label>
-                                            <Input
-                                                type="email"
-                                                value={supportEmail}
-                                                onChange={(e) => setSupportEmail(e.target.value)}
-                                                className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-foreground">Currency</label>
-                                            <Input
-                                                value={currency}
-                                                onChange={(e) => setCurrency(e.target.value)}
-                                                className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
-                                </section>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Store Info Section */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                                    <Globe className="w-5 h-5 text-primary" />
+                                </div>
+                                <h2 className="text-lg font-bold">Store Information</h2>
                             </div>
-                        )}
 
-                        {activeTab === 'security' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                {/* Security Settings */}
-                                <section className="glass-strong rounded-3xl border border-white/5 shadow-sm p-6 space-y-6">
-                                    <h3 className="text-lg font-bold text-foreground border-b border-white/5 pb-4">Admin PIN</h3>
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-foreground">Current PIN</label>
-                                            <div className="relative">
-                                                <Input
-                                                    type={showPin ? "text" : "password"}
-                                                    value={adminPin}
-                                                    disabled
-                                                    className="bg-white/5 border-white/10 pr-10"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPin(!showPin)}
-                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                                >
-                                                    {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-foreground">New PIN</label>
-                                            <Input
-                                                type="password"
-                                                value={newPin}
-                                                onChange={(e) => setNewPin(e.target.value)}
-                                                placeholder="Enter new 6-digit PIN"
-                                                maxLength={6}
-                                                className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-foreground">Confirm New PIN</label>
-                                            <Input
-                                                type="password"
-                                                value={confirmPin}
-                                                onChange={(e) => setConfirmPin(e.target.value)}
-                                                placeholder="Confirm new PIN"
-                                                maxLength={6}
-                                                className="bg-white/5 border-white/10 focus:bg-white/10 transition-colors"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            Leave blank to keep current PIN. Changes take effect immediately after saving.
-                                        </p>
-                                    </div>
-                                </section>
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Store Name</label>
+                                    <input
+                                        type="text"
+                                        value={settings.store_name || ""}
+                                        onChange={(e) => handleChange("store_name", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="Enter store name"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Support Email</label>
+                                    <input
+                                        type="email"
+                                        value={settings.support_email || ""}
+                                        onChange={(e) => handleChange("support_email", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="support@example.com"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Currency</label>
+                                    <input
+                                        type="text"
+                                        value={settings.currency || ""}
+                                        onChange={(e) => handleChange("currency", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="EGP"
+                                    />
+                                </div>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Promotions Section */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
+                                    <Bell className="w-5 h-5 text-secondary" />
+                                </div>
+                                <h2 className="text-lg font-bold">Promotions & Text</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Announcement Bar Text</label>
+                                    <textarea
+                                        rows={3}
+                                        value={settings.announcement_bar || ""}
+                                        onChange={(e) => handleChange("announcement_bar", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm resize-none placeholder:text-muted-foreground/30"
+                                        placeholder="Free shipping on orders over EGP 500 | Use code ARGAN20 for 20% off"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Announcement Bar (Arabic)</label>
+                                    <textarea
+                                        rows={3}
+                                        value={settings.announcement_bar_ar || ""}
+                                        onChange={(e) => handleChange("announcement_bar_ar", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm resize-none placeholder:text-muted-foreground/30 text-right font-arabic"
+                                        placeholder="شحن مجاني للطلبات فوق ٥٠٠ ج.م | استخدم كود ARGAN20 لخصم ٢٠٪"
+                                        dir="rtl"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Promo Code</label>
+                                    <input
+                                        type="text"
+                                        value={settings.promo_code || ""}
+                                        onChange={(e) => handleChange("promo_code", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="ARGAN20"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Hero Title</label>
+                                    <input
+                                        type="text"
+                                        value={settings.hero_title || ""}
+                                        onChange={(e) => handleChange("hero_title", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="The Beauty of Morocco"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Hero Subtitle</label>
+                                    <textarea
+                                        rows={2}
+                                        value={settings.hero_subtitle || ""}
+                                        onChange={(e) => handleChange("hero_subtitle", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm resize-none placeholder:text-muted-foreground/30"
+                                        placeholder="Experience the magic of pure argan oil..."
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Hero Title (Arabic)</label>
+                                    <input
+                                        type="text"
+                                        value={settings.hero_title_ar || ""}
+                                        onChange={(e) => handleChange("hero_title_ar", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30 text-right font-arabic"
+                                        placeholder="سر الجمال المغربي"
+                                        dir="rtl"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Hero Subtitle (Arabic)</label>
+                                    <textarea
+                                        rows={2}
+                                        value={settings.hero_subtitle_ar || ""}
+                                        onChange={(e) => handleChange("hero_subtitle_ar", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm resize-none placeholder:text-muted-foreground/30 text-right font-arabic"
+                                        placeholder="اكتشفي القوة التحويلية لزيت الأرغان النقي..."
+                                        dir="rtl"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Contact & WhatsApp Section */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                                    <Smartphone className="w-5 h-5 text-green-500" />
+                                </div>
+                                <h2 className="text-lg font-bold">WhatsApp & Contact</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">WhatsApp Number</label>
+                                    <input
+                                        type="text"
+                                        value={settings.whatsapp_number || ""}
+                                        onChange={(e) => handleChange("whatsapp_number", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="+201234567890"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Contact Phone</label>
+                                    <input
+                                        type="text"
+                                        value={settings.contact_phone || ""}
+                                        onChange={(e) => handleChange("contact_phone", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="+20 123 456 7890"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Security Section */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                                    <Shield className="w-5 h-5 text-red-500" />
+                                </div>
+                                <h2 className="text-lg font-bold">Admin Security</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-muted-foreground ml-1">Admin Access PIN</label>
+                                    <input
+                                        type="password"
+                                        value={settings.admin_pin || ""}
+                                        onChange={(e) => handleChange("admin_pin", e.target.value)}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
+                                        placeholder="••••••"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground mt-1 ml-1">used for dashboard entry verification</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>

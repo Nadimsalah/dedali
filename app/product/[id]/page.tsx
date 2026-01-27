@@ -14,13 +14,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { ShoppingBag, Star, Minus, Plus, Truck, ShieldCheck, RotateCcw, Check, Sparkles } from "lucide-react"
+import { ShoppingBag, Star, Minus, Plus, Truck, ShieldCheck, RotateCcw, Check, Sparkles, Search } from "lucide-react"
 
 export default function ProductPage() {
   const params = useParams()
   const productId = params.id as string
   const { addItem, cartCount } = useCart()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
@@ -82,6 +82,13 @@ export default function ProductPage() {
     )
   }
 
+  const isArabic = language === 'ar'
+  const displayTitle = isArabic && product.title_ar ? product.title_ar : product.title
+  const displayDescription = isArabic && product.description_ar ? product.description_ar : product.description || ""
+  const displayBenefits = isArabic && product.benefits_ar ? product.benefits_ar : product.benefits || []
+  const displayIngredients = isArabic && product.ingredients_ar ? product.ingredients_ar : product.ingredients || ""
+  const displayHowToUse = isArabic && product.how_to_use_ar ? product.how_to_use_ar : product.how_to_use || ""
+
   const inStock = product.stock > 0
   const productImages = (product.images && product.images.length > 0) ? product.images : ["/placeholder.svg?height=600&width=600"]
   const rating = 5.0
@@ -103,7 +110,12 @@ export default function ProductPage() {
               />
             </Link>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Link href="/search">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/5 hover:text-primary transition-all">
+                  <Search className="w-5 h-5" />
+                </Button>
+              </Link>
               <Link href="/cart">
                 <Button
                   variant="ghost"
@@ -128,7 +140,7 @@ export default function ProductPage() {
           <span>/</span>
           <Link href="/#shop" className="hover:text-primary transition-colors">Shop</Link>
           <span>/</span>
-          <span className="text-foreground font-medium truncate">{product.title}</span>
+          <span className="text-foreground font-medium truncate">{displayTitle}</span>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
@@ -137,7 +149,7 @@ export default function ProductPage() {
             <div className="glass rounded-3xl overflow-hidden aspect-square relative shadow-2xl">
               <Image
                 src={productImages[selectedImage]}
-                alt={product.title}
+                alt={displayTitle}
                 fill
                 className="object-cover"
                 priority
@@ -170,7 +182,7 @@ export default function ProductPage() {
           <div className="flex flex-col">
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
-                {product.title}
+                {displayTitle}
               </h1>
 
               <div className="flex flex-wrap items-center gap-4 mb-6">
@@ -199,22 +211,18 @@ export default function ProductPage() {
               </div>
 
               <div className="flex items-baseline gap-4 mb-8">
-                <span className="text-4xl sm:text-5xl font-bold text-primary">EGP {product.price}</span>
+                <span className="text-4xl sm:text-5xl font-bold text-primary">{t('common.currency')} {product.price}</span>
                 {product.compare_at_price && (
                   <span className="text-2xl text-muted-foreground line-through decoration-destructive/30">
-                    EGP {product.compare_at_price}
+                    {t('common.currency')} {product.compare_at_price}
                   </span>
                 )}
-                {product.compare_at_price && (
-                  <span className="px-3 py-1 bg-destructive/10 text-destructive text-sm font-bold rounded-lg">
-                    -{Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)}%
-                  </span>
-                )}
+                {/* Discount Badge Removed */}
               </div>
             </div>
 
             <p className="text-muted-foreground leading-relaxed mb-10 text-lg border-l-4 border-primary/20 pl-6 italic">
-              {product.description}
+              {displayDescription}
             </p>
 
             {/* Quantity */}
@@ -253,6 +261,7 @@ export default function ProductPage() {
                   addItem({
                     id: product.id,
                     name: product.title,
+                    nameAr: product.title_ar || undefined,
                     price: Number(product.price),
                     image: productImages[0],
                     quantity: quantity,
@@ -277,7 +286,7 @@ export default function ProductPage() {
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2">
                     <ul className="grid gap-4">
-                      {product.benefits.map((benefit, idx) => (
+                      {displayBenefits.map((benefit, idx) => (
                         <li key={idx} className="flex items-start gap-4 text-muted-foreground group">
                           <div className="mt-2 w-2 h-2 rounded-full bg-primary shrink-0 transition-transform group-hover:scale-150" />
                           <span className="text-lg">{benefit}</span>
@@ -294,7 +303,7 @@ export default function ProductPage() {
                     {t('product.ingredients')}
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2 text-muted-foreground leading-relaxed text-lg">
-                    {product.ingredients}
+                    {displayIngredients}
                   </AccordionContent>
                 </AccordionItem>
               )}
@@ -305,7 +314,7 @@ export default function ProductPage() {
                     {t('product.how_to_use')}
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2 text-muted-foreground leading-relaxed text-lg">
-                    {product.how_to_use}
+                    {displayHowToUse}
                   </AccordionContent>
                 </AccordionItem>
               )}
@@ -354,27 +363,23 @@ export default function ProductPage() {
                   <div className="aspect-square rounded-2xl overflow-hidden mb-4 sm:mb-6 bg-muted relative">
                     <Image
                       src={(item.images && item.images[0]) || "/placeholder.svg"}
-                      alt={item.title}
+                      alt={isArabic && item.title_ar ? item.title_ar : item.title}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-700"
                     />
-                    {item.compare_at_price && (
-                      <div className="absolute top-3 right-3 bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-1 rounded-lg">
-                        SALE
-                      </div>
-                    )}
+                    {/* Discount Badge Removed */}
                   </div>
                   <h3 className="font-bold text-foreground text-sm sm:text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                    {item.title}
+                    {isArabic && item.title_ar ? item.title_ar : item.title}
                   </h3>
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex flex-col">
                       <span className="text-base sm:text-xl font-bold text-primary">
-                        EGP {item.price}
+                        {t('common.currency')} {item.price}
                       </span>
                       {item.compare_at_price && (
                         <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
-                          EGP {item.compare_at_price}
+                          {t('common.currency')} {item.compare_at_price}
                         </span>
                       )}
                     </div>
@@ -419,6 +424,7 @@ export default function ProductPage() {
               addItem({
                 id: product.id,
                 name: product.title,
+                nameAr: product.title_ar || undefined,
                 price: Number(product.price),
                 image: productImages[0],
                 quantity: quantity,
@@ -427,7 +433,7 @@ export default function ProductPage() {
             }
           >
             <ShoppingBag className="w-5 h-5 mr-2" />
-            {t('product.add_to_cart')} • EGP {product.price * quantity}
+            {t('product.add_to_cart')} • {t('common.currency')} {(product.price * quantity).toFixed(2)}
           </Button>
         </div>
       </div>

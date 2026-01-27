@@ -15,6 +15,7 @@ interface LanguageContextType {
 
 const translations = {
     en: {
+        "common.currency": "EGP",
         // Navigation
         "nav.shop": "Shop",
         "nav.collections": "Collections",
@@ -26,6 +27,7 @@ const translations = {
 
         // Header Popups
         "header.categories": "Categories",
+        "header.browse_by_category": "Browse by Category",
         "header.face_care": "Face Care",
         "header.face_care_desc": "Serums, creams & oils",
         "header.hair_care": "Hair Care",
@@ -177,8 +179,35 @@ const translations = {
         "success.coupon_title": "A special gift for you",
         "success.coupon_desc": "Use this code for 20% off your next purchase",
         "success.order_summary": "Order Summary",
+        "footer.about_desc": "Authentic Moroccan beauty, crafted with care. We bring you the purest organic Argan oil, directly from the source to your daily routine.",
+        "footer.privacy_short": "Privacy",
+        "footer.terms_short": "Terms",
+        "footer.system_status": "System Normal",
+
+        // WhatsApp
+        "whatsapp.title": "Stay in the Loop on WhatsApp",
+        "whatsapp.desc": "Join our VIP list for exclusive discounts, skincare tips, and early access to new launches directly to your phone.",
+        "whatsapp.placeholder": "Phone number",
+        "whatsapp.button": "Join Now",
+        "whatsapp.success_title": "You're on the list!",
+        "whatsapp.success_desc": "Thank you for subscribing. We've sent a welcome gift to your WhatsApp.",
+        "whatsapp.disclaimer": "By joining, you agree to receive marketing messages on WhatsApp. Opt-out anytime.",
+        "whatsapp.register_another": "Register Another Number",
+        "whatsapp.verified_updates": "Verified WhatsApp Updates",
+        "whatsapp.processing": "Processing...",
+
+        // Timer
+        "timer.days": "Days",
+        "timer.hours": "Hours",
+        "timer.minutes": "Minutes",
+        "timer.seconds": "Seconds",
+        "timer.loading": "Loading Products...",
+
+        // Accessibility
+        "accessibility.go_to_slide": "Go to slide",
     },
     ar: {
+        "common.currency": "ج.م",
         // Navigation
         "nav.shop": "المتجر",
         "nav.collections": "المجموعات",
@@ -190,6 +219,7 @@ const translations = {
 
         // Header Popups
         "header.categories": "الأقسام",
+        "header.browse_by_category": "تصفح حسب القسم",
         "header.face_care": "العناية بالوجه",
         "header.face_care_desc": "سيروم، كريمات وزيوت",
         "header.hair_care": "العناية بالشعر",
@@ -220,6 +250,7 @@ const translations = {
         // Sections
         "section.featured_collections": "مجموعات مميزة",
         "section.featured_desc": "استكشفي مجموعاتنا المختارة من منتجات الأرغان الفاخرة",
+        "section.certifications": "معتمد للجودة والنقاء",
         "section.best_sellers": "الأقسام",
         "section.best_sellers_desc": "استعرضي جميع أقسامنا هنا",
         "section.all_categories": "الكل",
@@ -239,7 +270,7 @@ const translations = {
         "section.promo_desc": "جربي سحر زيت الأرغان المغربي. استخدمي الكود WELCOME25 عند الدفع.",
         "section.get_offer": "احصلي على العرض",
         "section.hurry_up": "سارعي!",
-        "section.view_collection": "شوف المجموعة",
+        "section.view_collection": "شفي المجموعة",
 
         // Newsletter
         "newsletter.title": "ابقي على تواصل",
@@ -247,6 +278,16 @@ const translations = {
         "newsletter.placeholder": "أدخلي بريدك الإلكتروني",
         "newsletter.subscribe": "اشترك",
         "newsletter.disclaimer": "بالاشتراك، أنت توافقين على سياسة الخصوصية الخاصة بنا. يمكنك إلغاء الاشتراك في أي وقت.",
+
+        // WhatsApp
+        "whatsapp.title": "خليك على تواصل عبر واتساب",
+        "whatsapp.desc": "انضمي لقائمتنا المميزة عشان يوصلك خصومات حصرية، نصائح للعناية، وأولوية الوصول للمنتجات الجديدة مباشرة على موبايلك.",
+        "whatsapp.placeholder": "رقم الموبايل",
+        "whatsapp.button": "انضمي دلوقتي",
+        "whatsapp.success_title": "أهلاً بيكي في القائمة!",
+        "whatsapp.success_desc": "شكراً لاشتراكك. بعتنالك هدية ترحيبية على واتساب.",
+        "whatsapp.disclaimer": "بالانضمام، انتي بتوافقي انك تستقبلي رسائل تسويقية على واتساب. تقدري تلغي الاشتراك في أي وقت.",
+
 
         // Footer
         "footer.company": "الشركة",
@@ -264,6 +305,10 @@ const translations = {
         "footer.refund_policy": "سياسة الاسترجاع",
         "footer.cookies": "ملفات تعريف الارتباط",
         "footer.rights": "جميع الحقوق محفوظة.",
+        "footer.about_desc": "جمال مغربي أصيل، مصنوع بعناية. نقدم لك أقى زيت أرغان عضوي، من المصدر مباشرة لروتينك اليومي.",
+        "footer.privacy_short": "الخصوصية",
+        "footer.terms_short": "الشروط",
+        "footer.system_status": "النظام يعمل",
 
         // Product & Cart
         "product.add_to_cart": "أضف إلى السلة",
@@ -341,6 +386,21 @@ const translations = {
         "success.coupon_title": "هدية خاصة لك",
         "success.coupon_desc": "استخدم هذا الكود لخصم 20% على طلبك القادم",
         "success.order_summary": "ملخص الطلب",
+
+        // WhatsApp New
+        "whatsapp.register_another": "تسجيل رقم آخر",
+        "whatsapp.verified_updates": "تحديثات واتساب موثقة",
+        "whatsapp.processing": "جاري المعالجة...",
+
+        // Timer
+        "timer.days": "أيام",
+        "timer.hours": "ساعات",
+        "timer.minutes": "دقائق",
+        "timer.seconds": "ثواني",
+        "timer.loading": "جاري تحميل المنتجات...",
+
+        // Accessibility
+        "accessibility.go_to_slide": "اذهب للشريحة",
     }
 }
 
