@@ -45,8 +45,8 @@ export async function POST(request: Request) {
             )
         }
 
-        // Async push notification (don't block response)
-        sendPushNotification({
+        // Send push notification and wait for it
+        await sendPushNotification({
             title: "New Order! 🛍️",
             body: `Order ${order.order_number} received from ${customer.fullName} for EGP ${cart.total}`,
             url: `/admin/orders/${order.id}`,

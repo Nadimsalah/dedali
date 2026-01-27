@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { AdminNotifications } from "@/components/admin/admin-notifications"
+import { PushNotificationManager } from "@/components/admin/push-notification-manager"
 
 export default function AdminLayout({
     children,
@@ -38,6 +40,8 @@ export default function AdminLayout({
     if (pathname === "/admin/login" || isAuthorized) {
         return (
             <div dir="ltr" className="min-h-screen bg-background">
+                <AdminNotifications />
+                <PushNotificationManager />
                 {children}
             </div>
         )
