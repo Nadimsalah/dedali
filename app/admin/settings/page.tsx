@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Loader2, RotateCcw, Globe, Bell, Mail, Shield, Smartphone } from "lucide-react"
+import { Save, Loader2, RotateCcw, Globe, Bell, Mail, Shield, Smartphone, Send } from "lucide-react"
 import { toast } from "sonner"
 import { getAdminSettings, updateAdminSettings } from "@/lib/supabase-api"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -12,6 +12,7 @@ export default function SettingsPage() {
     const [settings, setSettings] = useState<Record<string, string>>({})
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [testing, setTesting] = useState(false)
 
     useEffect(() => {
         loadSettings()
@@ -37,6 +38,31 @@ export default function SettingsPage() {
 
     const handleChange = (key: string, value: string) => {
         setSettings(prev => ({ ...prev, [key]: value }))
+    }
+
+    async function handleTestNotification() {
+        setTesting(true)
+        try {
+            const response = await fetch('/api/admin/push/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: "Test Connection 📡",
+                    body: "System check: Your device is now connected to Diar Argan alerts!",
+                    tag: 'test-push'
+                })
+            })
+            const data = await response.json()
+            if (data.sent > 0) {
+                toast.success(`Sent to ${data.sent} device(s)`)
+            } else {
+                toast.error("No active subscriptions found for this store.")
+            }
+        } catch (error) {
+            toast.error("Failed to trigger test notification")
+        } finally {
+            setTesting(false)
+        }
     }
 
     if (loading) {
@@ -305,6 +331,16 @@ export default function SettingsPage() {
                                             Subscribe Device
                                         </Button>
                                     </div>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="w-full h-8 rounded-lg text-[10px] bg-primary/10 hover:bg-primary/20 text-primary border-none"
+                                        onClick={handleTestNotification}
+                                        disabled={testing}
+                                    >
+                                        {testing ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Send className="w-3 h-3 mr-2" />}
+                                        Send Test Notification
+                                    </Button>
                                 </div>
 
                                 <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">

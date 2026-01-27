@@ -14,7 +14,6 @@ const almarai = Almarai({ subsets: ["arabic"], weight: ["300", "400", "700", "80
 export const metadata: Metadata = {
   title: 'Diar Argan | Premium Moroccan Cosmetics',
   description: 'Leader des produits cosmétiques. Discover luxurious argan oil skincare and beauty products crafted in Morocco.',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
@@ -32,6 +31,7 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
+  manifest: '/manifest.json',
 }
 
 export const viewport: Viewport = {
