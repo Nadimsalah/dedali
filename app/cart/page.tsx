@@ -20,6 +20,7 @@ import {
   Heart,
   Trash2,
 } from "lucide-react"
+import { getCurrentUserRole, getShippingSettings, ShippingSetting } from "@/lib/supabase-api"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -40,11 +41,45 @@ export default function CartPage() {
   const [promoApplied, setPromoApplied] = useState(false)
   const { items: cartItems, removeItem, updateQuantity, isInitialized } = useCart()
   const { t, language } = useLanguage()
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [shippingSettings, setShippingSettings] = useState<ShippingSetting[]>([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const role = await getCurrentUserRole()
+      setUserRole(role)
+
+      const shipping = await getShippingSettings()
+      setShippingSettings(shipping)
+    }
+    fetchData()
+  }, [])
 
   // Cart calculations
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = (userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price
+    return sum + price * item.quantity
+  }, 0)
+  // Get current shipping rule
+  const currentShippingRule = shippingSettings.find(s => s.role === (userRole === 'reseller' ? 'reseller' : 'retail'))
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+
   const discount = promoApplied ? subtotal * 0.2 : 0
-  const shipping = subtotal > 750 ? 0 : 50
+
+  let shipping = 50 // Default
+  if (currentShippingRule) {
+    const isFreeAmount = currentShippingRule.free_shipping_threshold > 0 && subtotal >= currentShippingRule.free_shipping_threshold
+    const isFreeItems = currentShippingRule.free_shipping_min_items > 0 && totalItems >= currentShippingRule.free_shipping_min_items
+
+    if (isFreeAmount || isFreeItems) {
+      shipping = 0
+    } else {
+      shipping = currentShippingRule.base_price
+    }
+  } else {
+    shipping = subtotal > 750 ? 0 : 50
+  }
+
   const total = subtotal - discount + shipping
 
   const applyPromo = () => {
@@ -57,7 +92,10 @@ export default function CartPage() {
     <div className="min-h-screen bg-background">
       {/* Announcement Bar */}
       <div className="bg-primary text-primary-foreground text-center py-2 px-4 text-sm font-medium">
-        Free Shipping on Orders Over EGP 750 • Use Code ARGAN20 for 20% Off
+        {language === 'ar'
+          ? (currentShippingRule ? `شحن مجاني للطلبات فوق ${currentShippingRule.free_shipping_threshold} ${t('common.currency')}` : `شحن مجاني للطلبات فوق ٧٥٠ ${t('common.currency')}`)
+          : (currentShippingRule ? `Free Shipping on Orders Over ${t('common.currency')} ${currentShippingRule.free_shipping_threshold}` : `Free Shipping on Orders Over ${t('common.currency')} 750`)
+        }
       </div>
 
       {/* Header */}
@@ -70,8 +108,8 @@ export default function CartPage() {
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
-                src="/logo.webp"
-                alt="Diar Argan"
+                src="/logo.png"
+                alt="Dedali Store"
                 width={120}
                 height={60}
                 className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -206,8 +244,12 @@ export default function CartPage() {
 
                           {/* Price */}
                           <div className="text-right">
-                            <p className="text-base sm:text-lg font-bold text-foreground">{t('common.currency')} {(item.price * item.quantity).toFixed(2)}</p>
-                            <p className="text-xs sm:text-sm text-muted-foreground">{t('common.currency')} {item.price.toFixed(2)} each</p>
+                            <p className="text-base sm:text-lg font-bold text-foreground">
+                              {t('common.currency')} {(((userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price) * item.quantity).toFixed(2)}
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              {t('common.currency')} {((userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price).toFixed(2)} each
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -315,6 +357,70 @@ export default function CartPage() {
       </main >
 
 
-    </div >
+      {/* Footer */}
+      <footer className="bg-background border-t border-border/40 py-16 sm:py-20 relative overflow-hidden mt-12 print:hidden">
+        <div className="container mx-auto px-4 relative">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+            {/* Brand Column */}
+            <div className="md:col-span-4 lg:col-span-5 space-y-6">
+              <Link href="/" className="inline-block">
+                <Image
+                  src="/logo.png"
+                  alt="Dedali Store"
+                  width={200}
+                  height={100}
+                  className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                />
+              </Link>
+              <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm text-left">
+                Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+              </p>
+            </div>
+
+            {/* Links Columns */}
+            <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+              <div className="text-left">
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Company</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="/our-story" className="hover:text-primary transition-colors block py-1">Our Story</Link></li>
+                  <li><Link href="/sustainability" className="hover:text-primary transition-colors block py-1">Sustainability</Link></li>
+                  <li><Link href="/press" className="hover:text-primary transition-colors block py-1">Press</Link></li>
+                  <li><Link href="/careers" className="hover:text-primary transition-colors block py-1">Careers</Link></li>
+                </ul>
+              </div>
+
+              <div className="text-left">
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Support</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">Contact Us</Link></li>
+                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">Shipping Info</Link></li>
+                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">Track Order</Link></li>
+                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">FAQ</Link></li>
+                </ul>
+              </div>
+
+              <div className="text-left">
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Legal</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">Terms of Service</Link></li>
+                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">Refund Policy</Link></li>
+                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">Cookies</Link></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+            <p>© {new Date().getFullYear()} Dedali Store. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   )
 }

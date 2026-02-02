@@ -49,6 +49,7 @@ export default function NewProductPage() {
     const [description, setDescription] = useState("")
     const [price, setPrice] = useState("")
     const [compareAtPrice, setCompareAtPrice] = useState("")
+    const [resellerPrice, setResellerPrice] = useState("")
     const [stock, setStock] = useState("")
     const [ingredients, setIngredients] = useState("")
     const [howToUse, setHowToUse] = useState("")
@@ -202,6 +203,7 @@ export default function NewProductPage() {
                     title,
                     price: parseFloat(price),
                     compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
+                    reseller_price: resellerPrice ? parseFloat(resellerPrice) : null,
                     stock: stock ? parseInt(stock) : 0,
                     status: status.toLowerCase(),
                     images,
@@ -320,7 +322,7 @@ export default function NewProductPage() {
                         </Link>
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">Add Product</h1>
-                            <p className="text-xs text-gray-500 font-medium">New Arrival</p>
+                            <p className="text-xs text-gray-500 font-medium">Dedicated to IT excellence</p>
                         </div>
                     </div>
 
@@ -397,7 +399,7 @@ export default function NewProductPage() {
                                         <Input
                                             value={title || ""}
                                             onChange={(e) => setTitle(e.target.value)}
-                                            placeholder="e.g. Rateb's Pure Argan Oil"
+                                            placeholder="e.g. Dell Latitude 5420 Laptop"
                                             className="bg-white border-gray-200 h-12 text-base focus:ring-blue-500/20 focus:border-blue-500 rounded-xl shadow-sm text-gray-900 placeholder:text-gray-400 pr-12"
                                         />
                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -534,10 +536,10 @@ export default function NewProductPage() {
                                 {/* Ingredients */}
                                 {/* Ingredients & How to Use */}
                                 <div className="space-y-8">
-                                    {/* Ingredients section */}
+                                    {/* Specifications section */}
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center px-1">
-                                            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Ingredients</label>
+                                            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Technical Specifications</label>
                                             <div className="flex items-center gap-2">
                                                 {ingredients.trim() && (
                                                     <button
@@ -555,14 +557,14 @@ export default function NewProductPage() {
                                             value={ingredients || ""}
                                             onChange={(e) => setIngredients(e.target.value)}
                                             className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none shadow-sm"
-                                            placeholder="Comma separated ingredients (English)"
+                                            placeholder="Processor, RAM, Storage, etc."
                                         />
                                     </div>
 
-                                    {/* How to Use section */}
+                                    {/* Warranty section */}
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center px-1">
-                                            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">How to Use</label>
+                                            <label className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Warranty & Support</label>
                                             <div className="flex items-center gap-2">
                                                 {howToUse.trim() && (
                                                     <button
@@ -580,7 +582,7 @@ export default function NewProductPage() {
                                             value={howToUse || ""}
                                             onChange={(e) => setHowToUse(e.target.value)}
                                             className="w-full min-h-[120px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none shadow-sm"
-                                            placeholder="Step by step instructions (English)"
+                                            placeholder="Warranty details and support info"
                                         />
                                     </div>
                                 </div>
@@ -646,9 +648,9 @@ export default function NewProductPage() {
                             </div>
                             <div className="p-6 space-y-6">
                                 <div className="space-y-3">
-                                    <label className="text-sm font-semibold text-gray-700">Price (EGP)</label>
+                                    <label className="text-sm font-semibold text-gray-700">Price (MAD)</label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">EGP</span>
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">MAD</span>
                                         <Input
                                             type="number"
                                             value={price || ""}
@@ -659,9 +661,23 @@ export default function NewProductPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-3">
+                                    <label className="text-sm font-semibold text-gray-700">Reseller Price (MAD)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">MAD</span>
+                                        <Input
+                                            type="number"
+                                            value={resellerPrice || ""}
+                                            onChange={(e) => setResellerPrice(e.target.value)}
+                                            placeholder="0.00"
+                                            className="bg-white border-blue-200 h-12 pl-14 text-lg font-mono rounded-xl shadow-sm focus:ring-blue-500/20 focus:border-blue-500 text-blue-900"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-blue-600/80">Only visible to approved reseller accounts</p>
+                                </div>
+                                <div className="space-y-3">
                                     <label className="text-sm font-semibold text-gray-700">Compare at Price (Optional)</label>
                                     <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">EGP</span>
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">MAD</span>
                                         <Input
                                             type="number"
                                             value={compareAtPrice || ""}

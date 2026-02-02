@@ -5,7 +5,7 @@ import { sendPushNotification } from "@/lib/push-notifications"
 export async function POST(request: Request) {
     try {
         const body = await request.json()
-        const { customer, cart } = body
+        const { customer, cart, customerId } = body
 
         // Validate required fields
         if (!customer.fullName || !customer.phone || !customer.city || !customer.address) {
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
 
         // Persist to Supabase
         const { order, error } = await createOrder({
+            customerId,
             customer: {
                 name: customer.fullName,
                 email: customer.email || `guest_${Date.now()}@example.com`,
@@ -35,7 +36,8 @@ export async function POST(request: Request) {
             })),
             subtotal: cart.subtotal,
             shipping_cost: cart.shipping,
-            total: cart.total
+            total: cart.total,
+            payment_method: body.paymentMethod || 'cod'
         })
 
         if (error) {
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
         // Send push notification and wait for it
         await sendPushNotification({
             title: "New Order! 🛍️",
-            body: `Order ${order.order_number} received from ${customer.fullName} for EGP ${cart.total}`,
+            body: `Order ${order.order_number} received from ${customer.fullName} for MAD ${cart.total}`,
             url: `/admin/orders/${order.id}`,
             tag: 'new-order'
         }).catch(err => console.error("Push notify failed:", err))

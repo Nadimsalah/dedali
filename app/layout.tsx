@@ -12,15 +12,15 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 const almarai = Almarai({ subsets: ["arabic"], weight: ["300", "400", "700", "800"], variable: "--font-almarai" });
 
 export const metadata: Metadata = {
-  title: 'Diar Argan | Premium Moroccan Cosmetics',
-  description: 'Leader des produits cosmétiques. Discover luxurious argan oil skincare and beauty products crafted in Morocco.',
+  title: 'Dedali Store | Premium IT Equipment',
+  description: 'Whole seller of IT material like PC, servers, printers. We are leader in Morocco.',
   icons: {
     icon: [
       {
-        url: '/logo.webp',
+        url: '/logo.png',
       },
     ],
-    apple: '/logo.webp',
+    apple: '/logo.png',
   },
   manifest: '/manifest.json',
 }

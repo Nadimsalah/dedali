@@ -138,7 +138,7 @@ export default function CustomersPage() {
                                                     </Badge>
                                                 </td>
                                                 <td className="py-4 px-6 hidden md:table-cell text-sm">{customer.total_orders || 0}</td>
-                                                <td className="py-4 px-6 hidden lg:table-cell font-semibold">EGP {customer.total_spent?.toLocaleString() || 0}</td>
+                                                <td className="py-4 px-6 hidden lg:table-cell font-semibold">MAD {customer.total_spent?.toLocaleString() || 0}</td>
                                                 <td className="py-4 px-6 hidden xl:table-cell text-sm text-muted-foreground">
                                                     {new Date(customer.created_at).toLocaleDateString()}
                                                 </td>

@@ -17,25 +17,25 @@ function wait(ms: number) {
 function mockRewrite(text: string, field: string): string {
     const mocks: Record<string, string[]> = {
         title: [
-            "إكسير الجمال المغربي",
-            "زيت الأرغان الملكي",
-            "سحر الطبيعة",
-            "نضارة فورية وتغذية عميقة"
+            "Dell Latitude 5420 Laptop",
+            "HP LaserJet Pro M404n",
+            "Cisco Catalyst 2960-X",
+            "Logitech MX Master 3S"
         ],
         description: [
-            "منتج طبيعي ١٠٠٪ بيوفر لك عناية متكاملة. ترطيب عميق وحماية طويلة المدى لبشرتك وشعرك.",
-            "جربي سحر المكونات الطبيعية اللي بتغذي بشرتك من الأعماق. نعومة ولمعان ملهوش مثيل.",
-            "اختيارك الأمثل لروتين يومي صحي. تركيبة غنية بالفيتامينات والمعادن اللي محتاجاها بشرتك."
+            "High performance IT solution for your business. Reliable, scalable and backed by industry leaders.",
+            "Premium quality hardware designed for demanding workflows. Ensures maximum uptime and productivity.",
+            "Enterprise grade equipment with advanced features and security. The perfect addition to your infrastructure."
         ],
         ingredients: [
-            "زيت أرغان نقي، فيتامين هـ، أحماض دهنية أساسية",
-            "خلاصة الصبار، زيت الجوجوبا، زبدة الشيا",
-            "زيت اللوز الحلو، مستخلص الورد، ماء مقطر"
+            "Processor: Intel Core i7, RAM: 16GB, Storage: 512GB SSD",
+            "Resolution: 4K UHD, Panel: IPS, Refresh Rate: 144Hz",
+            "Interface: USB-C, Compatibility: Windows/macOS/Linux"
         ],
         how_to_use: [
-            "1. حطي كمية صغيرة على بشرة نظيفة.\n2. دلكي بلطف بحركات دائرية.\n3. سيبيه يمتص تماماً.",
-            "1. وزعي المنتج بالتساوي على الشعر المبلل.\n2. ركزي على الأطراف.\n3. مش محتاجة تغسليه.",
-            "استخدميه مرة الصبح ومرة بالليل لنتائج أفضل."
+            "1. Connect the power cable.\n2. Press the power button.\n3. Follow the on-screen setup assistant.",
+            "Standard 1-year manufacturer warranty applies. Global support available 24/7 via official channels.",
+            "Includes dedicated technical support and free firmware updates for the first year."
         ]
     }
 
@@ -69,23 +69,20 @@ export async function POST(request: Request) {
 
         // Instructions
         const fieldRules: Record<string, string> = {
-            title: `GOAL: Generate a short, attractive cosmetic product name. RULES: Max 10 words. Clear and elegant. No exaggeration.`,
-            description: `GOAL: Explain what the product is, what it does, and why it’s useful. RULES: 2–4 short sentences. Marketing style. Friendly and trustworthy.`,
-            benefit: `GOAL: Generate a UNIQUE, short, punchy benefit title. RULES: Max 3-5 words. No sentences. creative and distinct.`,
-            ingredients: `GOAL: Extract ingredients from text and translate to EGYPTIAN ARABIC (Masri). RULES: No intro. Use common Egyptian terms (e.g. 'زيت', 'خلاصة'). List only.`,
-            how_to_use: `GOAL: Extract usage steps and rewrite in EGYPTIAN ARABIC (Masri). RULES: Use friendly dialect (e.g. 'حطي', 'اغسلي'). Direct numbered steps. No intro.`
+            title: `GOAL: Generate a professional IT product title. RULES: Clear, technical, and accurate. No marketing fluff.`,
+            description: `GOAL: Write a professional business description for IT hardware. RULES: Professional tone. Focus on reliability and value.`,
+            benefit: `GOAL: Generate a short, punchy technical feature. RULES: Technical and clear. 3-5 words max.`,
+            ingredients: `GOAL: Format technical specifications into a clean list. RULES: Professional and organized.`,
+            how_to_use: `GOAL: Write warranty and support information. RULES: Formal and professional.`
         }
 
         const specificRule = fieldRules[field] || "Rewrite efficiently."
         const systemPrompt = `You are an embedded AI assistant inside an e-commerce admin panel for a cosmetics brand.
 
 LANGUAGE & STYLE:
-- Output language: Egyptian Arabic ONLY (اللهجة المصرية).
-- No English words.
-- No emojis.
-- Natural, marketing-friendly cosmetics tone.
-- Suitable for an online beauty store.
-- Clear and easy for customers.
+- Output language: Professional Arabic (Fusha) or English as requested.
+- Professional, corporate IT distributor tone.
+- Clear and easy for business customers.
 
 SAFETY & CONTENT RULES:
 - Do NOT invent medical or therapeutic claims.

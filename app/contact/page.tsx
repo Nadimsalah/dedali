@@ -80,8 +80,8 @@ export default function ContactPage() {
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
             {isArabic
-              ? "سواء كنتِ عميلة، شريكاً محتملاً، أو موزعاً مهتماً بديار أرجان في مصر، املئي النموذج التالي وسنقوم بالرد عليك في أقرب وقت."
-              : "Whether you’re a customer, potential partner, or interested distributor in Egypt, fill in the form below and we’ll get back to you as soon as possible."}
+              ? "سواء كنتِ عميلة، شريكاً محتملاً، أو موزعاً مهتماً بمنتجات ديدالي في المغرب، املئي النموذج التالي وسنقوم بالرد عليك في أقرب وقت."
+              : "Whether you’re a customer, potential partner, or interested distributor in Morocco, fill in the form below and we’ll get back to you as soon as possible."}
           </p>
 
           {/* Type selector */}
@@ -152,7 +152,7 @@ export default function ContactPage() {
                 <Phone className="w-3.5 h-3.5 text-primary" />
                 {isArabic ? "رقم الموبايل" : "Phone number"}
               </label>
-              <Input name="phone" required placeholder="+20 ..." className="rounded-xl" />
+              <Input name="phone" required placeholder="+212 ..." className="rounded-xl" />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground flex items-center gap-2">
@@ -169,13 +169,13 @@ export default function ContactPage() {
                 ? type === "client"
                   ? "كيف يمكننا مساعدتك؟"
                   : type === "partner"
-                  ? "اخبرنا عن نوع الشراكة التي تبحث عنها"
-                  : "اخبرنا عن خطتك للتوزيع في السوق المصري"
+                    ? "اخبرنا عن نوع الشراكة التي تبحث عنها"
+                    : "اخبرنا عن خطتك للتوزيع في السوق المصري"
                 : type === "client"
-                ? "How can we help you?"
-                : type === "partner"
-                ? "Tell us what kind of partnership you are looking for"
-                : "Tell us about your distribution plans in the Egyptian market"}
+                  ? "How can we help you?"
+                  : type === "partner"
+                    ? "Tell us what kind of partnership you are looking for"
+                    : "Tell us about your distribution plans in the Moroccan market"}
             </label>
             <Textarea
               name="message"
@@ -207,8 +207,8 @@ export default function ContactPage() {
                   ? "تم إرسال الرسالة ✓"
                   : "Message sent ✓"
                 : isArabic
-                ? (loading ? "جاري الإرسال..." : "إرسال الرسالة")
-                : (loading ? "Sending..." : "Send message")}
+                  ? (loading ? "جاري الإرسال..." : "إرسال الرسالة")
+                  : (loading ? "Sending..." : "Send message")}
             </Button>
           </div>
 

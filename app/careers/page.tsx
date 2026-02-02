@@ -102,8 +102,8 @@ export default function CareersPage() {
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
             {isArabic
-              ? "نبحث دائماً عن مواهب شغوفة بالجمال النظيف وزيت الأرجان المغربي، سواء للعمل في المبيعات، خدمة العملاء، التسويق، أو التوزيع في السوق المصري."
-              : "We’re always looking for passionate people who love clean beauty and Moroccan argan oil—whether in sales, customer care, marketing, or distribution across the Egyptian market."}
+              ? "نبحث دائماً عن مواهب شغوفة بالجمال النظيف وزيت الأرجان المغربي، سواء للعمل في المبيعات، خدمة العملاء، التسويق، أو التوزيع في السوق المغربي."
+              : "We’re always looking for passionate people who love clean beauty and Moroccan argan oil—whether in sales, customer care, marketing, or distribution across the Moroccan market."}
           </p>
           <p className="text-xs sm:text-sm text-muted-foreground">
             {isArabic
@@ -154,7 +154,7 @@ export default function CareersPage() {
               </label>
               <Input
                 required
-                placeholder="+20 ..."
+                placeholder="+212 ..."
                 className="rounded-xl"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -204,8 +204,8 @@ export default function CareersPage() {
                 {cvName
                   ? cvName
                   : isArabic
-                  ? "لم يتم اختيار ملف بعد"
-                  : "No file selected yet"}
+                    ? "لم يتم اختيار ملف بعد"
+                    : "No file selected yet"}
               </span>
             </div>
           </div>
@@ -231,8 +231,8 @@ export default function CareersPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
             <p className="text-[11px] sm:text-xs text-muted-foreground max-w-md">
               {isArabic
-                ? "سنستخدم بياناتك وسيرتك الذاتية فقط لأغراض التوظيف المحتملة وفقًا لسياسة الخصوصية لدينا. سيتم الاحتفاظ بالبيانات لفترة محدودة بما يتماشى مع القانون المصري."
-                : "We will use your details and CV solely for potential recruitment purposes in line with our Privacy Policy and applicable Egyptian law."}
+                ? "سنستخدم بياناتك وسيرتك الذاتية فقط لأغراض التوظيف المحتملة وفقًا لسياسة الخصوصية لدينا. سيتم الاحتفاظ بالبيانات لفترة محدودة بما يتماشى مع القانون المغربي."
+                : "We will use your details and CV solely for potential recruitment purposes in line with our Privacy Policy and applicable Moroccan law."}
             </p>
             <Button
               type="submit"
@@ -245,8 +245,8 @@ export default function CareersPage() {
                   ? "تم إرسال الطلب ✓"
                   : "Application sent ✓"
                 : isArabic
-                ? "إرسال الطلب"
-                : "Submit application"}
+                  ? "إرسال الطلب"
+                  : "Submit application"}
             </Button>
           </div>
 

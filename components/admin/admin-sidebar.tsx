@@ -15,6 +15,7 @@ import {
     MessageCircle,
     Phone,
     Briefcase,
+    Truck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -25,6 +26,7 @@ const menuItems = [
     { icon: ShoppingBag, label: "Orders", href: "/admin/orders" },
     { icon: Package, label: "Products", href: "/admin/products" },
     { icon: Users, label: "Customers", href: "/admin/customers" },
+    { icon: Truck, label: "Shipping", href: "/admin/shipping" },
     { icon: BarChart3, label: "Analytics", href: "/admin/analytics" },
     { icon: ImageIcon, label: "Hero Carousel", href: "/admin/hero-carousel" },
     // CRM / Marketing
@@ -41,11 +43,11 @@ export function AdminSidebar() {
         <div className="flex flex-col h-full bg-background/50 backdrop-blur-xl border-r border-white/10">
             <div className="p-6 flex items-center justify-center border-b border-white/10">
                 <Image
-                    src="/logo.webp"
-                    alt="Diar Argan"
-                    width={120}
-                    height={60}
-                    className="h-10 w-auto"
+                    src="/logo.png"
+                    alt="Dedali Store"
+                    width={160}
+                    height={80}
+                    className="h-16 w-auto"
                 />
             </div>
 

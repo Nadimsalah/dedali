@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, Loader2, RotateCcw, Globe, Bell, Mail, Shield, Smartphone, Send } from "lucide-react"
+import { Save, Loader2, RotateCcw, Globe, Bell, Mail, Shield, Smartphone, Send, CreditCard } from "lucide-react"
 import { toast } from "sonner"
 import { getAdminSettings, updateAdminSettings } from "@/lib/supabase-api"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -48,7 +48,7 @@ export default function SettingsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: "Test Connection 📡",
-                    body: "System check: Your device is now connected to Diar Argan alerts!",
+                    body: "System check: Your device is now connected to Dedali Store alerts!",
                     tag: 'test-push'
                 })
             })
@@ -146,7 +146,7 @@ export default function SettingsPage() {
                                         value={settings.currency || ""}
                                         onChange={(e) => handleChange("currency", e.target.value)}
                                         className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
-                                        placeholder="EGP"
+                                        placeholder="MAD"
                                     />
                                 </div>
                             </div>
@@ -169,7 +169,7 @@ export default function SettingsPage() {
                                         value={settings.announcement_bar || ""}
                                         onChange={(e) => handleChange("announcement_bar", e.target.value)}
                                         className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm resize-none placeholder:text-muted-foreground/30"
-                                        placeholder="Free shipping on orders over EGP 500 | Use code ARGAN20 for 20% off"
+                                        placeholder="Free shipping on orders over MAD 500 | Use code ARGAN20 for 20% off"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -179,7 +179,7 @@ export default function SettingsPage() {
                                         value={settings.announcement_bar_ar || ""}
                                         onChange={(e) => handleChange("announcement_bar_ar", e.target.value)}
                                         className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm resize-none placeholder:text-muted-foreground/30 text-right font-arabic"
-                                        placeholder="شحن مجاني للطلبات فوق ٥٠٠ ج.م | استخدم كود ARGAN20 لخصم ٢٠٪"
+                                        placeholder="شحن مجاني للطلبات فوق ٧٥٠ د.م | استخدم كود ARGAN20 لخصم ٢٠٪"
                                         dir="rtl"
                                     />
                                 </div>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                                         value={settings.whatsapp_number || ""}
                                         onChange={(e) => handleChange("whatsapp_number", e.target.value)}
                                         className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
-                                        placeholder="+201234567890"
+                                        placeholder="+212600000000"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -265,8 +265,86 @@ export default function SettingsPage() {
                                         value={settings.contact_phone || ""}
                                         onChange={(e) => handleChange("contact_phone", e.target.value)}
                                         className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
-                                        placeholder="+20 123 456 7890"
+                                        placeholder="+212 600 000 000"
                                     />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Payment Methods Section */}
+                        <div className="bg-white/5 border border-white/5 rounded-3xl p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                                    <CreditCard className="w-5 h-5 text-purple-500" />
+                                </div>
+                                <h2 className="text-lg font-bold">Payment Methods</h2>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Cash on Delivery */}
+                                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <label className="text-sm font-semibold text-foreground">Cash on Delivery (COD)</label>
+                                            <p className="text-[10px] text-muted-foreground">Standard payment on delivery.</p>
+                                        </div>
+                                        <Switch
+                                            checked={settings.payment_cod_enabled !== "false"}
+                                            onCheckedChange={(checked) => handleChange("payment_cod_enabled", checked ? "true" : "false")}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Bank Transfer (Virement) */}
+                                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <label className="text-sm font-semibold text-foreground">Bank Transfer (Virement)</label>
+                                            <p className="text-[10px] text-muted-foreground">Enable direct bank transfers.</p>
+                                        </div>
+                                        <Switch
+                                            checked={settings.payment_virement_enabled === "true"}
+                                            onCheckedChange={(checked) => handleChange("payment_virement_enabled", checked ? "true" : "false")}
+                                        />
+                                    </div>
+                                    {settings.payment_virement_enabled === "true" && (
+                                        <div className="animate-in fade-in slide-in-from-top-2 pt-2">
+                                            <label className="text-xs font-semibold text-muted-foreground ml-1 mb-1.5 block">Bank Details & Instructions</label>
+                                            <textarea
+                                                rows={4}
+                                                value={settings.payment_virement_details || ""}
+                                                onChange={(e) => handleChange("payment_virement_details", e.target.value)}
+                                                className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 focus:border-primary/50 focus:outline-none transition-all text-sm resize-none"
+                                                placeholder="Bank Name: ...&#10;Account Number: ...&#10;SWIFT/BIC: ..."
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Cheque */}
+                                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <label className="text-sm font-semibold text-foreground">Cheque Payment</label>
+                                            <p className="text-[10px] text-muted-foreground">Accept cheques from valid banks.</p>
+                                        </div>
+                                        <Switch
+                                            checked={settings.payment_cheque_enabled === "true"}
+                                            onCheckedChange={(checked) => handleChange("payment_cheque_enabled", checked ? "true" : "false")}
+                                        />
+                                    </div>
+                                    {settings.payment_cheque_enabled === "true" && (
+                                        <div className="animate-in fade-in slide-in-from-top-2 pt-2">
+                                            <label className="text-xs font-semibold text-muted-foreground ml-1 mb-1.5 block">Cheque Payee & Info</label>
+                                            <textarea
+                                                rows={3}
+                                                value={settings.payment_cheque_details || ""}
+                                                onChange={(e) => handleChange("payment_cheque_details", e.target.value)}
+                                                className="w-full px-4 py-2.5 rounded-xl bg-black/20 border border-white/10 focus:border-primary/50 focus:outline-none transition-all text-sm resize-none"
+                                                placeholder="Make cheques payable to: ...&#10;Send to address: ..."
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

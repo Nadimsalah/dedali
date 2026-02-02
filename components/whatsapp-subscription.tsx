@@ -9,8 +9,8 @@ import { CheckCircle2, MessageCircle } from "lucide-react"
 import { createWhatsappSubscription } from "@/lib/supabase-api"
 
 const COUNTRY_CODES = (t: (k: string) => string) => [
-    { code: "+20", country: t('language') === 'ar' ? "مصر" : "Egypt", flag: "🇪🇬" },
     { code: "+212", country: t('language') === 'ar' ? "المغرب" : "Morocco", flag: "🇲🇦" },
+    { code: "+20", country: t('language') === 'ar' ? "مصر" : "Egypt", flag: "🇪🇬" },
     { code: "+966", country: t('language') === 'ar' ? "السعودية" : "Saudi Arabia", flag: "🇸🇦" },
     { code: "+971", country: t('language') === 'ar' ? "الإمارات" : "UAE", flag: "🇦🇪" },
     { code: "+965", country: t('language') === 'ar' ? "الكويت" : "Kuwait", flag: "🇰🇼" },
@@ -24,7 +24,7 @@ const COUNTRY_CODES = (t: (k: string) => string) => [
 export function WhatsAppSubscription() {
     const { t } = useLanguage()
     const [submitted, setSubmitted] = useState(false)
-    const [countryCode, setCountryCode] = useState("+20")
+    const [countryCode, setCountryCode] = useState("+212")
     const [phone, setPhone] = useState("")
     const [loading, setLoading] = useState(false)
 

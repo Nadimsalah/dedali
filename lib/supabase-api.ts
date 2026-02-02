@@ -9,6 +9,7 @@ export interface Product {
     sku: string
     category: string
     price: number
+    reseller_price?: number | null
     compare_at_price: number | null
     stock: number
     status: string
@@ -29,6 +30,11 @@ export interface Customer {
     name: string
     email: string
     phone: string | null
+    role: string // 'customer' | 'reseller' | 'admin'
+    company_name?: string | null
+    ice?: string | null
+    website?: string | null
+    city?: string | null
     status: string
     total_orders: number
     total_spent: number
@@ -52,6 +58,7 @@ export interface Order {
     subtotal: number
     shipping_cost: number
     total: number
+    payment_method: string | null
     ip_address: string | null
     notes: string | null
     created_at: string
@@ -90,6 +97,16 @@ export interface ContactMessage {
     type: string | null
     message: string
     created_at: string
+}
+
+export interface ShippingSetting {
+    id: string
+    role: 'retail' | 'reseller'
+    base_price: number
+    free_shipping_threshold: number
+    free_shipping_min_items: number
+    enabled: boolean
+    updated_at: string
 }
 
 // Career applications
@@ -223,6 +240,44 @@ export async function listCareerApplications(): Promise<CareerApplication[]> {
     }
 
     return (data || []) as CareerApplication[]
+}
+
+// --- SHIPPING SETTINGS ---
+
+export async function getShippingSettings() {
+    const { data, error } = await supabase
+        .from('shipping_settings')
+        .select('*')
+        .order('role', { ascending: true })
+
+    if (error) {
+        console.error('Error fetching shipping settings:', error)
+        return []
+    }
+
+    return data as ShippingSetting[]
+}
+
+export async function updateShippingSettings(settings: ShippingSetting[]) {
+    try {
+        for (const setting of settings) {
+            const { error } = await supabase
+                .from('shipping_settings')
+                .update({
+                    base_price: setting.base_price,
+                    free_shipping_threshold: setting.free_shipping_threshold,
+                    free_shipping_min_items: setting.free_shipping_min_items,
+                    enabled: setting.enabled
+                })
+                .eq('id', setting.id)
+
+            if (error) throw error
+        }
+        return { success: true }
+    } catch (error) {
+        console.error('Error updating shipping settings:', error)
+        return { success: false, error }
+    }
 }
 
 // Products API
@@ -400,6 +455,21 @@ export async function getOrders(filters?: {
     }
 }
 
+export async function getCustomerOrders(customerId: string) {
+    const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching customer orders:', error)
+        return []
+    }
+
+    return data as Order[]
+}
+
 export async function getOrderById(id: string) {
     const { data, error } = await supabase
         .from('orders')
@@ -437,20 +507,39 @@ export async function createOrder(data: {
     subtotal: number
     shipping_cost: number
     total: number
+    payment_method: string
+    customerId?: string
 }) {
-    // 1. Create or get customer
-    const { data: customer, error: customerError } = await supabase
-        .from('customers')
-        .upsert({
-            name: data.customer.name,
-            email: data.customer.email,
-            phone: data.customer.phone
-        }, { onConflict: 'email' })
-        .select()
-        .single()
+    // 1. Get or create customer
+    let customer: any = null;
 
-    if (customerError) {
-        console.error('Error with customer record:', customerError)
+    if (data.customerId) {
+        // If customerId is provided, get the customer record
+        const { data: existingCustomer } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('id', data.customerId)
+            .single()
+
+        customer = existingCustomer;
+    }
+
+    if (!customer) {
+        // Fallback to email-based upsert (for guests or missing records)
+        const { data: upsertedCustomer, error: customerError } = await supabase
+            .from('customers')
+            .upsert({
+                name: data.customer.name,
+                email: data.customer.email,
+                phone: data.customer.phone
+            }, { onConflict: 'email' })
+            .select()
+            .single()
+
+        if (customerError) {
+            console.error('Error with customer record:', customerError)
+        }
+        customer = upsertedCustomer;
     }
 
     // 2. Insert order
@@ -465,11 +554,12 @@ export async function createOrder(data: {
             customer_phone: data.customer.phone,
             address_line1: data.customer.address_line1,
             city: data.customer.city,
-            governorate: 'Egypt', // Default for now
+            governorate: 'Morocco', // Default for now
             status: 'pending',
             subtotal: data.subtotal,
             shipping_cost: data.shipping_cost,
-            total: data.total
+            total: data.total,
+            payment_method: data.payment_method
         })
         .select()
         .single()
@@ -492,6 +582,33 @@ export async function createOrder(data: {
     if (itemsError) {
         console.error('Error creating order items:', itemsError)
         return { error: itemsError }
+    }
+
+    // 4. Update customer stats
+    if (customer?.id) {
+        const { error: statsError } = await supabase.rpc('increment_customer_stats', {
+            customer_id: customer.id,
+            amount: data.total
+        })
+
+        if (statsError) {
+            // Fallback if RPC doesn't exist
+            const { data: currentStats } = await supabase
+                .from('customers')
+                .select('total_orders, total_spent')
+                .eq('id', customer.id)
+                .single()
+
+            if (currentStats) {
+                await supabase
+                    .from('customers')
+                    .update({
+                        total_orders: (currentStats.total_orders || 0) + 1,
+                        total_spent: Number(currentStats.total_spent || 0) + data.total
+                    })
+                    .eq('id', customer.id)
+            }
+        }
     }
 
     return { order }
@@ -542,6 +659,21 @@ export async function getCustomers(filters?: {
     }
 
     return data as Customer[]
+}
+
+export async function getCurrentUserRole(): Promise<string | null> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+        .from('customers')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    if (error || !data) return 'customer' // Default to customer if error
+
+    return data.role
 }
 
 // Analytics API
@@ -622,12 +754,7 @@ export async function getAdminSettings() {
         .select('key, value')
 
     if (error) {
-        console.error('Error fetching admin settings:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-        })
+        console.error('Error fetching admin settings:', error)
         return {}
     }
 
@@ -694,12 +821,7 @@ export async function getHeroCarouselItems(admin = false): Promise<HeroCarouselI
     const { data, error } = await query
 
     if (error) {
-        console.error('Error fetching hero carousel items:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-        })
+        console.error('Error fetching hero carousel items:', error)
         return []
     }
 

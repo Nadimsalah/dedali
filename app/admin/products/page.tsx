@@ -37,7 +37,7 @@ const allProducts = [
         id: "PROD-001",
         name: "Pure Argan Oil",
         category: "Face Care",
-        price: "EGP 450.00",
+        price: "MAD 450.00",
         stock: 124,
         status: "In Stock",
         sales: 1205,
@@ -47,7 +47,7 @@ const allProducts = [
         id: "PROD-002",
         name: "Body Butter Set",
         category: "Body Care",
-        price: "EGP 420.00",
+        price: "MAD 420.00",
         stock: 45,
         status: "In Stock",
         sales: 850,
@@ -57,7 +57,7 @@ const allProducts = [
         id: "PROD-003",
         name: "Hair Repair Mask",
         category: "Hair Care",
-        price: "EGP 280.00",
+        price: "MAD 280.00",
         stock: 8,
         status: "Low Stock",
         sales: 432,
@@ -67,7 +67,7 @@ const allProducts = [
         id: "PROD-004",
         name: "Gift Box Premium",
         category: "Gift Sets",
-        price: "EGP 1,200.00",
+        price: "MAD 1,200.00",
         stock: 0,
         status: "Out of Stock",
         sales: 156,
@@ -77,7 +77,7 @@ const allProducts = [
         id: "PROD-005",
         name: "Face Serum",
         category: "Face Care",
-        price: "EGP 580.00",
+        price: "MAD 580.00",
         stock: 67,
         status: "In Stock",
         sales: 980,
@@ -87,7 +87,7 @@ const allProducts = [
         id: "PROD-006",
         name: "Argan Soap Trio",
         category: "Body Care",
-        price: "EGP 150.00",
+        price: "MAD 150.00",
         stock: 200,
         status: "In Stock",
         sales: 2100,
@@ -436,7 +436,7 @@ export default function AdminProductsPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-sm text-foreground/80 hidden sm:table-cell">{product.category}</td>
-                                                <td className="py-4 px-4 text-sm font-bold text-foreground">EGP {product.price}</td>
+                                                <td className="py-4 px-4 text-sm font-bold text-foreground">MAD {product.price}</td>
                                                 <td className="py-4 px-4 text-sm text-muted-foreground hidden md:table-cell font-medium">
                                                     {product.stock} units
                                                 </td>

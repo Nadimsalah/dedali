@@ -41,7 +41,7 @@ export function AdminNotifications() {
                                 <p className="text-sm opacity-90 font-medium">
                                     Order #{newOrder.order_number} received from {newOrder.customer_name || 'Guest'}
                                 </p>
-                                <p className="text-lg font-bold mt-1">EGP {newOrder.total}</p>
+                                <p className="text-lg font-bold mt-1">MAD {newOrder.total}</p>
                             </div>
                             <button
                                 onClick={() => {

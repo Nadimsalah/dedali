@@ -20,14 +20,15 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { CheckoutSummarySkeleton } from "@/components/ui/store-skeletons"
+import { supabase } from "@/lib/supabase"
+import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { getAdminSettings, getShippingSettings, ShippingSetting } from "@/lib/supabase-api"
 
-const EGYPT_CITIES = [
-    "Cairo", "Alexandria", "Giza", "Shubra El Kheima", "Port Said", "Suez", "Luxor", "Mansoura",
-    "El-Mahalla El-Kubra", "Tanta", "Asyut", "Ismailia", "Faiyum", "Zagazig", "Aswan", "Damietta",
-    "Damanhur", "Minya", "Beni Suef", "Qena", "Sohag", "Hurghada", "6th of October", "Shibin El Kom",
-    "Banha", "Kafr El Sheikh", "Arish", "Mallawi", "10th of Ramadan", "Bilbais", "Marsa Matruh",
-    "Idfu", "Mit Ghamr", "Al-Hamidiyya", "Desouk", "Qalyub", "Abu Kabir", "Kafr el-Dawwar", "Girga",
-    "Akhmim", "Matareya"
+const MOROCCO_CITIES = [
+    "Casablanca", "Rabat", "Marrakech", "Fes", "Tangier", "Agadir", "Meknes", "Oujda", "Kenitra",
+    "Tetouan", "Safi", "Mohammedia", "Beni Mellal", "El Jadida", "Taza", "Nador", "Settat", "Larache",
+    "Khemisset", "Khouribga", "Guelmim", "Errachidia", "Ouarzazate", "Essaouira", "El Kelaa des Sraghna"
 ].sort()
 
 export default function CheckoutPage() {
@@ -36,6 +37,12 @@ export default function CheckoutPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [errors, setErrors] = useState<Record<string, string>>({})
+    const [currentUser, setCurrentUser] = useState<any>(null)
+    const [saveInfo, setSaveInfo] = useState(false)
+    const [paymentSettings, setPaymentSettings] = useState<Record<string, string>>({})
+    const [paymentMethod, setPaymentMethod] = useState("cod")
+    const [userRole, setUserRole] = useState<string | null>(null)
+    const [shippingSettings, setShippingSettings] = useState<ShippingSetting[]>([])
 
     // Form State
     const [formData, setFormData] = useState({
@@ -53,9 +60,64 @@ export default function CheckoutPage() {
         }
     }, [cartCount, router])
 
+    // Fetch user and profile for pre-filling, and settings
+    useEffect(() => {
+        const fetchUserAndProfile = async () => {
+            const settingsData = await getAdminSettings()
+            setPaymentSettings(settingsData)
+
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                setCurrentUser(user)
+                const { data: profile } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+
+                if (profile) {
+                    setUserRole(profile.role)
+                    setFormData(prev => ({
+                        ...prev,
+                        fullName: profile.name || prev.fullName,
+                        email: profile.email || prev.email,
+                        phone: profile.phone || prev.phone,
+                        city: profile.city || prev.city
+                    }))
+                }
+            }
+
+            const shippingData = await getShippingSettings()
+            setShippingSettings(shippingData)
+        }
+        fetchUserAndProfile()
+    }, [])
+
+    // Get current shipping rule
+    const currentShippingRule = shippingSettings.find(s => s.role === (userRole === 'reseller' ? 'reseller' : 'retail'))
+
     // Calculate totals
-    const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
-    const shipping = subtotal >= 750 ? 0 : 50
+    const subtotal = items.reduce((total, item) => {
+        const price = (userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price
+        return total + price * item.quantity
+    }, 0)
+
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+
+    let shipping = 50 // Default
+    if (currentShippingRule) {
+        const isFreeAmount = currentShippingRule.free_shipping_threshold > 0 && subtotal >= currentShippingRule.free_shipping_threshold
+        const isFreeItems = currentShippingRule.free_shipping_min_items > 0 && totalItems >= currentShippingRule.free_shipping_min_items
+
+        if (isFreeAmount || isFreeItems) {
+            shipping = 0
+        } else {
+            shipping = currentShippingRule.base_price
+        }
+    } else {
+        shipping = subtotal >= 750 ? 0 : 50
+    }
+
     const total = subtotal + shipping
 
     // Handle Input Change
@@ -117,17 +179,36 @@ export default function CheckoutPage() {
         setLoading(true)
 
         try {
+            const itemsWithPrices = items.map(item => ({
+                ...item,
+                price: (userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price
+            }))
+
+            // Updated user profile if requested
+            if (currentUser && saveInfo) {
+                await supabase
+                    .from('customers')
+                    .update({
+                        name: formData.fullName,
+                        phone: formData.phone,
+                        city: formData.city
+                    })
+                    .eq('id', currentUser.id)
+            }
+
             const response = await fetch("/api/checkout/create-session", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     customer: formData,
+                    customerId: currentUser?.id,
                     cart: {
-                        items,
+                        items: itemsWithPrices,
                         subtotal,
                         shipping,
                         total
-                    }
+                    },
+                    paymentMethod: currentUser ? paymentMethod : 'cod'
                 })
             })
 
@@ -169,7 +250,7 @@ export default function CheckoutPage() {
             <header className="sticky top-0 z-50 glass-strong border-b border-border/50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href="/" className="relative">
-                        <Image src="/logo.webp" alt="Diar Argan" width={100} height={50} className="h-8 w-auto" />
+                        <Image src="/logo.png" alt="Dedali Store" width={100} height={50} className="h-8 w-auto" />
                     </Link>
                     <Link href="/cart" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
                         <ArrowLeft className="w-4 h-4" /> {t('checkout.return_cart')}
@@ -207,8 +288,8 @@ export default function CheckoutPage() {
                                 <Label htmlFor="phone">{t('checkout.phone')} *</Label>
                                 <div className="relative">
                                     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-muted-foreground pointer-events-none z-10">
-                                        <span className="text-base">🇪🇬</span>
-                                        <span className="text-sm font-medium border-r border-border/50 pr-2 h-4 flex items-center">+20</span>
+                                        <span className="text-base">🇲🇦</span>
+                                        <span className="text-sm font-medium border-r border-border/50 pr-2 h-4 flex items-center">+212</span>
                                     </div>
                                     <Input
                                         id="phone"
@@ -247,7 +328,7 @@ export default function CheckoutPage() {
                                         <SelectValue placeholder="Select City" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {EGYPT_CITIES.map((city) => (
+                                        {MOROCCO_CITIES.map((city) => (
                                             <SelectItem key={city} value={city}>
                                                 {city}
                                             </SelectItem>
@@ -270,6 +351,91 @@ export default function CheckoutPage() {
                                 />
                                 {errors.address && <p className="text-xs text-destructive">{errors.address}</p>}
                             </div>
+
+                            {/* Payment Method Selection (Logged in users only) */}
+                            {currentUser && (
+                                <div className="space-y-4 pt-2">
+                                    <Label className="text-base font-semibold">
+                                        {language === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
+                                    </Label>
+                                    <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-3">
+
+                                        {/* COD */}
+                                        {paymentSettings.payment_cod_enabled !== 'false' && (
+                                            <div className={`flex items-start space-x-3 space-x-reverse rounded-xl border p-4 transition-all cursor-pointer ${paymentMethod === 'cod' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border bg-card hover:bg-accent/50'}`}>
+                                                <RadioGroupItem value="cod" id="cod" className="mt-1" />
+                                                <div className="flex-1 space-y-1">
+                                                    <Label htmlFor="cod" className="font-medium cursor-pointer">
+                                                        {language === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery (COD)'}
+                                                    </Label>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {language === 'ar' ? 'الدفع نقداً عند استلام الطلب' : 'Pay in cash when you receive your order'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Virement */}
+                                        {paymentSettings.payment_virement_enabled === 'true' && (
+                                            <div className={`flex flex-col rounded-xl border transition-all ${paymentMethod === 'virement' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border bg-card'}`}>
+                                                <div className="flex items-start space-x-3 space-x-reverse p-4 cursor-pointer" onClick={() => setPaymentMethod('virement')}>
+                                                    <RadioGroupItem value="virement" id="virement" className="mt-1" />
+                                                    <div className="flex-1 space-y-1">
+                                                        <Label htmlFor="virement" className="font-medium cursor-pointer">
+                                                            {language === 'ar' ? 'تحويل بنكي' : 'Bank Transfer'}
+                                                        </Label>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {language === 'ar' ? 'الدفع عبر التحويل البنكي المباشر' : 'Direct bank transfer'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {paymentMethod === 'virement' && paymentSettings.payment_virement_details && (
+                                                    <div className="px-4 pb-4 pl-10 text-xs text-muted-foreground whitespace-pre-line border-t border-primary/10 pt-3 mt-1">
+                                                        {paymentSettings.payment_virement_details}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Cheque */}
+                                        {paymentSettings.payment_cheque_enabled === 'true' && (
+                                            <div className={`flex flex-col rounded-xl border transition-all ${paymentMethod === 'cheque' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border bg-card'}`}>
+                                                <div className="flex items-start space-x-3 space-x-reverse p-4 cursor-pointer" onClick={() => setPaymentMethod('cheque')}>
+                                                    <RadioGroupItem value="cheque" id="cheque" className="mt-1" />
+                                                    <div className="flex-1 space-y-1">
+                                                        <Label htmlFor="cheque" className="font-medium cursor-pointer">
+                                                            {language === 'ar' ? 'شيك بنكي' : 'Cheque Payment'}
+                                                        </Label>
+                                                    </div>
+                                                </div>
+                                                {paymentMethod === 'cheque' && paymentSettings.payment_cheque_details && (
+                                                    <div className="px-4 pb-4 pl-10 text-xs text-muted-foreground whitespace-pre-line border-t border-primary/10 pt-3 mt-1">
+                                                        {paymentSettings.payment_cheque_details}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </RadioGroup>
+                                </div>
+                            )}
+
+                            {/* Save Info Checkbox */}
+                            {currentUser && (
+                                <div className="flex items-center space-x-2 bg-secondary/30 p-3 rounded-lg border border-border/50">
+                                    <Checkbox
+                                        id="saveInfo"
+                                        checked={saveInfo}
+                                        onCheckedChange={(checked) => setSaveInfo(checked as boolean)}
+                                        className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                                    />
+                                    <label
+                                        htmlFor="saveInfo"
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                    >
+                                        {language === 'ar' ? 'حفظ المعلومات للمرة القادمة' : 'Save this information for next time'}
+                                    </label>
+                                </div>
+                            )}
 
                             {/* Submit Button (Mobile) */}
                             <Button
@@ -324,7 +490,7 @@ export default function CheckoutPage() {
                                                 </h4>
                                                 {item.size && <p className="text-xs text-muted-foreground">{item.size}</p>}
                                                 <p className="text-sm font-semibold text-primary mt-1">
-                                                    {t('common.currency')} {(item.price * item.quantity).toFixed(2)}
+                                                    {t('common.currency')} {(((userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price) * item.quantity).toFixed(2)}
                                                 </p>
                                             </div>
                                         </div>
@@ -332,6 +498,29 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <div className="my-6 h-px bg-border/50" />
+
+                                {currentShippingRule && shipping > 0 && (
+                                    <div className="mb-6 space-y-2 p-4 rounded-xl bg-primary/5 border border-primary/10">
+                                        <div className="flex justify-between text-xs font-semibold">
+                                            <span className="text-primary flex items-center gap-1.5">
+                                                <Truck className="w-3.5 h-3.5" />
+                                                {language === 'ar' ? 'شحن مجاني' : 'Free Shipping'}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {language === 'ar'
+                                                    ? `باقي ${Math.max(0, currentShippingRule.free_shipping_threshold - subtotal).toFixed(2)} ${t('common.currency')}`
+                                                    : `${Math.max(0, currentShippingRule.free_shipping_threshold - subtotal).toFixed(2)} ${t('common.currency')} left`
+                                                }
+                                            </span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-primary transition-all duration-1000 ease-out"
+                                                style={{ width: `${Math.min(100, (subtotal / currentShippingRule.free_shipping_threshold) * 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-3 text-sm">
                                     <div className="flex justify-between text-muted-foreground">
@@ -379,6 +568,70 @@ export default function CheckoutPage() {
 
                 </div>
             </main>
+            {/* Footer */}
+            <footer className="bg-background border-t border-border/40 py-16 sm:py-20 relative overflow-hidden print:hidden mt-auto">
+                <div className="container mx-auto px-4 relative">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+                        {/* Brand Column */}
+                        <div className="md:col-span-4 lg:col-span-5 space-y-6">
+                            <Link href="/" className="inline-block">
+                                <Image
+                                    src="/logo.png"
+                                    alt="Dedali Store"
+                                    width={200}
+                                    height={100}
+                                    className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                                />
+                            </Link>
+                            <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm text-left">
+                                Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+                            </p>
+                        </div>
+
+                        {/* Links Columns */}
+                        <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+                            <div className="text-left">
+                                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Company</h4>
+                                <ul className="space-y-4 text-sm text-muted-foreground">
+                                    <li><Link href="/our-story" className="hover:text-primary transition-colors block py-1">Our Story</Link></li>
+                                    <li><Link href="/sustainability" className="hover:text-primary transition-colors block py-1">Sustainability</Link></li>
+                                    <li><Link href="/press" className="hover:text-primary transition-colors block py-1">Press</Link></li>
+                                    <li><Link href="/careers" className="hover:text-primary transition-colors block py-1">Careers</Link></li>
+                                </ul>
+                            </div>
+
+                            <div className="text-left">
+                                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Support</h4>
+                                <ul className="space-y-4 text-sm text-muted-foreground">
+                                    <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">Contact Us</Link></li>
+                                    <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">Shipping Info</Link></li>
+                                    <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">Track Order</Link></li>
+                                    <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">FAQ</Link></li>
+                                </ul>
+                            </div>
+
+                            <div className="text-left">
+                                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Legal</h4>
+                                <ul className="space-y-4 text-sm text-muted-foreground">
+                                    <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">Privacy Policy</Link></li>
+                                    <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">Terms of Service</Link></li>
+                                    <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">Refund Policy</Link></li>
+                                    <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">Cookies</Link></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Bar */}
+                    <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+                        <p>© {new Date().getFullYear()} Dedali Store. All rights reserved.</p>
+                        <div className="flex items-center gap-6">
+                            <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
+                            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
     )
 }

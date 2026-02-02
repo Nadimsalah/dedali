@@ -165,7 +165,7 @@ export default function AdminOrdersPage() {
                                                 <td className="py-4 px-4 text-sm text-muted-foreground hidden lg:table-cell">
                                                     {order.customer_email}
                                                 </td>
-                                                <td className="py-4 px-4 text-sm font-bold text-foreground">EGP {order.total}</td>
+                                                <td className="py-4 px-4 text-sm font-bold text-foreground">MAD {order.total}</td>
                                                 <td className="py-4 px-4">
                                                     <Badge variant="outline" className={`border ${getStatusColor(order.status)} text-[10px] sm:text-xs py-0.5 px-2`}>
                                                         {order.status}

@@ -30,7 +30,7 @@ export function DashboardStats() {
     const stats = [
         {
             label: "Total Revenue",
-            value: `EGP ${statsData?.totalRevenue?.toLocaleString()}`,
+            value: `MAD ${statsData?.totalRevenue?.toLocaleString()}`,
             change: "+12.5%", // Mock change for now
             trend: "up",
             icon: DollarSign,

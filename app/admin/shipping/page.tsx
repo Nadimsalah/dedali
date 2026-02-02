@@ -1,0 +1,197 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Save, Loader2, RotateCcw, Truck, Info, CheckCircle2, AlertCircle } from "lucide-react"
+import { toast } from "sonner"
+import { getShippingSettings, updateShippingSettings, ShippingSetting } from "@/lib/supabase-api"
+import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+export default function ShippingAdminPage() {
+    const [settings, setSettings] = useState<ShippingSetting[]>([])
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+
+    useEffect(() => {
+        loadSettings()
+    }, [])
+
+    async function loadSettings() {
+        setLoading(true)
+        const data = await getShippingSettings()
+        // If no data (table empty or error), fallback to defaults for UI state
+        if (data && data.length > 0) {
+            setSettings(data)
+        }
+        setLoading(false)
+    }
+
+    async function handleSave() {
+        setSaving(true)
+        const result = await updateShippingSettings(settings)
+        if (result.success) {
+            toast.success("Shipping settings updated successfully")
+        } else {
+            toast.error("Failed to update settings")
+        }
+        setSaving(false)
+    }
+
+    const handleChange = (id: string, field: keyof ShippingSetting, value: any) => {
+        setSettings(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s))
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background lg:pl-72">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex min-h-screen bg-background">
+            <AdminSidebar />
+
+            <main className="flex-1 lg:ml-72 p-4 sm:p-8">
+                <div className="max-w-4xl mx-auto space-y-8">
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                Shipping Rules
+                            </h1>
+                            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
+                                Control shipping costs and free delivery thresholds for different types of customers.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={loadSettings}
+                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                Refresh
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center justify-center gap-2 text-sm font-semibold shadow-lg shadow-primary/20"
+                            >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                Save Rules
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-8">
+                        {settings.map((rule) => (
+                            <Card key={rule.id} className="border-white/5 bg-white/5 overflow-hidden rounded-3xl">
+                                <CardHeader className="border-b border-white/5 bg-white/[0.02]">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 rounded-2xl bg-primary/10">
+                                                <Truck className="w-6 h-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="capitalize text-xl">{rule.role} Customer Rules</CardTitle>
+                                                <CardDescription>Configure costs and thresholds</CardDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-black/20 px-4 py-2 rounded-2xl border border-white/5">
+                                            <Label htmlFor={`enabled-${rule.id}`} className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Status</Label>
+                                            <Switch
+                                                id={`enabled-${rule.id}`}
+                                                checked={rule.enabled}
+                                                onCheckedChange={(checked) => handleChange(rule.id, 'enabled', checked)}
+                                            />
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        {/* Base Shipping Cost */}
+                                        <div className="space-y-3">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Base Shipping Cost</Label>
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium group-focus-within:text-primary transition-colors">MAD</div>
+                                                <Input
+                                                    type="number"
+                                                    value={rule.base_price}
+                                                    onChange={(e) => handleChange(rule.id, 'base_price', parseFloat(e.target.value) || 0)}
+                                                    className="pl-14 h-12 rounded-xl bg-white/[0.03] border-white/10 focus:border-primary/50 focus:bg-white/[0.06] transition-all"
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground px-1">Fixed fee added to orders below threshold.</p>
+                                        </div>
+
+                                        {/* Free Threshold (Amount) */}
+                                        <div className="space-y-3">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Free Shipping (Amount)</Label>
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium group-focus-within:text-primary transition-colors">MAD</div>
+                                                <Input
+                                                    type="number"
+                                                    value={rule.free_shipping_threshold}
+                                                    onChange={(e) => handleChange(rule.id, 'free_shipping_threshold', parseFloat(e.target.value) || 0)}
+                                                    className="pl-14 h-12 rounded-xl bg-white/[0.03] border-white/10 focus:border-primary/50 focus:bg-white/[0.06] transition-all"
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground px-1">Amount required for free delivery.</p>
+                                        </div>
+
+                                        {/* Free Threshold (Items) */}
+                                        <div className="space-y-3">
+                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Free Shipping (Items)</Label>
+                                            <div className="relative group">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium group-focus-within:text-primary transition-colors">QTY</div>
+                                                <Input
+                                                    type="number"
+                                                    value={rule.free_shipping_min_items}
+                                                    onChange={(e) => handleChange(rule.id, 'free_shipping_min_items', parseInt(e.target.value) || 0)}
+                                                    className="pl-14 h-12 rounded-xl bg-white/[0.03] border-white/10 focus:border-primary/50 focus:bg-white/[0.06] transition-all"
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground px-1">Minimum items required for free delivery.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Summary Info */}
+                                    <div className="mt-8 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-start gap-3">
+                                        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                                        <div className="text-sm">
+                                            <span className="text-muted-foreground">Order logic: </span>
+                                            <span className="font-semibold text-foreground">
+                                                {rule.enabled ? (
+                                                    <>
+                                                        Orders will cost <span className="text-primary">{rule.base_price} MAD</span> unless they exceed
+                                                        <span className="text-primary"> {rule.free_shipping_threshold} MAD</span> or contain at least
+                                                        <span className="text-primary"> {rule.free_shipping_min_items} items</span>.
+                                                    </>
+                                                ) : (
+                                                    <span className="text-destructive font-bold uppercase">Shipping rule is currently disabled.</span>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+
+                        {!loading && settings.length === 0 && (
+                            <div className="text-center py-20 glass rounded-3xl border-white/5 space-y-4">
+                                <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
+                                <p className="text-muted-foreground">No shipping rules found. Please check database configuration.</p>
+                                <Button onClick={loadSettings} variant="outline">Retry Loading</Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
+        </div>
+    )
+}

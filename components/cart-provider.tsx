@@ -12,6 +12,7 @@ export interface CartItem {
     quantity: number
     size?: string
     inStock: boolean
+    resellerPrice?: number | null
 }
 
 interface CartContextType {

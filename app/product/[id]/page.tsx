@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useCart } from "@/components/cart-provider"
 import { useLanguage } from "@/components/language-provider"
-import { getProductById, getProducts, type Product } from "@/lib/supabase-api"
+import { getProductById, getProducts, getCurrentUserRole, type Product } from "@/lib/supabase-api"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Accordion,
   AccordionContent,
@@ -28,22 +29,28 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      const data = await getProductById(productId)
-      setProduct(data)
+      const [productData, roleData] = await Promise.all([
+        getProductById(productId),
+        getCurrentUserRole()
+      ])
 
-      if (data) {
+      setProduct(productData)
+      setUserRole(roleData)
+
+      if (productData) {
         // Fetch related products from same category
         const related = await getProducts({
-          category: data.category,
+          category: productData.category,
           limit: 4,
           status: 'active'
         })
         // Filter out current product
-        setRelatedProducts(related.filter(p => p.id !== data.id))
+        setRelatedProducts(related.filter(p => p.id !== productData.id))
       }
 
       setLoading(false)
@@ -112,8 +119,8 @@ export default function ProductPage() {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
-                src="/logo.webp"
-                alt="Diar Argan"
+                src="/logo.png"
+                alt="Dedali Store"
                 width={120}
                 height={60}
                 className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -221,13 +228,31 @@ export default function ProductPage() {
               </div>
 
               <div className="flex items-baseline gap-4 mb-8">
-                <span className="text-4xl sm:text-5xl font-bold text-primary">{t('common.currency')} {product.price}</span>
-                {product.compare_at_price && (
-                  <span className="text-2xl text-muted-foreground line-through decoration-destructive/30">
-                    {t('common.currency')} {product.compare_at_price}
-                  </span>
+                {/* Dynamic Price Display */}
+                {userRole === 'reseller' && product.reseller_price ? (
+                  <>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-1">Reseller Price</span>
+                      <span className="text-4xl sm:text-5xl font-bold text-primary">{t('common.currency')} {product.reseller_price}</span>
+                    </div>
+                    <div className="flex flex-col items-start border-l pl-4 border-gray-200">
+                      <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Regular Price</span>
+                      <span className="text-xl text-muted-foreground line-through decoration-destructive/30">
+                        {t('common.currency')} {product.price}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-4xl sm:text-5xl font-bold text-primary">{t('common.currency')} {product.price}</span>
+                    {product.compare_at_price && (
+                      <span className="text-2xl text-muted-foreground line-through decoration-destructive/30">
+                        {t('common.currency')} {product.compare_at_price}
+                      </span>
+                    )}
+                  </>
                 )}
-                {/* Discount Badge Removed */}
+
               </div>
             </div>
 
@@ -238,7 +263,7 @@ export default function ProductPage() {
             {/* Quantity */}
             <div className="mb-8">
               <label className="block text-sm font-bold text-foreground mb-4 uppercase tracking-widest text-primary/80">
-                Quantity
+                {t('product.quantity')}
               </label>
               <div className="flex items-center gap-4 bg-secondary/30 w-fit p-1.5 rounded-2xl border border-white/5 backdrop-blur-sm">
                 <Button
@@ -250,7 +275,18 @@ export default function ProductPage() {
                 >
                   <Minus className="w-4 h-4" />
                 </Button>
-                <span className="w-10 text-center font-bold text-lg text-foreground">{quantity}</span>
+                <Input
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    if (!isNaN(val) && val >= 1) {
+                      setQuantity(val)
+                    }
+                  }}
+                  className="w-16 text-center font-bold text-lg text-foreground bg-transparent border-none h-auto p-0 focus-visible:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+                />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -276,6 +312,7 @@ export default function ProductPage() {
                     image: productImages[0],
                     quantity: quantity,
                     inStock: inStock,
+                    resellerPrice: product.reseller_price
                   })
                   router.push("/cart")
                 }}
@@ -292,7 +329,7 @@ export default function ProductPage() {
                   <AccordionTrigger className="px-8 py-5 hover:no-underline font-bold text-xl text-foreground">
                     <div className="flex items-center gap-4">
                       <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-                      {t('product.key_benefits')}
+                      {t('product.features')}
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2">
@@ -311,7 +348,7 @@ export default function ProductPage() {
               {product.ingredients && (
                 <AccordionItem value="ingredients" className="glass rounded-3xl border-white/5 overflow-hidden shadow-sm">
                   <AccordionTrigger className="px-8 py-5 hover:no-underline font-bold text-xl text-foreground">
-                    {t('product.ingredients')}
+                    {t('product.specifications')}
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2 text-muted-foreground leading-relaxed text-lg">
                     {displayIngredients}
@@ -322,7 +359,7 @@ export default function ProductPage() {
               {product.how_to_use && (
                 <AccordionItem value="how-to-use" className="glass rounded-3xl border-white/5 overflow-hidden shadow-sm">
                   <AccordionTrigger className="px-8 py-5 hover:no-underline font-bold text-xl text-foreground">
-                    {t('product.how_to_use')}
+                    {t('product.warranty')}
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2 text-muted-foreground leading-relaxed text-lg">
                     {displayHowToUse}
@@ -418,7 +455,18 @@ export default function ProductPage() {
             >
               <Minus className="w-4 h-4" />
             </Button>
-            <span className="w-4 text-center font-bold text-lg text-foreground">{quantity}</span>
+            <Input
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => {
+                const val = parseInt(e.target.value)
+                if (!isNaN(val) && val >= 1) {
+                  setQuantity(val)
+                }
+              }}
+              className="w-12 text-center font-bold text-lg text-foreground bg-transparent border-none h-auto p-0 focus-visible:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
+            />
             <Button
               variant="ghost"
               size="icon"
@@ -449,6 +497,70 @@ export default function ProductPage() {
           </Button>
         </div>
       </div>
+      {/* Footer */}
+      <footer className="bg-background border-t border-border/40 py-16 sm:py-20 relative overflow-hidden mt-12 print:hidden">
+        <div className="container mx-auto px-4 relative">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-16">
+            {/* Brand Column */}
+            <div className="md:col-span-4 lg:col-span-5 space-y-6">
+              <Link href="/" className="inline-block">
+                <Image
+                  src="/logo.png"
+                  alt="Dedali Store"
+                  width={200}
+                  height={100}
+                  className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                />
+              </Link>
+              <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm">
+                Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+              </p>
+            </div>
+
+            {/* Links Columns */}
+            <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+              <div>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Company</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="/our-story" className="hover:text-primary transition-colors block py-1">Our Story</Link></li>
+                  <li><Link href="/sustainability" className="hover:text-primary transition-colors block py-1">Sustainability</Link></li>
+                  <li><Link href="/press" className="hover:text-primary transition-colors block py-1">Press</Link></li>
+                  <li><Link href="/careers" className="hover:text-primary transition-colors block py-1">Careers</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Support</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">Contact Us</Link></li>
+                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">Shipping Info</Link></li>
+                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">Track Order</Link></li>
+                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">FAQ</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Legal</h4>
+                <ul className="space-y-4 text-sm text-muted-foreground">
+                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">Terms of Service</Link></li>
+                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">Refund Policy</Link></li>
+                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">Cookies</Link></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+            <p>© {new Date().getFullYear()} Dedali Store. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

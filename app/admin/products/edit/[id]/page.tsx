@@ -34,6 +34,7 @@ export default function EditProductPage() {
     const [category, setCategory] = useState("")
     const [price, setPrice] = useState("")
     const [compareAtPrice, setCompareAtPrice] = useState("")
+    const [resellerPrice, setResellerPrice] = useState("")
     const [stock, setStock] = useState("")
     const [sku, setSku] = useState("")
     const [status, setStatus] = useState("active")
@@ -56,6 +57,7 @@ export default function EditProductPage() {
                 setCategory(product.category)
                 setPrice(product.price.toString())
                 setCompareAtPrice(product.compare_at_price?.toString() || "")
+                setResellerPrice(product.reseller_price?.toString() || "")
                 setStock(product.stock.toString())
                 setSku(product.sku)
                 setStatus(product.status)
@@ -117,6 +119,7 @@ export default function EditProductPage() {
                 category,
                 price: parseFloat(price),
                 compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
+                reseller_price: resellerPrice ? parseFloat(resellerPrice) : null,
                 stock: parseInt(stock),
                 sku,
                 status,
@@ -217,7 +220,7 @@ export default function EditProductPage() {
                                     <Input
                                         value={title || ""}
                                         onChange={(e) => setTitle(e.target.value)}
-                                        placeholder="e.g., Pure Argan Oil"
+                                        placeholder="e.g., Dell Latitude 5420 Laptop"
                                         className="h-12 text-base bg-gray-50/50 border-gray-200 focus:bg-white transition-colors pr-12"
                                     />
                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -307,7 +310,7 @@ export default function EditProductPage() {
 
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <label className="text-sm font-semibold text-gray-700">Ingredients</label>
+                                    <label className="text-sm font-semibold text-gray-700">Technical Specifications</label>
                                     <div className="flex gap-2">
                                         {ingredients.trim() && (
                                             <button
@@ -323,14 +326,14 @@ export default function EditProductPage() {
                                 <Textarea
                                     value={ingredients || ""}
                                     onChange={(e) => setIngredients(e.target.value)}
-                                    placeholder="Ingredients (English)..."
+                                    placeholder="Processor, RAM, Storage, etc."
                                     className="min-h-[100px] text-sm bg-gray-50/50 border-gray-200 focus:bg-white transition-colors resize-none"
                                 />
                             </div>
 
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <label className="text-sm font-semibold text-gray-700">How to Use</label>
+                                    <label className="text-sm font-semibold text-gray-700">Warranty & Support</label>
                                     <div className="flex gap-2">
                                         {howToUse.trim() && (
                                             <button
@@ -346,7 +349,7 @@ export default function EditProductPage() {
                                 <Textarea
                                     value={howToUse || ""}
                                     onChange={(e) => setHowToUse(e.target.value)}
-                                    placeholder="Usage Instructions (English)..."
+                                    placeholder="Warranty details and support info..."
                                     className="min-h-[100px] text-sm bg-gray-50/50 border-gray-200 focus:bg-white transition-colors resize-none"
                                 />
                             </div>
@@ -400,7 +403,7 @@ export default function EditProductPage() {
                             <h3 className="text-lg font-bold text-gray-900 border-b border-gray-50 pb-4">Pricing</h3>
 
                             <div className="space-y-3">
-                                <label className="text-sm font-semibold text-gray-700">Price (EGP)</label>
+                                <label className="text-sm font-semibold text-gray-700">Price (MAD)</label>
                                 <Input
                                     type="number"
                                     value={price || ""}
@@ -408,6 +411,18 @@ export default function EditProductPage() {
                                     placeholder="0.00"
                                     className="h-12 text-base bg-gray-50/50 border-gray-200"
                                 />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-sm font-semibold text-gray-700">Reseller Price (MAD)</label>
+                                <Input
+                                    type="number"
+                                    value={resellerPrice || ""}
+                                    onChange={(e) => setResellerPrice(e.target.value)}
+                                    placeholder="0.00"
+                                    className="h-12 text-base bg-blue-50/50 border-blue-200 text-blue-900 focus:bg-white transition-colors"
+                                />
+                                <p className="text-xs text-blue-600/80">Visible only to resellers</p>
                             </div>
 
                             <div className="space-y-3">

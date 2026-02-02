@@ -158,10 +158,10 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-foreground">{item.product_title}</h4>
-                                            <p className="text-sm text-muted-foreground">Qty: {item.quantity} × EGP {item.price}</p>
+                                            <p className="text-sm text-muted-foreground">Qty: {item.quantity} × MAD {item.price}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-foreground">EGP {item.subtotal}</p>
+                                            <p className="font-bold text-foreground">MAD {item.subtotal}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -170,151 +170,147 @@ export default function OrderDetailsPage() {
                             <div className="mt-6 pt-6 border-t border-white/10 space-y-2">
                                 <div className="flex justify-between text-sm text-muted-foreground">
                                     <span>Subtotal</span>
-                                    <span>EGP {order.subtotal}</span>
+                                    <span>MAD {order.subtotal}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-muted-foreground">
                                     <span>Shipping</span>
-                                    <span>EGP {order.shipping_cost}</span>
+                                    <span>MAD {order.shipping_cost}</span>
                                 </div>
                                 <div className="flex justify-between text-lg font-bold text-foreground pt-4 border-t border-white/5">
                                     <span>Total</span>
-                                    <span className="text-primary">EGP {order.total}</span>
+                                    <span className="text-primary">MAD {order.total}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Professional Invoice Layout (Print Only) */}
-                        <div className="hidden print:block bg-white text-black p-0 min-h-screen" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
+                        <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
                             <style dangerouslySetInnerHTML={{
                                 __html: `
                                 @media print {
-                                    @page { margin: 10mm; }
-                                    body { -webkit-print-color-adjust: exact !important; }
+                                    @page { margin: 5mm; size: auto; }
+                                    body { -webkit-print-color-adjust: exact !important; margin: 0; padding: 0; }
+                                    .print-container { padding: 0 !important; }
+                                    * { -webkit-print-color-adjust: exact !important; }
+                                    table { page-break-inside: auto; }
+                                    tr { page-break-inside: avoid; page-break-after: auto; }
                                 }
                             `}} />
 
                             {/* Invoice Header */}
-                            <div className="flex justify-between items-start border-b-2 border-[#1a1a1a] pb-8 mb-8">
+                            <div className="flex justify-between items-start border-b-2 border-[#1a1a1a] pb-4 mb-4">
                                 <div>
-                                    <div className="relative w-56 h-24 mb-4">
+                                    <div className="relative w-40 h-10 mb-2">
                                         <Image
-                                            src="/logo.webp"
-                                            alt="Diar Argan Logo"
+                                            src="/logo.png"
+                                            alt="Dedali Store Logo"
                                             fill
                                             className="object-contain object-left"
                                             priority
                                         />
                                     </div>
-                                    <div className="space-y-0.5">
-                                        <p className="text-sm font-black text-[#1a1a1a]">Diar Argan</p>
-                                        <p className="text-xs text-black/70 italic">L'excellence de l'Argan Bio</p>
-                                        <p className="text-xs text-black/60">Casablanca, Morocco</p>
-                                        <p className="text-xs text-black/60">Email: contact@diarargan.com</p>
+                                    <div className="space-y-0 text-[10px] text-black/70">
+                                        <p className="font-black text-[#1a1a1a] text-xs">Dedali Store</p>
+                                        <p className="italic">Premium IT Equipment</p>
+                                        <p>Casablanca, Morocco</p>
+                                        <p>Email: contact@dedalistore.com</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <h1 className="text-5xl font-black text-[#1a1a1a] uppercase mb-2 tracking-tighter">FACTURE</h1>
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-bold text-black/90">N° Commande: {order.order_number}</p>
-                                        <p className="text-xs text-black/60">Date: {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                                        <p className="text-xs text-black/60">Statut: <span className="uppercase font-bold text-green-600">{order.status}</span></p>
+                                    <h1 className="text-3xl font-black text-[#1a1a1a] uppercase mb-0 tracking-tighter">FACTURE</h1>
+                                    <div className="space-y-0">
+                                        <p className="text-xs font-bold text-black/90">N° Commande: {order.order_number}</p>
+                                        <p className="text-[10px] text-black/60">Date: {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                        <p className="text-[10px] text-black/60">Statut: <span className="uppercase font-bold text-green-600">{order.status}</span></p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Billing & Shipping Info */}
-                            <div className="grid grid-cols-2 gap-16 mb-12">
-                                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                    <h3 className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mb-4">Facturé à</h3>
-                                    <div className="space-y-1">
-                                        <p className="font-black text-lg text-[#1a1a1a]">{order.customer_name}</p>
-                                        <p className="text-sm text-black/80">{order.customer_email}</p>
-                                        <p className="text-sm text-black/80">{order.customer_phone}</p>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <h3 className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1">Facturé à</h3>
+                                    <div className="space-y-0">
+                                        <p className="font-black text-sm text-[#1a1a1a]">{order.customer_name}</p>
+                                        <p className="text-[10px] text-black/80">{order.customer_email}</p>
+                                        <p className="text-[10px] text-black/80">{order.customer_phone}</p>
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    <h3 className="text-[10px] font-black text-black/40 uppercase tracking-[0.2em] mb-4 text-right">Adresse de livraison</h3>
-                                    <div className="text-right space-y-1">
-                                        <p className="font-black text-lg text-[#1a1a1a]">{order.customer_name}</p>
-                                        <p className="text-sm text-black/80">{order.address_line1}</p>
-                                        {order.address_line2 && <p className="text-sm text-black/80">{order.address_line2}</p>}
-                                        <p className="text-sm text-black/80 font-bold">{order.city}, {order.governorate}</p>
-                                        {order.postal_code && <p className="text-sm text-black/80">{order.postal_code}</p>}
+                                <div className="p-3">
+                                    <h3 className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1 text-right">Adresse de livraison</h3>
+                                    <div className="text-right space-y-0">
+                                        <p className="font-black text-sm text-[#1a1a1a]">{order.customer_name}</p>
+                                        <p className="text-[10px] text-black/80">{order.address_line1}</p>
+                                        {order.address_line2 && <p className="text-[10px] text-black/80">{order.address_line2}</p>}
+                                        <p className="text-[10px] text-black/80 font-bold">{order.city}, {order.governorate}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Items Table */}
-                            <div className="mb-12">
+                            <div className="mb-4">
                                 <table className="w-full border-collapse">
                                     <thead>
                                         <tr className="border-b-2 border-black">
-                                            <th className="py-4 px-2 text-left text-[10px] uppercase font-black tracking-wider w-[50%]">Produit & Description</th>
-                                            <th className="py-4 px-2 text-center text-[10px] uppercase font-black tracking-wider w-[15%]">Quantité</th>
-                                            <th className="py-4 px-2 text-right text-[10px] uppercase font-black tracking-wider w-[15%]">Prix Unitaire</th>
-                                            <th className="py-4 px-2 text-right text-[10px] uppercase font-black tracking-wider w-[20%]">Total HT</th>
+                                            <th className="py-1 px-1 text-left text-[9px] uppercase font-black tracking-wider w-[50%]">Produit</th>
+                                            <th className="py-1 px-1 text-center text-[9px] uppercase font-black tracking-wider w-[15%]">Qté</th>
+                                            <th className="py-1 px-1 text-right text-[9px] uppercase font-black tracking-wider w-[15%]">PU</th>
+                                            <th className="py-1 px-1 text-right text-[9px] uppercase font-black tracking-wider w-[20%]">Total</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-gray-100">
                                         {order.order_items.map((item, i) => (
-                                            <tr key={i} className="border-b border-gray-100">
-                                                <td className="py-5 px-2">
-                                                    <p className="font-bold text-sm text-[#1a1a1a]">{item.product_title}</p>
-                                                    <p className="text-[10px] text-black/40 font-mono mt-1">SKU: {item.product_sku || 'N/A'}</p>
-                                                    {item.variant_name && <p className="text-[10px] text-black/60 italic mt-1 bg-gray-50 inline-block px-2 py-0.5 rounded-md">{item.variant_name}</p>}
+                                            <tr key={i}>
+                                                <td className="py-1.5 px-1 text-left">
+                                                    <p className="font-bold text-[11px] text-[#1a1a1a]">{item.product_title}</p>
+                                                    {item.variant_name && <p className="text-[8px] text-black/60 italic leading-none">{item.variant_name}</p>}
                                                 </td>
-                                                <td className="py-5 px-2 text-center font-bold text-sm">{item.quantity}</td>
-                                                <td className="py-5 px-2 text-right text-sm">{(item.price || 0).toLocaleString('fr-FR')} EGP</td>
-                                                <td className="py-5 px-2 text-right font-black text-sm">{(item.subtotal || 0).toLocaleString('fr-FR')} EGP</td>
+                                                <td className="py-1.5 px-1 text-center font-bold text-[11px]">{item.quantity}</td>
+                                                <td className="py-1.5 px-1 text-right text-[11px] text-black/70">{(item.price || 0).toLocaleString('fr-FR')}</td>
+                                                <td className="py-1.5 px-1 text-right font-black text-[11px]">{(item.subtotal || 0).toLocaleString('fr-FR')}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
 
-                            {/* Footer Summary */}
-                            <div className="flex justify-end mb-20">
-                                <div className="w-96 space-y-3">
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-100 px-2">
-                                        <span className="text-xs font-bold text-black/60">Sous-total</span>
-                                        <span className="text-sm font-medium">{(order.subtotal || 0).toLocaleString('fr-FR')} EGP</span>
+                            {/* Summary */}
+                            <div className="flex justify-end mb-4">
+                                <div className="w-48 space-y-0.5">
+                                    <div className="flex justify-between items-center py-0.5 border-b border-gray-100 px-1">
+                                        <span className="text-[9px] font-bold text-black/60">Sous-total</span>
+                                        <span className="text-[10px] font-medium">{(order.subtotal || 0).toLocaleString('fr-FR')} MAD</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-gray-100 px-2">
-                                        <span className="text-xs font-bold text-black/60">Frais de livraison</span>
-                                        <span className="text-sm font-medium">{(order.shipping_cost || 0).toLocaleString('fr-FR')} EGP</span>
+                                    <div className="flex justify-between items-center py-0.5 border-b border-gray-100 px-1">
+                                        <span className="text-[9px] font-bold text-black/60">Livraison</span>
+                                        <span className="text-[10px] font-medium">{(order.shipping_cost || 0).toLocaleString('fr-FR')} MAD</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-4 bg-[#1a1a1a] text-white rounded-xl px-6 shadow-xl">
-                                        <span className="text-sm font-black uppercase tracking-wider">Total à payer</span>
-                                        <span className="text-2xl font-black font-mono">{(order.total || 0).toLocaleString('fr-FR')} EGP</span>
+                                    <div className="flex justify-between items-center py-1 bg-[#1a1a1a] text-white rounded-lg px-3 shadow-sm mt-1">
+                                        <span className="text-[9px] font-black uppercase tracking-wider">Total à payer</span>
+                                        <span className="text-base font-black font-mono">{(order.total || 0).toLocaleString('fr-FR')} MAD</span>
                                     </div>
-                                    {order.status !== 'delivered' && (
-                                        <div className="text-right pt-2">
-                                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-tight">Paiement à la livraison (COD)</p>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
-                            {/* Notes / Legal */}
-                            <div className="grid grid-cols-2 gap-12 pt-12 border-t border-black/10">
+                            {/* Footer */}
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-black/10 text-left">
                                 <div>
-                                    <h4 className="text-[10px] font-black text-[#1a1a1a] uppercase tracking-widest mb-4">Informations Importantes</h4>
-                                    <p className="text-[10px] text-black/50 leading-relaxed">
-                                        Merci de conserver cette facture. Pour toute question concernant votre commande,
-                                        veuillez nous contacter par téléphone au (+212) 6 00 00 00 00 ou par email.
-                                        Les retours sont acceptés sous 15 jours si l'emballage n'est pas ouvert.
+                                    <h4 className="text-[8px] font-black text-[#1a1a1a] uppercase tracking-widest mb-1">Informations</h4>
+                                    <p className="text-[8px] text-black/50 leading-tight">
+                                        Merci de votre confiance. Facture à conserver. Retours acceptés sous 15 jours (emballage intact).
+                                        Contact: contact@dedalistore.com
                                     </p>
                                 </div>
                                 <div className="flex flex-col items-end justify-center">
                                     <div className="text-center">
-                                        <p className="text-[10px] text-black/40 font-black uppercase tracking-[0.3em] mb-4">Cachet & Signature</p>
-                                        <div className="w-48 h-24 border-2 border-dashed border-gray-200 rounded-2xl"></div>
+                                        <p className="text-[8px] text-black/40 font-black uppercase tracking-[0.3em] mb-1">Cachet & Signature</p>
+                                        <div className="w-24 h-10 border-2 border-dashed border-gray-200 rounded-lg"></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="fixed bottom-10 left-0 right-0 text-center">
-                                <p className="text-[10px] text-black/30 font-bold uppercase tracking-[0.2em]">Diar Argan SARL — RC: 123456 — ICE: 0000000000000000</p>
+                            <div className="mt-4 text-center">
+                                <p className="text-[8px] text-black/30 font-bold uppercase tracking-[0.2em]">Dedali Store SARL — RC: 123456 — ICE: 0000000000000000</p>
                             </div>
                         </div>
 
@@ -401,7 +397,7 @@ export default function OrderDetailsPage() {
                                     <MapPin className="w-4 h-4 text-primary" />
                                     <div>
                                         <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Destination</p>
-                                        <p className="text-foreground font-medium">{order.city}, Egypt</p>
+                                        <p className="text-foreground font-medium">{order.city}, Morocco</p>
                                     </div>
                                 </div>
                             </div>

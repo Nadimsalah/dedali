@@ -93,7 +93,7 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <StatCard
                         title="Total Revenue"
-                        value={`EGP ${stats?.totalRevenue?.toLocaleString()}`}
+                        value={`MAD ${stats?.totalRevenue?.toLocaleString()}`}
                         change="+12.5%"
                         trend="up"
                         icon={CreditCard}
@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
                     />
                     <StatCard
                         title="Avg. Order Value"
-                        value={`EGP ${(stats?.totalRevenue / (stats?.totalOrders || 1))?.toFixed(0)}`}
+                        value={`MAD ${(stats?.totalRevenue / (stats?.totalOrders || 1))?.toFixed(0)}`}
                         change="+5.2%"
                         trend="up"
                         icon={ShoppingBag}
@@ -146,7 +146,7 @@ export default function AnalyticsPage() {
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                                        tickFormatter={(val) => `EGP ${val}`}
+                                        tickFormatter={(val) => `MAD ${val}`}
                                     />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '16px', border: 'none', color: '#fff' }}
@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
                                         <p className="font-semibold text-foreground truncate">{product.name}</p>
                                         <p className="text-xs text-muted-foreground">{product.sales} sales</p>
                                     </div>
-                                    <p className="font-bold text-foreground">EGP {product.revenue.toLocaleString()}</p>
+                                    <p className="font-bold text-foreground">MAD {product.revenue.toLocaleString()}</p>
                                 </div>
                             ))}
                             {topProducts.length === 0 && (

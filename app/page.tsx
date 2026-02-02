@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useCart } from "@/components/cart-provider"
 import { useLanguage } from "@/components/language-provider"
-import { getProducts, getHeroCarouselItems, getCategories, getAdminSettings, type Product } from "@/lib/supabase-api"
+import { getProducts, getHeroCarouselItems, getCategories, getAdminSettings, getCurrentUserRole, type Product } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 import Link from "next/link"
@@ -32,6 +32,7 @@ import {
   ArrowRight,
   ChevronDown,
   X,
+  User,
 } from "lucide-react"
 
 import {
@@ -107,7 +108,7 @@ function CartCount() {
 }
 
 // Product Card Component
-function ProductCard(product: Product) {
+function ProductCard({ product, userRole }: { product: Product, userRole?: string | null }) {
   const { t, language } = useLanguage()
   const isArabic = language === 'ar'
   const rating = 5 // Default rating since it's not in DB yet
@@ -144,7 +145,18 @@ function ProductCard(product: Product) {
           <span className="text-xs text-muted-foreground ml-1">({rating}.0)</span>
         </div>
         <div className="flex items-center justify-between pt-2">
-          <span className="text-lg font-bold text-foreground">{t('common.currency')} {product.price}</span>
+          <div className="flex flex-col">
+            {userRole === 'reseller' && product.reseller_price ? (
+              <>
+                <span className="text-lg font-bold text-foreground">{t('common.currency')} {product.reseller_price}</span>
+                <span className="text-xs text-muted-foreground line-through decoration-destructive/30">
+                  {t('common.currency')} {product.price}
+                </span>
+              </>
+            ) : (
+              <span className="text-lg font-bold text-foreground">{t('common.currency')} {product.price}</span>
+            )}
+          </div>
           <Button size="sm" className="rounded-full text-xs pointer-events-none">
             {t('product.add_to_cart')}
           </Button>
@@ -213,66 +225,66 @@ function HeroCarousel({ products }: { products: Product[] }) {
           setCarouselItems([
             {
               image: '/hero-showcase-1.jpg',
-              title: 'سر الجمال المغربي',
-              subtitle: 'نقي • طبيعي • خالد'
+              title: 'خوادم عالية الأداء',
+              subtitle: 'قوة لمشروعك'
             },
             {
               image: '/hero-showcase-2.jpg',
-              title: 'تميز مصنوع يدوياً',
-              subtitle: 'من المغرب بكل حب'
+              title: 'أجهزة لابتوب حديثة',
+              subtitle: 'اعمل في أي وقت ومكان'
             },
             {
               image: '/hero-showcase-3.jpg',
-              title: 'الذهب السائل',
-              subtitle: 'زيت الأرغان المعصور على البارد'
+              title: 'مكونات الألعاب',
+              subtitle: 'أطلق العنان لقدراتك'
             },
             {
               image: '/hero-showcase-4.jpg',
-              title: 'إشراقة طبيعية',
-              subtitle: 'عضوي ١٠٠٪ • معتمد'
+              title: 'طابعات احترافية',
+              subtitle: 'دقة وسرعة وموثوقية'
             },
             {
               image: '/hero-showcase-5.jpg',
-              title: 'طقوس الجمال',
-              subtitle: 'حكمة قديمة • عناية حديثة'
+              title: 'حلول الشبكات',
+              subtitle: 'تواصل بثقة'
             },
             {
               image: '/hero-showcase-6.jpg',
-              title: 'ديار أرغان',
-              subtitle: 'عناية مغربية أصيلة بالبشرة'
+              title: 'متجر ديدالي',
+              subtitle: 'شريكك التقني الموثوق'
             }
           ])
         } else {
           setCarouselItems([
             {
               image: '/hero-showcase-1.jpg',
-              title: 'The Secret of Moroccan Beauty',
-              subtitle: 'Pure • Natural • Timeless'
+              title: 'High-Performance Servers',
+              subtitle: 'Powering Your Enterprise'
             },
             {
               image: '/hero-showcase-2.jpg',
-              title: 'Handcrafted Excellence',
-              subtitle: 'From Morocco with Love'
+              title: 'Next-Gen Laptops',
+              subtitle: 'Work Anywhere, Anytime'
             },
             {
               image: '/hero-showcase-3.jpg',
-              title: 'Liquid Gold',
-              subtitle: 'Cold Pressed Argan Oil'
+              title: 'Gaming Components',
+              subtitle: 'Unleash Your Potential'
             },
             {
               image: '/hero-showcase-4.jpg',
-              title: 'Natural Radiance',
-              subtitle: '100% Organic • Certified'
+              title: 'Professional Printers',
+              subtitle: 'Sharp, Fast, Reliable'
             },
             {
               image: '/hero-showcase-5.jpg',
-              title: 'Beauty Ritual',
-              subtitle: 'Ancient Wisdom • Modern Care'
+              title: 'Network Solutions',
+              subtitle: 'Connect with Confidence'
             },
             {
               image: '/hero-showcase-6.jpg',
-              title: 'Diar Argan',
-              subtitle: 'Authentic Moroccan Skincare'
+              title: 'Dedali Store',
+              subtitle: 'Your Trusted IT Partner'
             }
           ])
         }
@@ -297,6 +309,8 @@ export default function HomePage() {
   const [visibleProducts, setVisibleProducts] = useState(4)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const { t, language, toggleLanguage, dir } = useLanguage()
+  const [user, setUser] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   // Cart context is now available but we need to create a client component wrapper 
   // or accept that HomePage is a client component (which it already is: "use client" is missing but useState implies it)
@@ -326,21 +340,26 @@ export default function HomePage() {
     async function loadData() {
       setLoading(true)
       try {
-        const [productsData, categoriesData, settingsData] = await Promise.all([
+        const [productsData, categoriesData, settingsData, userData, roleData] = await Promise.all([
           getProducts({ status: 'active', limit: 20 }),
           getCategories(),
-          getAdminSettings()
+          getAdminSettings(),
+          supabase.auth.getUser(),
+          getCurrentUserRole()
         ])
 
         setProducts(productsData || [])
         setCategories(categoriesData || [])
         setSettings(settingsData || {})
+        setUser(userData.data.user)
+        setUserRole(roleData)
       } catch (e) {
         console.error("Failed to load home page data", e)
         // Ensure UI doesn't break
         setProducts([])
         setCategories([])
         setSettings({})
+        setUser(null)
       } finally {
         setLoading(false)
       }
@@ -377,10 +396,10 @@ export default function HomePage() {
   const headerCategories =
     categories.length > 0
       ? categories
-      : (['face', 'hair', 'body', 'gift'] as const).map((slug) => ({
+      : (['laptops', 'servers', 'printers', 'components'] as const).map((slug) => ({
         id: slug,
         slug,
-        name: getCategoryLabel(slug),
+        name: slug.charAt(0).toUpperCase() + slug.slice(1), // Simple capitalization for fallback
       }))
 
   const faqs = [
@@ -405,8 +424,8 @@ export default function HomePage() {
       <div className="bg-primary text-primary-foreground py-2 text-center text-sm">
         <p>
           {language === 'ar'
-            ? (settings.announcement_bar_ar || settings.announcement_bar || "شحن مجاني للطلبات فوق ٥٠٠ ج.م | استخدم كود ARGAN20 لخصم ٢٠٪")
-            : (settings.announcement_bar || "Free shipping on orders over EGP 500 | Use code ARGAN20 for 20% off")
+            ? (settings.announcement_bar_ar || settings.announcement_bar || "شحن مجاني للطلبات فوق ٧٥٠ د.م")
+            : (settings.announcement_bar || "Free shipping on orders over MAD 750")
           }
         </p>
       </div>
@@ -421,11 +440,11 @@ export default function HomePage() {
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
-                src="/logo.webp"
-                alt="Diar Argan"
-                width={120}
-                height={60}
-                className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
+                src="/logo.png"
+                alt="Dedali Store"
+                width={180}
+                height={90}
+                className="h-16 sm:h-20 w-auto transition-transform duration-300 group-hover:scale-105"
               />
             </Link>
 
@@ -434,6 +453,12 @@ export default function HomePage() {
               <Link href="/search">
                 <Button variant="ghost" size="icon" className="hidden sm:flex rounded-full hover:bg-primary/5 hover:text-primary transition-all">
                   <Search className="w-5 h-5" />
+                </Button>
+              </Link>
+
+              <Link href={user ? "/reseller/dashboard" : "/login"}>
+                <Button variant="ghost" size="icon" className="hidden sm:flex rounded-full hover:bg-primary/5 hover:text-primary transition-all">
+                  <User className="w-5 h-5" />
                 </Button>
               </Link>
 
@@ -464,11 +489,11 @@ export default function HomePage() {
                     {/* Mobile Menu Header */}
                     <div className="flex items-center justify-between p-6 border-b border-border/50">
                       <Image
-                        src="/logo.webp"
-                        alt="Diar Argan"
-                        width={100}
-                        height={50}
-                        className="h-10 w-auto"
+                        src="/logo.png"
+                        alt="Dedali Store"
+                        width={140}
+                        height={70}
+                        className="h-14 w-auto"
                       />
                       <SheetClose asChild>
                         <Button variant="ghost" size="icon" className="rounded-full">
@@ -537,7 +562,7 @@ export default function HomePage() {
                             }
                           </p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            {language === 'ar' ? "استخدم كود" : "Use code"} <span className="font-bold text-primary">{settings.promo_code || "ARGAN20"}</span>
+                            {language === 'ar' ? "استخدم كود" : "Use code"} <span className="font-bold text-primary">{settings.promo_code || "DEDALI20"}</span>
                           </p>
                         </div>
                       </div>
@@ -567,6 +592,14 @@ export default function HomePage() {
                         >
                           {language === 'en' ? 'العربية' : 'English'}
                         </Button>
+                        <SheetClose asChild>
+                          <Link href="/login" className="w-full">
+                            <Button variant="outline" className="w-full h-12 rounded-full bg-primary/10 border-primary/20 hover:bg-primary hover:text-white transition-colors">
+                              <User className="w-4 h-4 mx-2" />
+                              {language === 'ar' ? "دخول / تسجيل" : "Login / Register"}
+                            </Button>
+                          </Link>
+                        </SheetClose>
                       </div>
                     </div>
                   </div>
@@ -686,7 +719,7 @@ export default function HomePage() {
               ))
             ) : (
               filteredProducts.slice(0, visibleProducts).map((product, i) => (
-                <ProductCard key={`${product.id}-${selectedCategory}`} {...product} />
+                <ProductCard key={`${product.id}-${selectedCategory}`} product={product} userRole={userRole} />
               ))
             )}
           </div>
@@ -734,39 +767,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Certifications */}
-      <section className="py-10 relative overflow-hidden bg-secondary/5 border-t border-border/50">
-        <div className="relative flex overflow-x-hidden group" dir="ltr">
-          <div className="animate-marquee whitespace-nowrap flex items-center gap-12 sm:gap-20 px-4">
-            {/* Original Set */}
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="relative w-24 h-24 sm:w-32 sm:h-32 grayscale hover:grayscale-0 transition-all duration-500 opacity-70 hover:opacity-100 flex-shrink-0">
-                <Image
-                  src={`/certifications/${i}.png`}
-                  alt={`Certification ${i}`}
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            ))}
-            {/* Duplicate Set for smooth infinite scroll */}
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={`dup-${i}`} className="relative w-24 h-24 sm:w-32 sm:h-32 grayscale hover:grayscale-0 transition-all duration-500 opacity-70 hover:opacity-100 flex-shrink-0">
-                <Image
-                  src={`/certifications/${i}.png`}
-                  alt={`Certification ${i}`}
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="absolute top-0 flex w-full h-full pointer-events-none">
-            <div className={`w-1/6 h-full bg-gradient-to-r ${language === 'ar' ? 'bg-gradient-to-l ml-auto' : 'from-background'} to-transparent`}></div>
-            <div className={`w-1/6 h-full bg-gradient-to-l ${language === 'ar' ? 'bg-gradient-to-r mr-auto' : 'from-background ml-auto'} to-transparent`}></div>
-          </div>
-        </div>
-      </section>
+      {/* Certifications Section Removed for IT Store */}
 
       {/* Footer */}
       <footer className="bg-background border-t border-border/40 py-16 sm:py-20 relative overflow-hidden">
@@ -777,11 +778,11 @@ export default function HomePage() {
             <div className="md:col-span-4 lg:col-span-5 space-y-6">
               <Link href="/" className="inline-block">
                 <Image
-                  src="/logo.webp"
-                  alt="Diar Argan"
-                  width={150}
-                  height={60}
-                  className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                  src="/logo.png"
+                  alt="Dedali Store"
+                  width={200}
+                  height={100}
+                  className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
                 />
               </Link>
               <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm">
@@ -795,48 +796,48 @@ export default function HomePage() {
             {/* Links Columns */}
             <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.company')}</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Company</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
                   <li>
                     <Link href="/our-story" className="hover:text-primary transition-colors block py-1">
-                      {t('footer.our_story')}
+                      Our Story
                     </Link>
                   </li>
                   <li>
                     <Link href="/sustainability" className="hover:text-primary transition-colors block py-1">
-                      {t('footer.sustainability')}
+                      Sustainability
                     </Link>
                   </li>
                   <li>
                     <Link href="/press" className="hover:text-primary transition-colors block py-1">
-                      {t('footer.press')}
+                      Press
                     </Link>
                   </li>
                   <li>
                     <Link href="/careers" className="hover:text-primary transition-colors block py-1">
-                      {t('footer.careers')}
+                      Careers
                     </Link>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.support')}</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Support</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">{t('footer.contact_us')}</Link></li>
-                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">{t('footer.shipping_info')}</Link></li>
-                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">{t('footer.track_order')}</Link></li>
-                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">{t('nav.faq')}</Link></li>
+                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">Contact Us</Link></li>
+                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">Shipping Info</Link></li>
+                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">Track Order</Link></li>
+                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">FAQ</Link></li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.legal')}</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Legal</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">{t('footer.privacy_policy')}</Link></li>
-                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">{t('footer.terms')}</Link></li>
-                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">{t('footer.refund_policy')}</Link></li>
-                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">{t('footer.cookies')}</Link></li>
+                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">Terms of Service</Link></li>
+                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">Refund Policy</Link></li>
+                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">Cookies</Link></li>
                 </ul>
               </div>
             </div>
@@ -844,7 +845,7 @@ export default function HomePage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <p>© {new Date().getFullYear()} Diar Argan. {t('footer.rights')}</p>
+            <p>© {new Date().getFullYear()} Dedali Store. {t('footer.rights')}</p>
             <div className="flex items-center gap-6">
               <Link href="/privacy-policy" className="hover:text-foreground transition-colors">{t('footer.privacy_short')}</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.terms_short')}</Link>
