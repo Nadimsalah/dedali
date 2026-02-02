@@ -166,7 +166,7 @@ export default function HeroCarouselPage() {
                     </h1>
                     <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
                         Customize your homepage slider. High-quality images (16:9 or 4:3) work best.
-                        Link slides to products to drive sales.
+                        Link slides to products to drive sales. <span className="text-primary font-bold">Important: Make sure to set slides to "Active" for them to appear in the store.</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

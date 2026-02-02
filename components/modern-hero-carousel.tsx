@@ -77,12 +77,16 @@ export function ModernHeroCarousel({ items }: HeroCarouselProps) {
                                 {/* Text Content */}
                                 <div className={`absolute inset-0 flex flex-col justify-end p-8 sm:p-12 pb-16 sm:pb-20 ${dir === 'rtl' ? 'items-start' : 'items-start'}`}>
                                     <div className={`max-w-2xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both ${dir === 'rtl' ? 'text-right' : 'text-left'}`} key={selectedIndex}>
-                                        <p className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-semibold uppercase tracking-wider">
-                                            {item.subtitle}
-                                        </p>
-                                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
-                                            {item.title}
-                                        </h2>
+                                        {item.subtitle && (
+                                            <p className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-semibold uppercase tracking-wider">
+                                                {item.subtitle}
+                                            </p>
+                                        )}
+                                        {item.title && (
+                                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
+                                                {item.title}
+                                            </h2>
+                                        )}
                                     </div>
                                 </div>
                             </>

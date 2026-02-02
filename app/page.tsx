@@ -203,98 +203,112 @@ function HeroCarousel({ products }: { products: Product[] }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadCarouselItems() {
-      let items: Awaited<ReturnType<typeof getHeroCarouselItems>> = []
+      if (!isMounted) return;
+      setLoading(true);
+
       try {
-        items = await getHeroCarouselItems()
-      } catch (error) {
-        console.error("Failed to load carousel items", error)
-      }
+        const items = await getHeroCarouselItems();
+        console.log("HeroCarousel - Fetched items:", items);
 
-      if (items && items.length > 0) {
-        // Use database items
-        setCarouselItems(items.map(item => ({
-          image: item.image_url,
-          title: item.title,
-          subtitle: item.subtitle || '',
-          link: item.link
-        })))
-      } else {
-        // Fallback to default showcase items
-        if (language === 'ar') {
-          setCarouselItems([
-            {
-              image: '/hero-showcase-1.jpg',
-              title: 'خوادم عالية الأداء',
-              subtitle: 'قوة لمشروعك'
-            },
-            {
-              image: '/hero-showcase-2.jpg',
-              title: 'أجهزة لابتوب حديثة',
-              subtitle: 'اعمل في أي وقت ومكان'
-            },
-            {
-              image: '/hero-showcase-3.jpg',
-              title: 'مكونات الألعاب',
-              subtitle: 'أطلق العنان لقدراتك'
-            },
-            {
-              image: '/hero-showcase-4.jpg',
-              title: 'طابعات احترافية',
-              subtitle: 'دقة وسرعة وموثوقية'
-            },
-            {
-              image: '/hero-showcase-5.jpg',
-              title: 'حلول الشبكات',
-              subtitle: 'تواصل بثقة'
-            },
-            {
-              image: '/hero-showcase-6.jpg',
-              title: 'متجر ديدالي',
-              subtitle: 'شريكك التقني الموثوق'
-            }
-          ])
-        } else {
-          setCarouselItems([
-            {
-              image: '/hero-showcase-1.jpg',
-              title: 'High-Performance Servers',
-              subtitle: 'Powering Your Enterprise'
-            },
-            {
-              image: '/hero-showcase-2.jpg',
-              title: 'Next-Gen Laptops',
-              subtitle: 'Work Anywhere, Anytime'
-            },
-            {
-              image: '/hero-showcase-3.jpg',
-              title: 'Gaming Components',
-              subtitle: 'Unleash Your Potential'
-            },
-            {
-              image: '/hero-showcase-4.jpg',
-              title: 'Professional Printers',
-              subtitle: 'Sharp, Fast, Reliable'
-            },
-            {
-              image: '/hero-showcase-5.jpg',
-              title: 'Network Solutions',
-              subtitle: 'Connect with Confidence'
-            },
-            {
-              image: '/hero-showcase-6.jpg',
-              title: 'Dedali Store',
-              subtitle: 'Your Trusted IT Partner'
-            }
-          ])
+        if (!isMounted) return;
+
+        if (items && Array.isArray(items) && items.length > 0) {
+          const mappedItems = items
+            .filter(item => item && item.image_url) // Only show items with an image
+            .map(item => ({
+              image: String(item.image_url || '/placeholder.jpg'),
+              title: String(item.title || ''),
+              subtitle: String(item.subtitle || ''),
+              link: item.link ? String(item.link) : null
+            }));
+
+          if (mappedItems.length > 0) {
+            setCarouselItems(mappedItems);
+            setLoading(false);
+            return;
+          }
         }
+      } catch (error) {
+        console.error("HeroCarousel - Error loading data:", error);
       }
 
-      setLoading(false)
+      // If we reach here, we use fallback data
+      if (!isMounted) return;
+
+      const fallbackItems = language === 'ar' ? [
+        {
+          image: '/hero-showcase-1.jpg',
+          title: 'خوادم عالية الأداء',
+          subtitle: 'قوة لمشروعك'
+        },
+        {
+          image: '/hero-showcase-2.jpg',
+          title: 'أجهزة لابتوب حديثة',
+          subtitle: 'اعمل في أي وقت ومكان'
+        },
+        {
+          image: '/hero-showcase-3.jpg',
+          title: 'مكونات الألعاب',
+          subtitle: 'أطلق العنان لقدراتك'
+        },
+        {
+          image: '/hero-showcase-4.jpg',
+          title: 'طابعات احترافية',
+          subtitle: 'دقة وسرعة وموثوقية'
+        },
+        {
+          image: '/hero-showcase-5.jpg',
+          title: 'حلول الشبكات',
+          subtitle: 'تواصل بثقة'
+        },
+        {
+          image: '/hero-showcase-6.jpg',
+          title: 'متجر ديدالي',
+          subtitle: 'شريكك التقني الموثوق'
+        }
+      ] : [
+        {
+          image: '/hero-showcase-1.jpg',
+          title: 'High-Performance Servers',
+          subtitle: 'Powering Your Enterprise'
+        },
+        {
+          image: '/hero-showcase-2.jpg',
+          title: 'Next-Gen Laptops',
+          subtitle: 'Work Anywhere, Anytime'
+        },
+        {
+          image: '/hero-showcase-3.jpg',
+          title: 'Gaming Components',
+          subtitle: 'Unleash Your Potential'
+        },
+        {
+          image: '/hero-showcase-4.jpg',
+          title: 'Professional Printers',
+          subtitle: 'Sharp, Fast, Reliable'
+        },
+        {
+          image: '/hero-showcase-5.jpg',
+          title: 'Network Solutions',
+          subtitle: 'Connect with Confidence'
+        },
+        {
+          image: '/hero-showcase-6.jpg',
+          title: 'Dedali Store',
+          subtitle: 'Your Trusted IT Partner'
+        }
+      ];
+
+      setCarouselItems(fallbackItems);
+      setLoading(false);
     }
 
-    loadCarouselItems()
-  }, [])
+    loadCarouselItems();
+    return () => { isMounted = false; };
+  }, [language])
 
   if (loading) {
     return <HeroCarouselSkeleton />
@@ -367,16 +381,16 @@ export default function HomePage() {
     loadData()
   }, [])
 
-  const allCategories = ["All", ...categories.map(c => c.slug)]
+  const allCategories = ["All", ...categories.filter(c => c && c.slug).map(c => c.slug)]
 
   const getCategoryLabel = (cat: string) => {
-    if (cat === "All") return t('section.all_categories')
+    if (!cat || cat === "All") return t('section.all_categories')
     const category = categories.find(c => c.slug === cat)
     if (category) {
       if (language === 'ar' && category.name_ar) {
         return category.name_ar
       }
-      return category.name
+      return category.name || cat
     }
     // Fallback to translation keys for default categories
     const categoryMap: Record<string, string> = {
@@ -385,7 +399,7 @@ export default function HomePage() {
       body: t('header.body_care'),
       gift: t('header.gift_sets')
     }
-    return categoryMap[cat] || cat
+    return categoryMap[cat] || cat || t('section.all_categories')
   }
 
   const filteredProducts = selectedCategory === "All"
