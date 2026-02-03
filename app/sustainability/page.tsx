@@ -25,10 +25,10 @@ export default function SustainabilityPage() {
           <Link href="/" className="flex-shrink-0 relative group">
             <Image
               src="/logo.webp"
-              alt="Diar Argan"
-              width={120}
-              height={60}
-              className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+              alt="Dedali Store"
+              width={142}
+              height={40}
+              className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
         </div>
@@ -47,12 +47,12 @@ export default function SustainabilityPage() {
               {isArabic ? "جمال مسؤول • من المغرب إلى مصر" : "Responsible Beauty • From Morocco to Egypt"}
             </p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-              {isArabic ? "الاستدامة في ديار أرجان" : "Sustainability at Diar Argan"}
+              {isArabic ? "الاستدامة في ديدالي" : "Sustainability at Dedali"}
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               {isArabic
-                ? "منذ عام 1999 ونحن نؤمن أن جمال الأرغان الحقيقي لا يكتمل إلا عندما يحترم الأرض والناس الذين يقفون وراءه. في ديار أرجان، الاستدامة ليست مجرد كلمة، بل طريقة عمل يومية."
-                : "Since 1999, we believe that the true beauty of argan oil is only complete when it respects both the earth and the people behind it. At Diar Argan, sustainability is not a slogan – it is a daily way of working."}
+                ? "منذ عام 1999 ونحن نؤمن أن جمال الأرغان الحقيقي لا يكتمل إلا عندما يحترم الأرض والناس الذين يقفون وراءه. في ديدالي، الاستدامة ليست مجرد كلمة، بل طريقة عمل يومية."
+                : "Since 1999, we believe that the true beauty of argan oil is only complete when it respects both the earth and the people behind it. At Dedali, sustainability is not a slogan – it is a daily way of working."}
             </p>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -117,7 +117,7 @@ export default function SustainabilityPage() {
         <div className="container mx-auto px-4 max-w-5xl space-y-12">
           <div className={`space-y-4 text-center max-w-2xl mx-auto ${isArabic ? "rtl" : ""}`}>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-              {isArabic ? "ثلاث ركائز للاستدامة في ديار أرجان" : "Three Pillars of Sustainability at Diar Argan"}
+              {isArabic ? "ثلاث ركائز للاستدامة في ديدالي" : "Three Pillars of Sustainability at Dedali"}
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -180,8 +180,8 @@ export default function SustainabilityPage() {
           </h2>
           <p className="text-muted-foreground leading-relaxed">
             {isArabic
-              ? "كل منتج من ديار أرجان هو خطوة صغيرة نحو روتين عناية أجمل وأكثر وعياً. اختاري منتجات تعكس قيمك وتدلّل بشرتك في نفس الوقت."
-              : "Every Diar Argan product is a small step towards a more beautiful and conscious routine. Choose treatments that reflect your values and pamper your skin at the same time."}
+              ? "كل منتج من ديدالي هو خطوة صغيرة نحو روتين عناية أجمل وأكثر وعياً. اختاري منتجات تعكس قيمك وتدلّل بشرتك في نفس الوقت."
+              : "Every Dedali product is a small step towards a more beautiful and conscious routine. Choose treatments that reflect your values and pamper your skin at the same time."}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="rounded-full shadow-lg shadow-primary/25">

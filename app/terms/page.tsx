@@ -27,13 +27,13 @@ export default function TermsPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "شروط وأحكام استخدام موقع ديار أرجان – مصر" : "Diar Argan Egypt – Terms of Service"}
+          {isArabic ? "شروط وأحكام استخدام موقع ديدالي – مصر" : "Dedali Egypt – Terms of Service"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
-              ? "باستخدامك لموقع ديار أرجان في مصر أو إجرائك لأي طلب شراء، فأنت توافق على الشروط والأحكام الموضحة أدناه، والمطبقة وفقًا لأحكام القانون المصري."
-              : "By accessing Diar Argan&apos;s website in Egypt or placing an order, you agree to the terms and conditions below, applied in accordance with Egyptian law."}
+              ? "باستخدامك لموقع ديدالي في مصر أو إجرائك لأي طلب شراء، فأنت توافق على الشروط والأحكام الموضحة أدناه، والمطبقة وفقًا لأحكام القانون المصري."
+              : "By accessing Dedali&apos;s website in Egypt or placing an order, you agree to the terms and conditions below, applied in accordance with Egyptian law."}
           </p>
 
           <h2 className="font-semibold text-foreground">
@@ -41,8 +41,8 @@ export default function TermsPage() {
           </h2>
           <p>
             {isArabic
-              ? "يُسمح لك باستخدام الموقع لعرض المنتجات وطلبها لأغراض شخصية وغير تجارية فقط. لا يُسمح بأي استخدام غير قانوني أو يضر بديار أرجان أو بعملائها."
-              : "You may use the website to browse and purchase products for personal, non‑commercial use only. Any unlawful use or use that may harm Diar Argan or its customers is prohibited."}
+              ? "يُسمح لك باستخدام الموقع لعرض المنتجات وطلبها لأغراض شخصية وغير تجارية فقط. لا يُسمح بأي استخدام غير قانوني أو يضر بديدالي أو بعملائها."
+              : "You may use the website to browse and purchase products for personal, non‑commercial use only. Any unlawful use or use that may harm Dedali or its customers is prohibited."}
           </p>
 
           <h2 className="font-semibold text-foreground">
@@ -78,7 +78,7 @@ export default function TermsPage() {
           <p>
             {isArabic
               ? "يحق لدیار أرجان تعديل هذه الشروط من وقت لآخر. يسري أي تحديث من تاريخ نشره على هذه الصفحة، ويُعد استمرار استخدامك للموقع بعد التعديل موافقة ضمنية على الشروط المحدثة."
-              : "Diar Argan may update these terms from time to time. Any changes take effect from the date they are published on this page, and your continued use of the website constitutes acceptance of the updated terms."}
+              : "Dedali may update these terms from time to time. Any changes take effect from the date they are published on this page, and your continued use of the website constitutes acceptance of the updated terms."}
           </p>
         </div>
       </main>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, Users } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, Users, Briefcase } from "lucide-react"
 import { getDashboardStats } from "@/lib/supabase-api"
 
 export function DashboardStats() {
@@ -47,18 +47,18 @@ export function DashboardStats() {
             textColor: "text-blue-500",
         },
         {
-            label: "Total Products",
-            value: statsData?.totalProducts?.toString(),
-            change: "Active",
+            label: "Total Resellers",
+            value: statsData?.totalResellers?.toString(),
+            change: "Partners",
             trend: "up",
-            icon: Package,
+            icon: Briefcase,
             color: "from-orange-500/20 to-red-500/20",
             textColor: "text-orange-500",
         },
         {
-            label: "Total Customers",
+            label: "Guest Customers",
             value: statsData?.totalCustomers?.toString(),
-            change: "Syncing",
+            change: "Direct",
             trend: "up",
             icon: Users,
             color: "from-purple-500/20 to-pink-500/20",

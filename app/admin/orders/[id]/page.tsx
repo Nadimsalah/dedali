@@ -200,7 +200,7 @@ export default function OrderDetailsPage() {
                             {/* Invoice Header */}
                             <div className="flex justify-between items-start border-b-2 border-[#1a1a1a] pb-4 mb-4">
                                 <div>
-                                    <div className="relative w-40 h-10 mb-2">
+                                    <div className="relative w-32 h-9 mb-2">
                                         <Image
                                             src="/logo.png"
                                             alt="Dedali Store Logo"

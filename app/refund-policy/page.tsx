@@ -27,13 +27,13 @@ export default function RefundPolicyPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الاسترجاع لديار أرجان – مصر" : "Diar Argan Egypt – Refund & Returns Policy"}
+          {isArabic ? "سياسة الاسترجاع لديدالي – مصر" : "Dedali Egypt – Refund & Returns Policy"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
-              ? "نحرص على رضاك التام عن منتجات ديار أرجان. توضح هذه السياسة الشروط التي يتم من خلالها استرجاع أو استبدال المنتجات داخل مصر وفقًا لقانون حماية المستهلك المصري."
-              : "We want you to be fully satisfied with your Diar Argan products. This policy explains the conditions for returns and refunds within Egypt, in line with Egyptian consumer protection law."}
+              ? "نحرص على رضاك التام عن منتجات ديدالي. توضح هذه السياسة الشروط التي يتم من خلالها استرجاع أو استبدال المنتجات داخل مصر وفقًا لقانون حماية المستهلك المصري."
+              : "We want you to be fully satisfied with your Dedali products. This policy explains the conditions for returns and refunds within Egypt, in line with Egyptian consumer protection law."}
           </p>
 
           <h2 className="font-semibold text-foreground">

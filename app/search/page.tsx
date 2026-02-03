@@ -153,7 +153,7 @@ export default function SearchPage() {
                             {isArabic ? <ArrowRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
                         </Button>
                     </Link>
-                    <Image src="/logo.webp" alt="Diar Argan" width={120} height={60} className="h-10 w-auto" />
+                    <Image src="/logo.webp" alt="Dedali Store" width={106} height={30} className="h-8 w-auto" />
                 </div>
 
                 <div className="max-w-3xl mx-auto relative group">

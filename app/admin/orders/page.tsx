@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { getOrders, type Order } from "@/lib/supabase-api"
 import { Notifications } from "@/components/admin/notifications"
 import {
@@ -21,6 +22,8 @@ import {
 } from "lucide-react"
 
 export default function AdminOrdersPage() {
+    const searchParams = useSearchParams()
+    const customerId = searchParams.get('customer_id')
     const [activeTab, setActiveTab] = useState("All")
     const [searchQuery, setSearchQuery] = useState("")
     const [orders, setOrders] = useState<Order[]>([])
@@ -31,14 +34,15 @@ export default function AdminOrdersPage() {
         async function loadOrders() {
             setLoading(true)
             const { data, count } = await getOrders({
-                status: activeTab === "All" ? undefined : activeTab.toLowerCase()
+                status: activeTab === "All" ? undefined : activeTab.toLowerCase(),
+                customer_id: customerId || undefined
             })
             setOrders(data)
             setTotalOrders(count)
             setLoading(false)
         }
         loadOrders()
-    }, [activeTab])
+    }, [activeTab, customerId])
 
     const tabs = ["All", "Processing", "Delivered", "Pending", "Cancelled"]
 
@@ -133,7 +137,43 @@ export default function AdminOrdersPage() {
 
                     {/* Orders Table */}
                     <div className="glass-strong rounded-3xl overflow-hidden min-h-[500px] flex flex-col">
-                        <div className="overflow-x-auto flex-1">
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-4 p-4">
+                            {filteredOrders.length > 0 ? (
+                                filteredOrders.map((order) => (
+                                    <div key={order.id} className="bg-white/5 rounded-xl p-4 border border-white/5 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="font-bold text-foreground">#{order.order_number}</div>
+                                                <div className="text-xs text-muted-foreground mt-0.5">{order.customer_name}</div>
+                                                <div className="text-[10px] text-muted-foreground/60">{new Date(order.created_at).toLocaleDateString()}</div>
+                                            </div>
+                                            <Badge variant="outline" className={`border ${getStatusColor(order.status)} text-[10px]`}>
+                                                {order.status}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex justify-between items-end pt-2 border-t border-white/5">
+                                            <div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">Total</div>
+                                                <div className="font-bold text-foreground">MAD {order.total}</div>
+                                            </div>
+                                            <Link href={`/admin/orders/${order.id}`}>
+                                                <Button size="sm" variant="outline" className="h-8 text-xs bg-white/5 hover:bg-white/10 border-white/10">
+                                                    View Details
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center text-muted-foreground py-8">
+                                    {loading ? "Loading orders..." : "No orders found"}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto flex-1">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5 text-left">

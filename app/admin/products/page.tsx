@@ -18,11 +18,13 @@ import {
     AlertCircle,
     Tag,
     X,
-    Bell
+    Bell,
+    Upload
 } from "lucide-react"
 import { Notifications } from "@/components/admin/notifications"
 import Link from "next/link"
 import Image from "next/image"
+import Papa from "papaparse"
 import {
     Dialog,
     DialogContent,
@@ -105,6 +107,7 @@ export default function AdminProductsPage() {
     const [newCategoryNameAr, setNewCategoryNameAr] = useState("")
     const [isTranslating, setIsTranslating] = useState(false)
     const [showCategoryDialog, setShowCategoryDialog] = useState(false)
+    const [categorySearch, setCategorySearch] = useState("")
 
     // Fetch products from Supabase
     useEffect(() => {
@@ -150,21 +153,34 @@ export default function AdminProductsPage() {
 
         const slug = newCategoryName.toLowerCase().replace(/\s+/g, '-')
 
-        const { error } = await supabase
+        // Try inserting with name_ar
+        const { error: errorWithAr } = await supabase
             .from('categories')
             .insert({
                 name: newCategoryName,
                 slug,
-                name_ar: newCategoryNameAr || newCategoryName // Fallback to English if no Arabic provided
+                name_ar: newCategoryNameAr || newCategoryName
             })
 
-        if (error) {
-            alert('Error adding category: ' + error.message)
-        } else {
-            setNewCategoryName("")
-            setNewCategoryNameAr("")
-            loadCategories()
+        if (errorWithAr) {
+            console.warn('Failed to insert with name_ar, trying without...', errorWithAr.message)
+            // Try inserting without name_ar
+            const { error: errorWithoutAr } = await supabase
+                .from('categories')
+                .insert({
+                    name: newCategoryName,
+                    slug
+                })
+
+            if (errorWithoutAr) {
+                alert('Error adding category: ' + errorWithoutAr.message)
+                return
+            }
         }
+
+        setNewCategoryName("")
+        setNewCategoryNameAr("")
+        loadCategories()
     }
 
     async function handleDeleteCategory(id: string) {
@@ -234,6 +250,186 @@ export default function AdminProductsPage() {
         }
     }
 
+    const [uploading, setUploading] = useState(false)
+    const [uploadStatus, setUploadStatus] = useState("")
+
+    // Handle CSV Upload
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        setUploading(true)
+        setUploadStatus("Parsing CSV...")
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results: Papa.ParseResult<any>) => {
+                const rows = results.data as any[]
+                const validProducts: any[] = []
+
+                // 1. Pre-process Categories
+                const uniqueCategories = new Set<string>()
+                const categoryNameMap = new Map<string, string>() // slug -> Name
+
+                // Helper to slugify
+                const toSlug = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+
+                for (const row of rows) {
+                    const rawCat = row["Product Category"] || row["category"] || "Uncategorized"
+                    // Handle "Parent > Child > Grandchild" - take Grandchild
+                    const cleanName = rawCat.split('>').pop().trim()
+                    const slug = toSlug(cleanName)
+
+                    if (slug) {
+                        uniqueCategories.add(slug)
+                        if (!categoryNameMap.has(slug)) {
+                            categoryNameMap.set(slug, cleanName)
+                        }
+                    }
+                }
+
+                // Check for new categories
+                const existingSlugs = new Set(categories.map(c => c.slug))
+                const newCategoriesToInsert: { name: string, slug: string }[] = []
+
+                uniqueCategories.forEach(slug => {
+                    if (!existingSlugs.has(slug)) {
+                        newCategoriesToInsert.push({
+                            name: categoryNameMap.get(slug) || slug,
+                            slug: slug
+                        })
+                    }
+                })
+
+                if (newCategoriesToInsert.length > 0) {
+                    setUploadStatus(`Creating ${newCategoriesToInsert.length} new categories...`)
+                    const { error: catError } = await supabase
+                        .from('categories')
+                        .insert(newCategoriesToInsert)
+
+                    if (catError) {
+                        console.error("Error creating categories:", catError)
+                        // Continue anyway, maybe they exist but local state is stale?
+                    } else {
+                        // Refresh local categories to ensure consistency
+                        await loadCategories()
+                    }
+                }
+
+                // 2. Transform Data
+                setUploadStatus(`Processing ${rows.length} rows...`)
+
+                // Flexible check for required title column
+                const firstRow = rows[0] || {}
+                const titleKey = firstRow.hasOwnProperty('Title') ? 'Title' : firstRow.hasOwnProperty('title') ? 'title' : null
+
+                if (!titleKey) {
+                    console.error("CSV Missing 'Title' or 'title' column. Available keys:", Object.keys(firstRow))
+                    setUploadStatus("Error: CSV must have a 'Title' or 'title' column.")
+                    setUploading(false)
+                    return
+                }
+
+                for (const row of rows) {
+                    const title = row["Title"] || row["title"]
+                    if (!title || title.trim() === "") continue
+
+                    // Flexible field mapping
+                    const description = row["Body (HTML)"] || row["description"] || ""
+                    const rawCat = row["Product Category"] || row["category"] || "Uncategorized"
+
+                    // Same cleaning logic
+                    const catName = rawCat.split('>').pop().trim()
+                    const catSlug = toSlug(catName)
+
+                    const priceRaw = row["Variant Price"] || row["price"] || "0"
+                    const resellerPriceRaw = row["Price HT"] || row["reseller_price"] || "0"
+                    const stockRaw = row["Variant Inventory Qty"] || row["stock"] || "0"
+                    const sku = row["Variant SKU"] || row["sku"] || ""
+                    const imageUrl = row["Image Src"] || row["image_url"] || ""
+                    const crossSellsRaw = row["product.metafields.shopify--discovery--product_recommendation.related_products"] || row["cross_sells"]
+
+                    // Basic numeric cleanup
+                    const price = parseFloat(priceRaw) || 0
+                    const resellerPrice = parseFloat(resellerPriceRaw) || 0
+                    const stock = parseInt(stockRaw) || 0
+
+                    const product = {
+                        title: title,
+                        description: description,
+                        category: catSlug, // Use the slug!
+                        price: price,
+                        reseller_price: resellerPrice,
+                        compare_at_price: 0, // Hardcoded as per rule
+                        stock: stock,
+                        sku: sku,
+                        image_url: imageUrl,
+                        images: imageUrl ? [imageUrl] : [],
+                        cross_sells: crossSellsRaw
+                            ? String(crossSellsRaw)
+                                .split(',')
+                                .map((s: string) => s.trim())
+                                .filter((s: string) => s.length > 0)
+                            : [],
+                        status: stock > 0 ? "active" : "draft",
+                        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Math.floor(Math.random() * 1000)
+                    }
+
+                    // Exclude properties not in the schema
+                    const { cross_sells, image_url, slug, ...dbProduct } = product as any
+                    validProducts.push(dbProduct)
+                }
+
+                if (validProducts.length === 0) {
+                    console.warn("No valid products found. First row keys:", rows[0] ? Object.keys(rows[0]) : "No rows")
+                    setUploadStatus("No valid products found. Check CSV headers (Title, Body (HTML), etc).")
+                    setUploading(false)
+                    return
+                }
+
+                // 2. Batch Insert
+                const BATCH_SIZE = 50
+                let insertedCount = 0
+
+                try {
+                    for (let i = 0; i < validProducts.length; i += BATCH_SIZE) {
+                        const batch = validProducts.slice(i, i + BATCH_SIZE)
+                        setUploadStatus(`Uploading batch ${Math.floor(i / BATCH_SIZE) + 1}...`)
+
+                        const { error } = await supabase
+                            .from('products')
+                            .insert(batch)
+
+                        if (error) {
+                            console.error("Batch upload error:", JSON.stringify(error, null, 2))
+                            setUploadStatus(`Error: ${error.message || JSON.stringify(error)}`)
+                            return // Stop on error? Or continue? Let's stop to be safe.
+                        }
+                        insertedCount += batch.length
+                    }
+
+                    setUploadStatus(`Success! Uploaded ${insertedCount} products.`)
+                    loadProducts() // Refresh list
+                    // Clear file input
+                    event.target.value = ""
+                } catch (e: any) {
+                    console.error("Upload exception:", e)
+                    setUploadStatus(`Error: ${e.message}`)
+                } finally {
+                    setUploading(false)
+                    // Clear status after delay
+                    setTimeout(() => setUploadStatus(""), 5000)
+                }
+            },
+            error: (error: Error) => {
+                console.error("PapaParse error:", error)
+                setUploadStatus("Error parsing CSV file.")
+                setUploading(false)
+            }
+        })
+    }
+
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
             {/* Background gradients */}
@@ -258,6 +454,35 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Hidden File Input */}
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                            id="csv-upload-input"
+                            disabled={uploading}
+                        />
+
+                        {/* Upload Button */}
+                        <Button
+                            variant="outline"
+                            className="rounded-full h-9 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5"
+                            onClick={() => document.getElementById('csv-upload-input')?.click()}
+                            disabled={uploading}
+                        >
+                            {uploading ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    {uploadStatus || "Uploading..."}
+                                </span>
+                            ) : (
+                                <>
+                                    <Upload className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Import CSV</span>
+                                </>
+                            )}
+                        </Button>
                         <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
                             <DialogTrigger asChild>
                                 <Button variant="outline" className="rounded-full h-9">
@@ -303,24 +528,36 @@ export default function AdminProductsPage() {
                                     </div>
 
                                     {/* Categories List */}
-                                    <div className="space-y-2 max-h-[300px] overflow-y-auto mt-4">
-                                        {categories.map((category) => (
-                                            <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <p className="font-medium text-sm">{category.name}</p>
-                                                    {category.name_ar && <p className="text-xs text-muted-foreground font-arabic">{category.name_ar}</p>}
-                                                    <p className="text-[10px] text-muted-foreground/70">{category.slug}</p>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search categories..."
+                                            value={categorySearch}
+                                            onChange={(e) => setCategorySearch(e.target.value)}
+                                            className="pl-8 h-8 text-xs mb-2"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 max-h-[60vh] overflow-y-auto mt-2 px-1">
+                                        {categories
+                                            .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
+                                                (c.name_ar && c.name_ar.includes(categorySearch)))
+                                            .map((category) => (
+                                                <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <div>
+                                                        <p className="font-medium text-sm">{category.name}</p>
+                                                        {category.name_ar && <p className="text-xs text-muted-foreground font-arabic">{category.name_ar}</p>}
+                                                        <p className="text-[10px] text-muted-foreground/70">{category.slug}</p>
+                                                    </div>
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        onClick={() => handleDeleteCategory(category.id)}
+                                                        className="h-8 w-8 text-red-500 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
                                                 </div>
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    onClick={() => handleDeleteCategory(category.id)}
-                                                    className="h-8 w-8 text-red-500 hover:bg-red-50"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        ))}
+                                            ))}
                                     </div>
                                 </div>
                             </DialogContent>
@@ -395,7 +632,69 @@ export default function AdminProductsPage() {
 
                     {/* Products Grid/List */}
                     <div className="glass-strong rounded-3xl overflow-hidden min-h-[500px] flex flex-col">
-                        <div className="overflow-x-auto flex-1">
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-4 p-4">
+                            {filteredProducts.length > 0 ? (
+                                filteredProducts.map((product) => (
+                                    <div key={product.id} className="bg-white/5 rounded-xl p-4 border border-white/5 flex gap-4">
+                                        {/* Image */}
+                                        <div className="h-20 w-20 bg-white rounded-lg overflow-hidden flex-shrink-0 relative">
+                                            {product.images && product.images.length > 0 ? (
+                                                <Image
+                                                    src={product.images[0]}
+                                                    alt={product.title}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 bg-secondary/20 flex items-center justify-center">
+                                                    <Package className="w-5 h-5 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Info */}
+                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <p className="font-semibold text-foreground text-sm truncate">{product.title}</p>
+                                                    <Badge className={`${getStatusColor(getStockStatus(product.stock))} text-[10px] px-1.5 h-5`}>
+                                                        {getStockStatus(product.stock)}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-0.5">{product.category}</p>
+                                            </div>
+
+                                            <div className="flex justify-between items-end mt-2">
+                                                <p className="font-bold text-foreground">MAD {product.price}</p>
+                                                <div className="flex gap-2">
+                                                    <Link href={`/admin/products/edit/${product.id}`}>
+                                                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-white/10">
+                                                            <Edit className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </Link>
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 text-red-400 hover:text-red-500 hover:bg-red-500/10"
+                                                        onClick={() => handleDelete(product.id)}
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center text-muted-foreground py-8">
+                                    No products found matching your criteria.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto flex-1">
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5 text-left">

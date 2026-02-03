@@ -4,167 +4,317 @@ import { useState, useEffect } from "react"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
     Search,
     Download,
-    Filter,
-    MoreHorizontal,
     Mail,
     Ban,
-    UserCheck,
     Users,
+    DollarSign,
+    MapPin,
+    ShoppingBag
 } from "lucide-react"
-import { getCustomers, type Customer } from "@/lib/supabase-api"
+import { getOrders, type Customer } from "@/lib/supabase-api"
+import Link from "next/link"
 
 export default function CustomersPage() {
-    const [customers, setCustomers] = useState<Customer[]>([])
+    const [customers, setCustomers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
+    const [activeTab, setActiveTab] = useState("all") // all, top-spend
 
     useEffect(() => {
-        async function loadCustomers() {
-            setLoading(true)
-            const data = await getCustomers()
-            setCustomers(data)
-            setLoading(false)
-        }
-        loadCustomers()
+        loadGuestData()
     }, [])
 
-    const filteredCustomers = customers.filter(customer =>
-        customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    async function loadGuestData() {
+        setLoading(true)
+        // Fetch all guest orders (where customer_id is null)
+        const { data: orders } = await getOrders({ guest_only: true, limit: 1000 })
+
+        // Aggregate orders by email to create virtual customer profiles
+        const guestMap = new Map<string, any>()
+
+        orders.forEach((order: any) => {
+            const email = order.customer_email.toLowerCase().trim()
+
+            if (!guestMap.has(email)) {
+                guestMap.set(email, {
+                    id: `guest-${email}`, // Virtual ID
+                    name: order.customer_name,
+                    email: email,
+                    phone: order.customer_phone,
+                    city: order.city,
+                    total_spent: 0,
+                    total_orders: 0,
+                    last_order: order.order_number,
+                    created_at: order.created_at
+                })
+            }
+
+            const guest = guestMap.get(email)
+            guest.total_spent += order.total
+            guest.total_orders += 1
+            // Keep the most recent order number (assuming default sort is mostly time based or we accept the first seen if descending)
+            // If API returns desc, first seen is latest.
+        })
+
+        setCustomers(Array.from(guestMap.values()))
+        setLoading(false)
+    }
+
+    const filteredCustomers = customers
+        .filter(customer => {
+            const matchesSearch =
+                customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (customer.phone && customer.phone.includes(searchQuery)) ||
+                (customer.last_order && customer.last_order.toLowerCase().includes(searchQuery.toLowerCase()))
+
+            return matchesSearch
+        })
+        .sort((a, b) => {
+            if (activeTab === "top-spend") {
+                return (b.total_spent || 0) - (a.total_spent || 0)
+            }
+            return 0
+        })
+
+    const totalSpend = customers.reduce((acc, c) => acc + (c.total_spent || 0), 0)
 
     const stats = [
-        { label: "Total Customers", value: customers.length.toLocaleString(), icon: Users, color: "text-primary" },
-        { label: "Active Customers", value: customers.filter(c => c.status === 'active').length.toLocaleString(), icon: UserCheck, color: "text-green-500" },
+        { label: "Guest Database", value: customers.length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { label: "Total Guest Spend", value: `MAD ${totalSpend.toLocaleString()}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     ]
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden">
+        <div className="min-h-screen bg-background relative overflow-hidden font-sans">
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[120px]" />
+            </div>
+
             <AdminSidebar />
 
-            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10 transition-all duration-300">
-                {/* Header */}
-                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sticky top-4 z-40 glass-strong p-4 rounded-3xl border border-white/5 shadow-lg shadow-black/5">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                            <Users className="w-5 h-5 text-primary" />
+            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10">
+                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 glass-strong p-5 rounded-[2rem] border border-white/10 shadow-xl">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary rounded-2xl shadow-lg shadow-primary/20">
+                            <ShoppingBag className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Customers</h1>
-                            <p className="text-xs text-muted-foreground">Manage your customer base</p>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Guest Sales</h1>
+                            <p className="text-sm text-muted-foreground font-medium">Monitoring {customers.length} direct retail customers</p>
                         </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" className="rounded-full h-9 bg-background/50 border-white/10 hidden sm:flex">
-                            <Download className="w-4 h-4 mr-2" /> Export
-                        </Button>
                     </div>
                 </header>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     {stats.map((stat, i) => (
-                        <div key={i} className="glass-strong rounded-3xl p-6 relative overflow-hidden">
-                            <div className="flex justify-between items-start">
+                        <div key={i} className="glass-strong rounded-[2rem] p-6 border-white/5 relative overflow-hidden group hover:border-white/20 transition-all duration-300">
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color}`}>
+                                    <stat.icon className="w-6 h-6" />
+                                </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground font-medium mb-1">{stat.label}</p>
-                                    <h3 className="text-2xl font-bold text-foreground">{stat.value}</h3>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{stat.label}</p>
+                                    <h3 className="text-2xl font-black text-foreground">{stat.value}</h3>
                                 </div>
-                                <div className={`p-2 rounded-xl bg-white/5 ${stat.color}`}>
-                                    <stat.icon className="w-5 h-5" />
-                                </div>
+                            </div>
+                            <div className="absolute right-[-20px] bottom-[-20px] opacity-5 group-hover:opacity-10 transition-opacity">
+                                <stat.icon className="w-32 h-32" />
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Filters & Table */}
-                <div className="space-y-6">
-                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-background/40 backdrop-blur-md p-4 rounded-3xl border border-white/5">
-                        <div className="relative w-full sm:w-96">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search customers..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 rounded-full bg-white/5 border-white/10"
-                            />
-                        </div>
-                        <Button variant="outline" className="rounded-full h-10 bg-white/5 border-white/10">
-                            <Filter className="w-4 h-4 mr-2" /> Filters
-                        </Button>
+                <div className="flex flex-col xl:flex-row gap-4 items-center justify-between mb-8">
+                    <div className="flex p-1 bg-white/5 border border-white/5 rounded-2xl w-full xl:w-auto">
+                        {[
+                            { id: "all", label: "All Guests" },
+                            { id: "top-spend", label: "Top Spend" }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 xl:flex-none px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id
+                                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="glass-strong rounded-3xl overflow-hidden min-h-[500px]">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-white/10 bg-white/5 font-semibold text-muted-foreground uppercase tracking-wider text-[10px] sm:text-xs">
-                                        <th className="py-4 px-6">Customer</th>
-                                        <th className="py-4 px-6">Status</th>
-                                        <th className="py-4 px-6 hidden md:table-cell">Orders</th>
-                                        <th className="py-4 px-6 hidden lg:table-cell">Total Spent</th>
-                                        <th className="py-4 px-6 hidden xl:table-cell">Join Date</th>
-                                        <th className="py-4 px-6 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan={6} className="py-12 text-center text-muted-foreground animate-pulse">Loading customers...</td>
-                                        </tr>
-                                    ) : filteredCustomers.length > 0 ? (
-                                        filteredCustomers.map((customer) => (
-                                            <tr key={customer.id} className="group hover:bg-white/5 transition-colors">
-                                                <td className="py-4 px-6">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary font-bold">
-                                                            {customer.name.charAt(0)}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-semibold text-foreground text-sm sm:text-base">{customer.name}</p>
-                                                            <p className="text-xs text-muted-foreground">{customer.email}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 px-6">
-                                                    <Badge variant="outline" className={`rounded-full border-0 ${customer.status === 'active' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                        {customer.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="py-4 px-6 hidden md:table-cell text-sm">{customer.total_orders || 0}</td>
-                                                <td className="py-4 px-6 hidden lg:table-cell font-semibold">MAD {customer.total_spent?.toLocaleString() || 0}</td>
-                                                <td className="py-4 px-6 hidden xl:table-cell text-sm text-muted-foreground">
-                                                    {new Date(customer.created_at).toLocaleDateString()}
-                                                </td>
-                                                <td className="py-4 px-6 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
-                                                            <Mail className="w-4 h-4 text-muted-foreground" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-500/10 hover:text-red-500">
-                                                            <Ban className="w-4 h-4" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="icon" className="rounded-full">
-                                                            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={6} className="py-12 text-center text-muted-foreground">No customers found.</td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                    <div className="flex items-center gap-3 w-full xl:w-auto">
+                        <div className="relative flex-1 xl:w-[400px]">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search guests by name, email, phone or Order ID..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-primary transition-all"
+                            />
                         </div>
+                        <Button className="h-12 rounded-2xl px-6 gap-2 font-bold shadow-lg shadow-primary/20">
+                            <Download className="w-4 h-4" />
+                            Export CSV
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="glass-strong rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden mb-20">
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4 p-4">
+                        {loading ? (
+                            <div className="text-center py-20 animate-pulse text-muted-foreground font-bold">Initializing Guest Data...</div>
+                        ) : filteredCustomers.length > 0 ? (
+                            filteredCustomers.map((customer) => (
+                                <div key={customer.id} className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-6">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center text-purple-400 font-black text-lg border border-white/10 flex-shrink-0">
+                                            {customer.name && customer.name.length > 0 ? customer.name.charAt(0) : 'G'}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-foreground text-lg tracking-tight truncate">{customer.name || 'Guest User'}</p>
+                                            <div className="flex flex-col gap-1.5 mt-2">
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium truncate">
+                                                    <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                                                    <span className="truncate">{customer.email}</span>
+                                                </div>
+                                                {customer.phone && (
+                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                                                        <span className="w-3.5 h-3.5 flex items-center justify-center font-mono flex-shrink-0">#</span>
+                                                        {customer.phone}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                        <div>
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Spend</p>
+                                            <p className="font-black text-sm text-foreground">MAD {(customer.total_spent || 0).toLocaleString()}</p>
+                                            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{customer.total_orders || 0} Orders</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Last Order</p>
+                                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-mono font-bold inline-block border border-primary/20">
+                                                {customer.last_order || 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2">
+                                        <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                                            <MapPin className="w-3.5 h-3.5 text-primary/60" />
+                                            {customer.city || "Unknown"}
+                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-xl">
+                                            <Ban className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-20 text-muted-foreground">No guests found</div>
+                        )}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-white/5 bg-white/5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                                    <th className="py-6 px-8">Customer Identity</th>
+                                    <th className="py-6 px-6">Performance</th>
+                                    <th className="py-6 px-6">Last Order</th>
+                                    <th className="py-6 px-6">Location</th>
+                                    <th className="py-6 px-8 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="py-20 text-center text-muted-foreground animate-pulse font-bold">Initalizing Guest Data...</td>
+                                    </tr>
+                                ) : filteredCustomers.length > 0 ? (
+                                    filteredCustomers.map((customer) => (
+                                        <tr key={customer.id} className="group hover:bg-white/[0.02] transition-colors">
+                                            <td className="py-6 px-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center text-purple-400 font-black text-lg border border-white/10 shadow-inner">
+                                                        {customer.name && customer.name.length > 0 ? customer.name.charAt(0) : 'G'}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-foreground text-base tracking-tight">{customer.name || 'Guest User'}</p>
+                                                        <div className="flex flex-col gap-1 mt-1">
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                                                                <Mail className="w-3 h-3" />
+                                                                {customer.email}
+                                                            </div>
+                                                            {customer.phone && (
+                                                                <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                                                                    <span className="w-3 h-3 flex items-center justify-center font-mono">#</span>
+                                                                    {customer.phone}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-6 px-6">
+                                                <div className="flex gap-6">
+                                                    <div className={activeTab === 'top-spend' ? 'scale-110 transition-transform origin-left' : ''}>
+                                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Spend</p>
+                                                        <p className={`font-black text-sm ${activeTab === 'top-spend' ? 'text-primary' : 'text-foreground'}`}>
+                                                            MAD {(customer.total_spent || 0).toLocaleString()}
+                                                        </p>
+                                                        <p className="text-[10px] font-medium text-muted-foreground mt-1">
+                                                            {customer.total_orders || 0} Orders
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-6 px-6">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg font-mono text-xs font-bold border border-primary/20">
+                                                        {customer.last_order || 'N/A'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="py-6 px-6">
+                                                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                                                    <MapPin className="w-4 h-4 text-primary/60" />
+                                                    {customer.city || "Unknown"}
+                                                </div>
+                                            </td>
+                                            <td className="py-6 px-8 text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl group-hover:bg-red-500/10 hover:text-red-500">
+                                                        <Ban className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={5} className="py-40 text-center">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="p-6 bg-white/5 rounded-full text-muted-foreground/20">
+                                                    <Users className="w-16 h-16" />
+                                                </div>
+                                                <h3 className="text-xl font-bold text-foreground">No Guests Found</h3>
+                                                <p className="text-muted-foreground max-w-xs text-center">There are no guest customers matching your filters yet.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </main>

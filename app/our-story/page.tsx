@@ -15,20 +15,20 @@ export default function OurStoryPage() {
       {/* Top Bar */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>{isArabic ? "العودة إلى الصفحة الرئيسية" : "Back to Home"}</span>
-            </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>{isArabic ? "العودة إلى الصفحة الرئيسية" : "Back to Home"}</span>
+          </Link>
           <Link href="/" className="flex-shrink-0 relative group">
             <Image
               src="/logo.webp"
-              alt="Diar Argan"
-              width={120}
-              height={60}
-              className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+              alt="Dedali Store"
+              width={142}
+              height={40}
+              className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
         </div>
@@ -41,7 +41,7 @@ export default function OurStoryPage() {
           <div className="absolute bottom-0 right-0 w-80 h-80 bg-amber-200/30 rounded-full blur-3xl" />
         </div>
 
-          <div className="container mx-auto px-4 py-16 sm:py-24 relative z-10 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="container mx-auto px-4 py-16 sm:py-24 relative z-10 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div className={`space-y-6 ${isArabic ? "text-right" : ""}`}>
             <p className="text-xs font-semibold tracking-[0.35em] uppercase text-primary/80">
               {isArabic ? "منذ 1999 • خبرة في زيت الأرجان المغربي" : "Since 1999 • Moroccan Argan Expertise"}
@@ -49,18 +49,18 @@ export default function OurStoryPage() {
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
               {isArabic ? (
                 <>
-                  حكايتنا في <span className="text-primary">ديار أرجان</span>
+                  حكايتنا في <span className="text-primary">ديدالي</span>
                 </>
               ) : (
                 <>
-                  Our Story at <span className="text-primary">Diar Argan</span>
+                  Our Story at <span className="text-primary">Dedali</span>
                 </>
               )}
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               {isArabic
-                ? "ديار أرجان تصدّر زيت الأرجان المغربي النقي منذ عام 1999. لأكثر من عشرين عامًا، عملنا جنبًا إلى جنب مع التعاونيات والحرفيين المحليين لنحوّل هذا الزيت النادر إلى طقوس عناية فاخرة للبشرة والشعر."
-                : "Diar Argan has been exporting pure Moroccan argan oil since 1999. For more than two decades, we have worked hand in hand with local cooperatives and artisans to transform this rare oil into high‑performance skincare and haircare rituals."}
+                ? "ديدالي تصدّر زيت الأرجان المغربي النقي منذ عام 1999. لأكثر من عشرين عامًا، عملنا جنبًا إلى جنب مع التعاونيات والحرفيين المحليين لنحوّل هذا الزيت النادر إلى طقوس عناية فاخرة للبشرة والشعر."
+                : "Dedali has been exporting pure Moroccan argan oil since 1999. For more than two decades, we have worked hand in hand with local cooperatives and artisans to transform this rare oil into high‑performance skincare and haircare rituals."}
             </p>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -80,8 +80,8 @@ export default function OurStoryPage() {
             <div className={`mt-4 space-y-2 ${isArabic ? "text-right" : ""}`}>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {isArabic
-                  ? "ديار أرجان حاصلة على عدة شهادات للجودة والنقاء من جهات رقابية دولية وإقليمية، تؤكد مصدر زيتنا وطريقة استخلاصه."
-                  : "Diar Argan holds multiple quality and purity certifications from international and regional bodies, confirming the origin of our oil and our extraction methods."}
+                  ? "ديدالي حاصلة على عدة شهادات للجودة والنقاء من جهات رقابية دولية وإقليمية، تؤكد مصدر زيتنا وطريقة استخلاصه."
+                  : "Dedali holds multiple quality and purity certifications from international and regional bodies, confirming the origin of our oil and our extraction methods."}
               </p>
               <div className="flex flex-wrap items-center gap-4 opacity-80">
                 <div className="relative w-14 h-14 sm:w-16 sm:h-16">
@@ -168,8 +168,8 @@ export default function OurStoryPage() {
               </h2>
               <p className="text-muted-foreground leading-relaxed">
                 {isArabic
-                  ? "منذ عام 1999، تكرّس ديار أرجان لمشاركة أسرار الجمال المغربي مع العالم. ما بدأ كشغف بزيت الأرجان النقي تحوّل إلى مجموعة كاملة من منتجات العناية التي تحترم بشرتك والأرض التي تأتي منها."
-                  : "Since 1999, Diar Argan has been dedicated to sharing the secrets of Moroccan beauty with the world. What started as a passion for pure argan oil has grown into a full range of care products that respect both your skin and the land they come from."}
+                  ? "منذ عام 1999، تكرّس ديدالي لمشاركة أسرار الجمال المغربي مع العالم. ما بدأ كشغف بزيت الأرجان النقي تحوّل إلى مجموعة كاملة من منتجات العناية التي تحترم بشرتك والأرض التي تأتي منها."
+                  : "Since 1999, Dedali has been dedicated to sharing the secrets of Moroccan beauty with the world. What started as a passion for pure argan oil has grown into a full range of care products that respect both your skin and the land they come from."}
               </p>
             </div>
             <div className={`space-y-4 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
@@ -193,17 +193,17 @@ export default function OurStoryPage() {
                 {isArabic ? "الآن في السوق المصري" : "Now in Egypt"}
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                {isArabic ? "ديار أرجان تصل إلى السوق المصري" : "Diar Argan arrives in the Egyptian market"}
+                {isArabic ? "ديدالي تصل إلى السوق المصري" : "Dedali arrives in the Egyptian market"}
               </h2>
               <p className="text-muted-foreground leading-relaxed">
                 {isArabic
-                  ? "بعد سنوات من خدمة العملاء حول العالم، أصبحت ديار أرجان اليوم حاضرة في مصر. تظل رسالتنا واحدة: أن نقدّم لك عناية مغربية أصيلة بزيت الأرجان، تناسب روتينك اليومي وطبيعة المناخ من حولك."
-                  : "After years of serving customers around the world, Diar Argan is now present in Egypt. Our mission remains the same: to offer you authentic Moroccan argan care, adapted to your daily rituals and climate."}
+                  ? "بعد سنوات من خدمة العملاء حول العالم، أصبحت ديدالي اليوم حاضرة في مصر. تظل رسالتنا واحدة: أن نقدّم لك عناية مغربية أصيلة بزيت الأرجان، تناسب روتينك اليومي وطبيعة المناخ من حولك."
+                  : "After years of serving customers around the world, Dedali is now present in Egypt. Our mission remains the same: to offer you authentic Moroccan argan care, adapted to your daily rituals and climate."}
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 {isArabic
-                  ? "من القاهرة إلى الإسكندرية وما بعدها، نلتزم بتقديم منتجات أرجان عالية الجودة، حتى تعيشي نفس تجربة الفخامة والنتائج الموثوقة التي صنعت اسم ديار أرجان منذ 1999."
-                  : "From Cairo to Alexandria and beyond, we are committed to making premium argan‑based products accessible, so you can experience the same luxurious textures and results that made Diar Argan a trusted name since 1999."}
+                  ? "من القاهرة إلى الإسكندرية وما بعدها، نلتزم بتقديم منتجات أرجان عالية الجودة، حتى تعيشي نفس تجربة الفخامة والنتائج الموثوقة التي صنعت اسم ديدالي منذ 1999."
+                  : "From Cairo to Alexandria and beyond, we are committed to making premium argan‑based products accessible, so you can experience the same luxurious textures and results that made Dedali a trusted name since 1999."}
               </p>
             </div>
             <div className={`glass-subtle rounded-3xl p-6 space-y-3 text-sm sm:text-base ${isArabic ? "text-right" : ""}`}>
@@ -236,7 +236,7 @@ export default function OurStoryPage() {
       <section className="py-16 sm:py-20 bg-secondary/5 border-t border-border/40">
         <div className={`container mx-auto px-4 max-w-3xl text-center space-y-6 ${isArabic ? "rtl" : ""}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-            {isArabic ? "عيشي طقس العناية مع ديار أرجان" : "Experience the Diar Argan ritual"}
+            {isArabic ? "عيشي طقس العناية مع ديدالي" : "Experience the Dedali ritual"}
           </h2>
           <p className="text-muted-foreground leading-relaxed">
             {isArabic

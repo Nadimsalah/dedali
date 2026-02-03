@@ -51,7 +51,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [items, isInitialized])
 
-    const addItem = (newItem: CartItem) => {
+    const addItem = React.useCallback((newItem: CartItem) => {
         setItems((currentItems) => {
             const existingItemIndex = currentItems.findIndex(
                 (item) => item.id === newItem.id && item.size === newItem.size
@@ -71,43 +71,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 return [...currentItems, newItem]
             }
         })
-    }
+    }, [])
 
-    const removeItem = (id: string, size?: string) => {
+    const removeItem = React.useCallback((id: string, size?: string) => {
         setItems((currentItems) =>
             currentItems.filter((item) => !(item.id === id && item.size === size))
         )
         toast.info("Item removed from cart")
-    }
+    }, [])
 
-    const updateQuantity = (id: string, quantity: number, size?: string) => {
+    const updateQuantity = React.useCallback((id: string, quantity: number, size?: string) => {
         if (quantity < 1) return
         setItems((currentItems) =>
             currentItems.map((item) =>
                 item.id === id && item.size === size ? { ...item, quantity } : item
             )
         )
-    }
+    }, [])
 
-    const clearCart = () => {
+    const clearCart = React.useCallback(() => {
         setItems([])
         localStorage.removeItem("cart")
-    }
+    }, [])
 
     const cartCount = items.reduce((total, item) => total + item.quantity, 0)
 
+    const contextValue = React.useMemo(() => ({
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        cartCount,
+        isInitialized,
+    }), [items, addItem, removeItem, updateQuantity, clearCart, cartCount, isInitialized])
+
     return (
-        <CartContext.Provider
-            value={{
-                items,
-                addItem,
-                removeItem,
-                updateQuantity,
-                clearCart,
-                cartCount,
-                isInitialized,
-            }}
-        >
+        <CartContext.Provider value={contextValue}>
             {children}
         </CartContext.Provider>
     )

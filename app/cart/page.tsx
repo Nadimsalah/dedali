@@ -111,8 +111,8 @@ export default function CartPage() {
                 src="/logo.png"
                 alt="Dedali Store"
                 width={120}
-                height={60}
-                className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
+                height={34}
+                className="h-8 sm:h-10 w-auto transition-transform duration-300 group-hover:scale-105"
               />
             </Link>
 
@@ -367,9 +367,9 @@ export default function CartPage() {
                 <Image
                   src="/logo.png"
                   alt="Dedali Store"
-                  width={200}
-                  height={100}
-                  className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                  width={142}
+                  height={40}
+                  className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
                 />
               </Link>
               <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm text-left">

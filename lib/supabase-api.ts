@@ -422,6 +422,8 @@ export async function getRelatedProducts(productId: string, limit = 4) {
 // Orders API
 export async function getOrders(filters?: {
     status?: string
+    customer_id?: string
+    guest_only?: boolean
     limit?: number
     offset?: number
 }) {
@@ -432,6 +434,14 @@ export async function getOrders(filters?: {
 
     if (filters?.status) {
         query = query.eq('status', filters.status)
+    }
+
+    if (filters?.customer_id) {
+        query = query.eq('customer_id', filters.customer_id)
+    }
+
+    if (filters?.guest_only) {
+        query = query.is('customer_id', null)
     }
 
     if (filters?.limit) {
@@ -500,6 +510,7 @@ export async function createOrder(data: {
         product_id: string
         product_title: string
         product_sku: string
+        product_image: string | null
         quantity: number
         price: number
         subtotal: number
@@ -519,27 +530,42 @@ export async function createOrder(data: {
             .from('customers')
             .select('*')
             .eq('id', data.customerId)
-            .single()
+            .maybeSingle()
 
         customer = existingCustomer;
     }
 
     if (!customer) {
-        // Fallback to email-based upsert (for guests or missing records)
-        const { data: upsertedCustomer, error: customerError } = await supabase
+        // Fallback to email-based check (for guests or missing records)
+        const normalizedEmail = data.customer.email.toLowerCase().trim();
+        const { data: emailCustomer } = await supabase
             .from('customers')
-            .upsert({
-                name: data.customer.name,
-                email: data.customer.email,
-                phone: data.customer.phone
-            }, { onConflict: 'email' })
-            .select()
-            .single()
+            .select('*')
+            .eq('email', normalizedEmail)
+            .maybeSingle()
 
-        if (customerError) {
-            console.error('Error with customer record:', customerError)
+        if (emailCustomer) {
+            customer = emailCustomer;
+        } else {
+            const { data: newCustomer, error: customerError } = await supabase
+                .from('customers')
+                .insert({
+                    name: data.customer.name,
+                    email: normalizedEmail,
+                    phone: data.customer.phone,
+                    role: 'customer',
+                    status: 'active',
+                    total_orders: 0,
+                    total_spent: 0
+                })
+                .select()
+                .maybeSingle()
+
+            if (customerError) {
+                console.error('Error with customer record:', customerError)
+            }
+            customer = newCustomer;
         }
-        customer = upsertedCustomer;
     }
 
     // 2. Insert order
@@ -586,28 +612,23 @@ export async function createOrder(data: {
 
     // 4. Update customer stats
     if (customer?.id) {
-        const { error: statsError } = await supabase.rpc('increment_customer_stats', {
-            customer_id: customer.id,
-            amount: data.total
-        })
+        // We do a direct update instead of RPC to be more reliable across environments
+        const { data: currentStats } = await supabase
+            .from('customers')
+            .select('total_orders, total_spent')
+            .eq('id', customer.id)
+            .maybeSingle()
 
-        if (statsError) {
-            // Fallback if RPC doesn't exist
-            const { data: currentStats } = await supabase
+        if (currentStats) {
+            await supabase
                 .from('customers')
-                .select('total_orders, total_spent')
+                .update({
+                    total_orders: (currentStats.total_orders || 0) + 1,
+                    total_spent: Number(currentStats.total_spent || 0) + data.total,
+                    name: data.customer.name, // In case they used a different name this time
+                    phone: data.customer.phone
+                })
                 .eq('id', customer.id)
-                .single()
-
-            if (currentStats) {
-                await supabase
-                    .from('customers')
-                    .update({
-                        total_orders: (currentStats.total_orders || 0) + 1,
-                        total_spent: Number(currentStats.total_spent || 0) + data.total
-                    })
-                    .eq('id', customer.id)
-            }
         }
     }
 
@@ -631,6 +652,7 @@ export async function updateOrderStatus(orderId: string, status: string) {
 }
 export async function getCustomers(filters?: {
     status?: string
+    role?: string
     limit?: number
     offset?: number
 }) {
@@ -641,6 +663,17 @@ export async function getCustomers(filters?: {
 
     if (filters?.status) {
         query = query.eq('status', filters.status)
+    }
+
+    if (filters?.role) {
+        if (filters.role === 'customer') {
+            // Explicitly getting guests: Role is 'customer' OR NULL, AND NOT 'reseller' or 'admin' just to be safe
+            query = query.or('role.eq.customer,role.is.null')
+            query = query.neq('role', 'reseller')
+            query = query.neq('role', 'admin')
+        } else {
+            query = query.eq('role', filters.role)
+        }
     }
 
     if (filters?.limit) {
@@ -659,6 +692,37 @@ export async function getCustomers(filters?: {
     }
 
     return data as Customer[]
+}
+
+export async function getCustomerById(id: string) {
+    const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+    if (error) {
+        console.error('Error fetching customer:', error)
+        return null
+    }
+
+    return data as Customer
+}
+
+export async function updateCustomerStatus(customerId: string, status: string) {
+    const { data, error } = await supabase
+        .from('customers')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', customerId)
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error updating customer status:', error)
+        return null
+    }
+
+    return data as Customer
 }
 
 export async function getCurrentUserRole(): Promise<string | null> {
@@ -687,12 +751,22 @@ export async function getDashboardStats() {
     const completedOrders = orders?.filter(o => o.status === 'delivered').length || 0
     const pendingOrders = orders?.filter(o => o.status === 'pending' || o.status === 'processing').length || 0
 
-    // Get total customers
+    // Get total resellers
+    const { count: resellerCount } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'reseller')
+
+    // Get total customers (non-resellers - assuming 'customer' role means guest/standard)
+    // We include null roles to catch legacy guest records
     const { count: customerCount } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true })
+        .or('role.eq.customer,role.is.null')
+        .neq('role', 'reseller')
+        .neq('role', 'admin')
 
-    // Get total products
+    // Get total products (optional now but keeping for internal use if needed)
     const { count: productCount } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
@@ -702,6 +776,7 @@ export async function getDashboardStats() {
         totalOrders: orders?.length || 0,
         completedOrders,
         pendingOrders,
+        totalResellers: resellerCount || 0,
         totalCustomers: customerCount || 0,
         totalProducts: productCount || 0
     }

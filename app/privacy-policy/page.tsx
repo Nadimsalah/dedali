@@ -27,13 +27,13 @@ export default function PrivacyPolicyPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الخصوصية لديار أرجان – مصر" : "Diar Argan Egypt – Privacy Policy"}
+          {isArabic ? "سياسة الخصوصية لديدالي – مصر" : "Dedali Egypt – Privacy Policy"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
-              ? "هذه السياسة تشرح كيفية قيام ديار أرجان مصر بجمع واستخدام وحماية بياناتك الشخصية وفقًا لأحكام قانون حماية البيانات الشخصية المصري رقم 151 لسنة 2020 واللوائح ذات الصلة."
-              : "This policy explains how Diar Argan Egypt collects, uses, and protects your personal data in accordance with Egyptian Personal Data Protection Law No. 151 of 2020 and applicable regulations."}
+              ? "هذه السياسة تشرح كيفية قيام ديدالي مصر بجمع واستخدام وحماية بياناتك الشخصية وفقًا لأحكام قانون حماية البيانات الشخصية المصري رقم 151 لسنة 2020 واللوائح ذات الصلة."
+              : "This policy explains how Dedali Egypt collects, uses, and protects your personal data in accordance with Egyptian Personal Data Protection Law No. 151 of 2020 and applicable regulations."}
           </p>
 
           <h2 className="font-semibold text-foreground">

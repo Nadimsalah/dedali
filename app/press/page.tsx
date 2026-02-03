@@ -33,10 +33,10 @@ export default function PressPage() {
           <Link href="/" className="flex-shrink-0 relative group">
             <Image
               src="/logo.webp"
-              alt="Diar Argan"
-              width={120}
-              height={60}
-              className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+              alt="Dedali Store"
+              width={142}
+              height={40}
+              className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
         </div>
@@ -55,12 +55,12 @@ export default function PressPage() {
               {isArabic ? "في الإعلام" : "In the Press"}
             </p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-              {isArabic ? "ديار أرجان في الصحافة العالمية" : "Diar Argan in the international press"}
+              {isArabic ? "ديدالي في الصحافة العالمية" : "Dedali in the international press"}
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               {isArabic
-                ? "على مدار أكثر من 20 عامًا، ظهرت ديار أرجان في مجلات وصحف عالمية كمرجع في زيت الأرجان المغربي ومنتجات العناية الطبيعية."
-                : "For more than 20 years, Diar Argan has been featured in international magazines and newspapers as a reference for Moroccan argan oil and natural beauty rituals."}
+                ? "على مدار أكثر من 20 عامًا، ظهرت ديدالي في مجلات وصحف عالمية كمرجع في زيت الأرجان المغربي ومنتجات العناية الطبيعية."
+                : "For more than 20 years, Dedali has been featured in international magazines and newspapers as a reference for Moroccan argan oil and natural beauty rituals."}
             </p>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -98,15 +98,15 @@ export default function PressPage() {
                   openLightbox(
                     "/press-2.jpg",
                     isArabic
-                      ? "صفحة مجلة تعرض منتجات ديار أرجان"
-                      : "Magazine spread showcasing Diar Argan products",
+                      ? "صفحة مجلة تعرض منتجات ديدالي"
+                      : "Magazine spread showcasing Dedali products",
                   )
                 }
                 className="block relative aspect-square rounded-3xl overflow-hidden shadow-xl shadow-black/10 focus:outline-none"
               >
                 <img
                   src="/press-2.jpg"
-                  alt={isArabic ? "صفحة مجلة تعرض منتجات ديار أرجان" : "Magazine spread showcasing Diar Argan products"}
+                  alt={isArabic ? "صفحة مجلة تعرض منتجات ديدالي" : "Magazine spread showcasing Dedali products"}
                   className="w-full h-full object-cover cursor-zoom-in"
                 />
               </button>
@@ -142,8 +142,8 @@ export default function PressPage() {
             </h2>
             <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
               {isArabic
-                ? "التغطية الصحفية التي حصلت عليها ديار أرجان في مجلات الجمال والصحة حول العالم تؤكد التزامنا بالجودة، الأصالة، والنتائج الملموسة."
-                : "The press coverage Diar Argan has received in beauty and health magazines around the world underlines our commitment to quality, authenticity, and visible results."}
+                ? "التغطية الصحفية التي حصلت عليها ديدالي في مجلات الجمال والصحة حول العالم تؤكد التزامنا بالجودة، الأصالة، والنتائج الملموسة."
+                : "The press coverage Dedali has received in beauty and health magazines around the world underlines our commitment to quality, authenticity, and visible results."}
             </p>
           </div>
 
@@ -155,8 +155,8 @@ export default function PressPage() {
               </h3>
               <p>
                 {isArabic
-                  ? "توصي العديد من المقالات بمنتجات ديار أرجان ضمن روتين العناية اليومية، خاصة زيت الأرجان الذي يقدَّم كعنصر أساسي للبشرة والشعر."
-                  : "Many feature stories recommend Diar Argan products as part of a daily routine, with our argan oil often presented as an essential step for skin and hair."}
+                  ? "توصي العديد من المقالات بمنتجات ديدالي ضمن روتين العناية اليومية، خاصة زيت الأرجان الذي يقدَّم كعنصر أساسي للبشرة والشعر."
+                  : "Many feature stories recommend Dedali products as part of a daily routine, with our argan oil often presented as an essential step for skin and hair."}
               </p>
             </div>
             <div className="space-y-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
@@ -182,8 +182,8 @@ export default function PressPage() {
           </h2>
           <p className="text-muted-foreground leading-relaxed">
             {isArabic
-              ? "تسوقي منتجات ديار أرجان المميزة وجربي بنفسك جودة زيت الأرجان المغربي التي لفتت أنظار الصحافة الدولية."
-              : "Explore Diar Argan&apos;s signature products and experience the Moroccan argan oil quality that has caught the attention of international press."}
+              ? "تسوقي منتجات ديدالي المميزة وجربي بنفسك جودة زيت الأرجان المغربي التي لفتت أنظار الصحافة الدولية."
+              : "Explore Dedali&apos;s signature products and experience the Moroccan argan oil quality that has caught the attention of international press."}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="rounded-full shadow-lg shadow-primary/25">

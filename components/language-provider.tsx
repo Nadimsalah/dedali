@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 
-type Language = "en" | "ar"
+type Language = "en" | "ar" | "fr"
 type Direction = "ltr" | "rtl"
 
 interface LanguageContextType {
@@ -401,13 +401,205 @@ const translations = {
 
         // Accessibility
         "accessibility.go_to_slide": "اذهب للشريحة",
+    },
+    fr: {
+        "common.currency": "MAD",
+        // Navigation
+        "nav.shop": "Boutique",
+        "nav.collections": "Collections",
+        "nav.about": "À propos",
+        "nav.faq": "FAQ",
+        "nav.search": "Rechercher",
+        "nav.shop_now": "Acheter",
+        "nav.view_all_collections": "Voir toutes les collections",
+
+        // Header Popups
+        "header.categories": "Catégories",
+        "header.browse_by_category": "Parcourir par catégorie",
+        "header.face_care": "Ordinateurs & Portables",
+        "header.face_care_desc": "Stations de travail haute performance",
+        "header.hair_care": "Serveurs & Stockage",
+        "header.hair_care_desc": "Solutions pour entreprises",
+        "header.body_care": "Imprimantes & Scanners",
+        "header.body_care_desc": "Impression professionnelle",
+        "header.gift_sets": "Composants",
+        "header.gift_sets_desc": "Processeurs, RAM & plus",
+        "header.new_arrival": "Nouveautés",
+        "header.argan_elixir": "Gaming",
+        "header.argan_elixir_desc": "Performance ultime pour gamers",
+        "header.signature": "Entreprise",
+        "header.essentials": "Bureau",
+        "header.premium": "Gaming",
+
+        // Hero
+        "hero.title_prefix": "Dedali",
+        "hero.title_suffix": "Store",
+        "hero.subtitle": "Leader de la distribution informatique au Maroc. Grossiste en PC, serveurs, imprimantes et plus.",
+        "hero.shop_collection": "Parcourir les produits",
+        "hero.explore_best_sellers": "Voir les meilleures ventes",
+        "hero.fast_delivery": "Livraison Rapide",
+        "hero.secure_checkout": "Paiement Sécurisé",
+        "hero.easy_returns": "Garantie Officielle",
+        "hero.pure_argan_oil": "Produits Authentiques",
+        "hero.cold_pressed": "Meilleurs Prix",
+
+        // Sections
+        "section.featured_collections": "Départements Vedettes",
+        "section.featured_desc": "Découvrez notre large gamme d'équipements informatiques",
+        "section.best_sellers": "Catégories",
+        "section.best_sellers_desc": "Afficher toutes nos catégories ici",
+        "section.all_categories": "Tout",
+        "section.view_all_products": "Voir tous les produits",
+        "section.load_more": "Charger plus",
+        "section.why_choose": "Pourquoi choisir Dedali Store ?",
+        "section.organic": "100% Authentique",
+        "section.organic_desc": "Produits authentiques des grandes marques",
+        "section.award_winning": "Leader du marché",
+        "section.award_winning_desc": "Plus de 20 ans d'expérience",
+        "section.cruelty_free": "Garantie Complète",
+        "section.cruelty_free_desc": "Garantie constructeur officielle",
+        "section.handcrafted": "Support Expert",
+        "section.handcrafted_desc": "Conseils techniques par des pros",
+        "section.limited_offer": "Offre Limitée",
+        "section.promo_title": "25% de remise sur votre 1ère commande",
+        "section.promo_desc": "Profitez de la meilleure offre pour votre première commande. Utilisez le code WELCOME25.",
+        "section.get_offer": "Profiter de l'offre",
+        "section.hurry_up": "Dépêchez-vous !",
+        "section.view_collection": "Voir la collection",
+
+        // Newsletter
+        "newsletter.title": "Restez informé",
+        "newsletter.desc": "Abonnez-vous pour des offres exclusives et les nouveaux lancements de produits.",
+        "newsletter.placeholder": "Entrez votre email",
+        "newsletter.subscribe": "S'abonner",
+        "newsletter.disclaimer": "En vous abonnant, vous acceptez notre politique de confidentialité. Désinscription à tout moment.",
+
+        // WhatsApp
+        "whatsapp.title": "Restez connecté sur WhatsApp",
+        "whatsapp.desc": "Rejoignez notre liste VIP pour des remises exclusives et un accès prioritaire aux nouveautés.",
+        "whatsapp.placeholder": "Numéro de téléphone",
+        "whatsapp.button": "Rejoindre maintenant",
+        "whatsapp.success_title": "Vous êtes sur la liste !",
+        "whatsapp.success_desc": "Merci de votre inscription. Un cadeau de bienvenue vous a été envoyé.",
+        "whatsapp.disclaimer": "En rejoignant, vous acceptez de recevoir des messages marketing sur WhatsApp.",
+        "whatsapp.register_another": "Inscrire un autre numéro",
+        "whatsapp.verified_updates": "Mises à jour vérifiées",
+        "whatsapp.processing": "Traitement...",
+
+        // Footer
+        "footer.company": "Entreprise",
+        "footer.support": "Support",
+        "footer.legal": "Légal",
+        "footer.our_story": "Notre histoire",
+        "footer.sustainability": "Durabilité",
+        "footer.press": "Presse",
+        "footer.careers": "Carrières",
+        "footer.contact_us": "Contactez-nous",
+        "footer.shipping_info": "Livraison",
+        "footer.track_order": "Suivre ma commande",
+        "footer.privacy_policy": "Politique de confidentialité",
+        "footer.terms": "Conditions d'utilisation",
+        "footer.refund_policy": "Politique de remboursement",
+        "footer.cookies": "Cookies",
+        "footer.rights": "Tous droits réservés.",
+        "footer.about_desc": "Dedali Store - Votre partenaire de confiance pour le matériel et les solutions informatiques au Maroc.",
+        "footer.privacy_short": "Confidentialité",
+        "footer.terms_short": "Conditions",
+        "footer.system_status": "Système Opérationnel",
+
+        // Product & Cart
+        "product.add_to_cart": "Ajouter au panier",
+        "product.reviews": "avis",
+        "product.in_stock": "En Stock",
+        "product.out_of_stock": "Rupture de stock",
+        "product.select_size": "Choisir la taille",
+        "product.quantity": "Quantité",
+        "product.features": "Caractéristiques Clés",
+        "product.specifications": "Spécifications Techniques",
+        "product.warranty": "Garantie & Support",
+        "product.you_may_also_like": "Vous aimerez aussi",
+        "cart.your_cart_empty": "Votre panier est vide",
+        "cart.empty_desc": "Il semblerait que vous n'ayez rien ajouté à votre panier pour le moment.",
+        "cart.start_shopping": "Commencer vos achats",
+        "cart.shopping_cart": "Panier",
+        "cart.items": "articles",
+        "cart.order_summary": "Résumé de la commande",
+        "cart.subtotal": "Sous-total",
+        "cart.shipping": "Livraison",
+        "cart.free": "Gratuit",
+        "cart.total": "Total",
+        "cart.proceed_checkout": "Passer à la caisse",
+        "cart.promo_code": "Code Promo",
+        "cart.apply": "Appliquer",
+        "cart.applied": "Appliqué",
+        "cart.enter_code": "Entrer le code",
+        "cart.discount_applied": "Remise appliquée !",
+        "cart.add_more_shipping": "Ajoutez plus pour la livraison gratuite",
+        "cart.continue_shopping": "Continuer vos achats",
+        "cart.trust.shipping": "Livraison Gratuite > 750 MAD",
+        "cart.trust.secure": "Paiement Sécurisé",
+        "cart.trust.returns": "Retours sous 30 jours",
+
+        // FAQ
+        "faq.title": "Questions Fréquentes",
+        "faq.subtitle": "Tout ce que vous devez savoir sur nos produits",
+        "faq.q1": "Quels types de produits vendez-vous ?",
+        "faq.a1": "Nous sommes un distributeur grossiste d'équipements informatiques, incluant PC, serveurs, imprimantes et réseaux.",
+        "faq.q2": "Offrez-vous une garantie ?",
+        "faq.a2": "Oui, tous nos produits sont couverts par la garantie officielle du fabricant.",
+        "faq.q3": "Vendez-vous aux particuliers ?",
+        "faq.a3": "Nous servons principalement les entreprises et revendeurs, mais vendons aussi aux particuliers.",
+        "faq.q4": "Où êtes-vous situés ?",
+        "faq.a4": "Nous sommes basés au Maroc et servons des clients dans tout le royaume.",
+        "faq.q5": "Comment obtenir un devis ?",
+        "faq.a5": "Vous pouvez demander un devis via notre site web ou contacter notre équipe commerciale.",
+        "faq.q6": "Fournissez-vous un support technique ?",
+        "faq.a6": "Oui, notre équipe d'experts peut vous assister pour vos questions techniques et la conception de solutions.",
+
+        // Checkout
+        "checkout.title": "Paiement",
+        "checkout.contact_info": "Informations de contact",
+        "checkout.full_name": "Nom complet",
+        "checkout.phone": "Numéro de téléphone",
+        "checkout.email": "Email (Optionnel)",
+        "checkout.city": "Ville",
+        "checkout.address": "Adresse",
+        "checkout.pay": "Payer",
+        "checkout.processing": "Traitement...",
+        "checkout.success_title": "Commande Confirmée !",
+        "checkout.continue_shopping": "Continuer vos achats",
+        "checkout.cancel_title": "Paiement Annulé",
+        "checkout.cancel_desc": "Votre paiement a été annulé. Aucun débit n'a été effectué.",
+        "checkout.return_cart": "Retour au panier",
+        "checkout.retry": "Réessayer",
+        "validation.required": "Ce champ est requis",
+        "validation.phone": "Veuillez entrer un numéro valide (min 10 car.)",
+        "validation.email": "Veuillez entrer un email valide",
+
+        // Success Page
+        "success.thank_you": "Merci",
+        "success.order_confirmed": "Votre commande est confirmée",
+        "checkout.success_desc": "Nous avons bien reçu votre commande. Nous vous appellerons bientôt pour confirmer.",
+        "success.coupon_title": "Un cadeau pour vous",
+        "success.coupon_desc": "Utilisez ce code pour 20% de réduction sur votre prochain achat",
+        "success.order_summary": "Résumé de la commande",
+
+        // Timer
+        "timer.days": "Jours",
+        "timer.hours": "Heures",
+        "timer.minutes": "Min",
+        "timer.seconds": "Sec",
+        "timer.loading": "Chargement...",
+
+        // Accessibility
+        "accessibility.go_to_slide": "Aller à la diapositive",
     }
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-    const [language, setLanguage] = useState<Language>("en")
+    const [language, setLanguage] = useState<Language>("fr")
 
     useEffect(() => {
         // Check localStorage or browser preference on mount
@@ -431,7 +623,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
 
     const toggleLanguage = () => {
-        setLanguage(prev => prev === "en" ? "ar" : "en")
+        setLanguage(prev => {
+            if (prev === 'fr') return 'en'
+            if (prev === 'en') return 'ar'
+            return 'fr'
+        })
     }
 
     return (

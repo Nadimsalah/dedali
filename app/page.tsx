@@ -320,7 +320,7 @@ function HeroCarousel({ products }: { products: Product[] }) {
 export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
-  const [visibleProducts, setVisibleProducts] = useState(4)
+  const [visibleProducts, setVisibleProducts] = useState(8)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const { t, language, toggleLanguage, dir } = useLanguage()
   const [user, setUser] = useState<any>(null)
@@ -381,40 +381,65 @@ export default function HomePage() {
     loadData()
   }, [])
 
-  const allCategories = ["All", ...categories.filter(c => c && c.slug).map(c => c.slug)]
+  const headerCategories =
+    categories.length > 0
+      ? categories
+      : ([
+        { slug: 'laptops', name: 'Laptops', name_ar: 'أجهزة لابتوب' },
+        { slug: 'components', name: 'Components', name_ar: 'مكونات' },
+        { slug: 'monitors', name: 'Monitors', name_ar: 'شاشات' },
+        { slug: 'printers', name: 'Printers', name_ar: 'طابعات' },
+        { slug: 'servers', name: 'Servers', name_ar: 'خوادم' },
+        { slug: 'accessories', name: 'Accessories', name_ar: 'إكسسوارات' }
+      ] as const).map((cat) => ({
+        id: cat.slug,
+        ...cat
+      }))
+
+  const allCategories = ["All", ...headerCategories.filter(c => c && c.slug).map(c => c.slug)]
 
   const getCategoryLabel = (cat: string) => {
     if (!cat || cat === "All") return t('section.all_categories')
     const category = categories.find(c => c.slug === cat)
+    // Fallback translation map for categories when DB name_ar is missing
+    const categoryMapAr: Record<string, string> = {
+      laptops: 'أجهزة لابتوب',
+      components: 'مكونات',
+      monitors: 'شاشات',
+      printers: 'طابعات',
+      servers: 'خوادم',
+      accessories: 'إكسسوارات',
+      desktops: 'أجهزة مكتبية'
+    }
+    const categoryMapFr: Record<string, string> = {
+      laptops: 'Ordinateurs Portables',
+      components: 'Composants',
+      monitors: 'Écrans',
+      printers: 'Imprimantes',
+      servers: 'Serveurs',
+      accessories: 'Accessoires',
+      desktops: 'Ordinateurs de Bureau'
+    }
+
     if (category) {
-      if (language === 'ar' && category.name_ar) {
-        return category.name_ar
+      if (language === 'ar') {
+        return category.name_ar || categoryMapAr[cat] || category.name || cat
+      }
+      if (language === 'fr') {
+        return categoryMapFr[cat] || category.name || cat
       }
       return category.name || cat
     }
-    // Fallback to translation keys for default categories
-    const categoryMap: Record<string, string> = {
-      face: t('header.face_care'),
-      hair: t('header.hair_care'),
-      body: t('header.body_care'),
-      gift: t('header.gift_sets')
-    }
-    return categoryMap[cat] || cat || t('section.all_categories')
+
+
+    if (language === 'ar') return categoryMapAr[cat] || cat
+    if (language === 'fr') return categoryMapFr[cat] || cat
+    return cat
   }
 
   const filteredProducts = selectedCategory === "All"
     ? products
     : products.filter(p => p.category === selectedCategory)
-
-  // Fallback categories for header/menu when Supabase categories are empty
-  const headerCategories =
-    categories.length > 0
-      ? categories
-      : (['laptops', 'servers', 'printers', 'components'] as const).map((slug) => ({
-        id: slug,
-        slug,
-        name: slug.charAt(0).toUpperCase() + slug.slice(1), // Simple capitalization for fallback
-      }))
 
   const faqs = [
     { q: t('faq.q1'), a: t('faq.a1') },
@@ -439,7 +464,9 @@ export default function HomePage() {
         <p>
           {language === 'ar'
             ? (settings.announcement_bar_ar || settings.announcement_bar || "شحن مجاني للطلبات فوق ٧٥٠ د.م")
-            : (settings.announcement_bar || "Free shipping on orders over MAD 750")
+            : language === 'fr'
+              ? (settings.announcement_bar || "Livraison gratuite > 750 MAD")
+              : (settings.announcement_bar || "Free shipping on orders over MAD 750")
           }
         </p>
       </div>
@@ -451,17 +478,15 @@ export default function HomePage() {
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between gap-8">
-            {/* Logo */}
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
-                src="/logo.png"
-                alt="Dedali Store"
-                width={180}
-                height={90}
-                className="h-16 sm:h-20 w-auto transition-transform duration-300 group-hover:scale-105"
+                src={"/logo.png"}
+                alt={"Dedali Store"}
+                width={120}
+                height={34}
+                className={"h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"}
               />
             </Link>
-
             {/* Right Actions */}
             <div className="flex items-center gap-1 sm:gap-2 ml-auto">
               <Link href="/search">
@@ -486,9 +511,15 @@ export default function HomePage() {
               </Link>
               <Button
                 onClick={toggleLanguage}
-                className="hidden sm:flex rounded-full ml-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 font-bold"
+                variant="outline"
+                className="hidden sm:flex gap-2 rounded-full ml-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-300 font-bold min-w-[80px]"
               >
-                {language === 'en' ? 'العربية' : 'English'}
+                <span className="text-lg">
+                  {language === 'en' ? '🇺🇸' : language === 'fr' ? '🇫🇷' : '🇲🇦'}
+                </span>
+                <span className="text-xs uppercase tracking-wider">
+                  {language === 'en' ? 'EN' : language === 'fr' ? 'FR' : 'AR'}
+                </span>
               </Button>
 
               {/* Mobile Menu */}
@@ -503,11 +534,11 @@ export default function HomePage() {
                     {/* Mobile Menu Header */}
                     <div className="flex items-center justify-between p-6 border-b border-border/50">
                       <Image
-                        src="/logo.png"
-                        alt="Dedali Store"
-                        width={140}
-                        height={70}
-                        className="h-14 w-auto"
+                        src={"/logo.png"}
+                        alt={"Dedali Store"}
+                        width={100}
+                        height={28}
+                        className={"h-8 w-auto mb-4"}
                       />
                       <SheetClose asChild>
                         <Button variant="ghost" size="icon" className="rounded-full">
@@ -604,7 +635,7 @@ export default function HomePage() {
                           className="w-full h-12 rounded-full bg-secondary/30 border-border/50 font-bold"
                           onClick={toggleLanguage}
                         >
-                          {language === 'en' ? 'العربية' : 'English'}
+                          {language === 'en' ? '🇺🇸 EN' : language === 'fr' ? '🇫🇷 FR' : '🇲🇦 AR'}
                         </Button>
                         <SheetClose asChild>
                           <Link href="/login" className="w-full">
@@ -707,28 +738,29 @@ export default function HomePage() {
               {t('section.best_sellers_desc')}
             </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-3 mb-10">
+          <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-3 mb-10 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
             {allCategories.map((cat) => (
-              <Button
-                key={cat}
-                variant={selectedCategory === cat ? "default" : "outline"}
-                className={`rounded-full px-6 transition-all duration-300 ${selectedCategory === cat
-                  ? "shadow-lg shadow-primary/25 scale-105"
-                  : "hover:scale-105"
-                  }`}
-                onClick={() => {
-                  setSelectedCategory(cat)
-                  setVisibleProducts(4) // Reset visible count on switch
-                }}
-              >
-                {getCategoryLabel(cat)}
-              </Button>
+              <div key={cat} className="flex-shrink-0">
+                <Button
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  className={`rounded-full px-6 transition-all duration-300 ${selectedCategory === cat
+                    ? "shadow-lg shadow-primary/25 scale-105"
+                    : "hover:scale-105"
+                    }`}
+                  onClick={() => {
+                    setSelectedCategory(cat)
+                    setVisibleProducts(4) // Reset visible count on switch
+                  }}
+                >
+                  {getCategoryLabel(cat)}
+                </Button>
+              </div>
             ))}
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in duration-500">
             {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
+              Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
               ))
             ) : (
@@ -792,11 +824,11 @@ export default function HomePage() {
             <div className="md:col-span-4 lg:col-span-5 space-y-6">
               <Link href="/" className="inline-block">
                 <Image
-                  src="/logo.png"
-                  alt="Dedali Store"
-                  width={200}
-                  height={100}
-                  className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                  src={"/logo.png"}
+                  alt={"Dedali Store"}
+                  width={142}
+                  height={40}
+                  className={"h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"}
                 />
               </Link>
               <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm">

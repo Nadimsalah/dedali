@@ -27,13 +27,13 @@ export default function ShippingInfoPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الشحن لدى ديار أرجان – مصر" : "Diar Argan Egypt – Shipping Information"}
+          {isArabic ? "سياسة الشحن لدى ديدالي – مصر" : "Dedali Egypt – Shipping Information"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
-              ? "نقدم خدمة توصيل للطلبات داخل جمهورية مصر العربية من خلال شركاء شحن موثوقين، مع الحرص على توصيل منتجات ديار أرجان بأفضل حالة."
-              : "We deliver orders across Egypt using trusted courier partners, ensuring your Diar Argan products arrive in the best condition."}
+              ? "نقدم خدمة توصيل للطلبات داخل جمهورية مصر العربية من خلال شركاء شحن موثوقين، مع الحرص على توصيل منتجات ديدالي بأفضل حالة."
+              : "We deliver orders across Egypt using trusted courier partners, ensuring your Dedali products arrive in the best condition."}
           </p>
 
           <h2 className="font-semibold text-foreground flex items-center gap-2">

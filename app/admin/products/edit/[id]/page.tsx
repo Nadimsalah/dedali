@@ -41,6 +41,7 @@ export default function EditProductPage() {
     const [benefits, setBenefits] = useState<string[]>([])
     const [ingredients, setIngredients] = useState("")
     const [howToUse, setHowToUse] = useState("")
+    const [categories, setCategories] = useState<{ id: string, name: string, slug: string }[]>([])
 
     // AI Rewrite State
     const [rewriting, setRewriting] = useState<string | null>(null)
@@ -49,7 +50,10 @@ export default function EditProductPage() {
     useEffect(() => {
         async function loadProduct() {
             setLoading(true)
-            const product = await getProductById(productId)
+            const [product, categoriesData] = await Promise.all([
+                getProductById(productId),
+                supabase.from('categories').select('id, name, slug').order('name')
+            ])
 
             if (product) {
                 setTitle(product.title)
@@ -64,6 +68,10 @@ export default function EditProductPage() {
                 setBenefits(product.benefits || [])
                 setIngredients(product.ingredients || "")
                 setHowToUse(product.how_to_use || "")
+            }
+
+            if (categoriesData.data) {
+                setCategories(categoriesData.data)
             }
 
             setLoading(false)
@@ -373,10 +381,9 @@ export default function EditProductPage() {
                                         className="w-full h-12 rounded-xl border border-gray-200 bg-white px-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 appearance-none shadow-sm"
                                     >
                                         <option value="" disabled>Select Category</option>
-                                        <option value="face">Face Care</option>
-                                        <option value="body">Body Care</option>
-                                        <option value="hair">Hair Care</option>
-                                        <option value="gift">Gift Sets</option>
+                                        {categories.map((cat) => (
+                                            <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                        ))}
                                     </select>
                                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                 </div>

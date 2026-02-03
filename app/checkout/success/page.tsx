@@ -21,6 +21,8 @@ export default function CheckoutSuccessPage() {
     const { clearCart } = useCart()
     const { t, language } = useLanguage()
     const [order, setOrder] = useState<OrderData | null>(null)
+    const [redirectUrl, setRedirectUrl] = useState("/")
+    const [isReseller, setIsReseller] = useState(false)
 
     useEffect(() => {
         // Load order details first
@@ -35,7 +37,17 @@ export default function CheckoutSuccessPage() {
 
         // Clear cart on successful checkout
         clearCart()
-    }, [])
+
+        // Check user role
+        import("@/lib/supabase-api").then(({ getCurrentUserRole }) => {
+            getCurrentUserRole().then(role => {
+                if (role === 'reseller') {
+                    setIsReseller(true)
+                    setRedirectUrl("/reseller/dashboard")
+                }
+            })
+        })
+    }, [clearCart])
 
     const copyCoupon = () => {
         navigator.clipboard.writeText("THANKYOU20")
@@ -56,7 +68,7 @@ export default function CheckoutSuccessPage() {
                 <div className="glass rounded-3xl p-8 sm:p-12 text-center border-primary/10 shadow-2xl shadow-primary/5">
                     {/* Logo */}
                     <div className="mb-8">
-                        <Image src="/logo.png" alt="Dedali Store" width={150} height={60} className="h-12 w-auto mx-auto" />
+                        <Image src="/logo.png" alt="Dedali Store" width={142} height={40} className="h-8 w-auto mx-auto" />
                     </div>
 
                     <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-500">
@@ -89,9 +101,9 @@ export default function CheckoutSuccessPage() {
                         </div>
                     </div>
 
-                    <Link href="/">
+                    <Link href={redirectUrl}>
                         <Button size="lg" className="rounded-full w-full sm:w-auto px-10 h-12 text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all hover:scale-105">
-                            {t('checkout.continue_shopping')} <ArrowRight className="w-4 h-4 ml-2" />
+                            {isReseller ? (language === 'ar' ? "الذهاب إلى لوحة التحكم" : "Go to Dashboard") : t('checkout.continue_shopping')} <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
                     </Link>
                 </div>

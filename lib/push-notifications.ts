@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceRole)
 // Configure VAPID keys
 if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(
-        'mailto:support@diarargan.com',
+        'mailto:support@dedali.com',
         process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
         process.env.VAPID_PRIVATE_KEY
     )

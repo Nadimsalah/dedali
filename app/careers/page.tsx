@@ -98,7 +98,7 @@ export default function CareersPage() {
       <main className="container mx-auto px-4 py-10 sm:py-16 max-w-4xl">
         <div className={cn("space-y-6 mb-10", isArabic && "text-right")}>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            {isArabic ? "انضمي إلى فريق ديار أرجان" : "Join the Diar Argan team"}
+            {isArabic ? "انضمي إلى فريق ديدالي" : "Join the Dedali team"}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
             {isArabic
@@ -222,8 +222,8 @@ export default function CareersPage() {
               onChange={(e) => setSummary(e.target.value)}
               placeholder={
                 isArabic
-                  ? "اكتبي بإيجاز خبراتك السابقة ولماذا ترغبين في الانضمام إلى ديار أرجان..."
-                  : "Briefly describe your background and why you’d like to join Diar Argan..."
+                  ? "اكتبي بإيجاز خبراتك السابقة ولماذا ترغبين في الانضمام إلى ديدالي..."
+                  : "Briefly describe your background and why you’d like to join Dedali..."
               }
             />
           </div>
@@ -253,8 +253,8 @@ export default function CareersPage() {
           {submitted && !error && (
             <p className="mt-3 text-xs sm:text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
               {isArabic
-                ? "شكرًا لك! تم استلام طلبك بنجاح وسيتواصل معك فريق ديار أرجان في حال توفر فرصة مناسبة."
-                : "Thank you! Your application has been received. The Diar Argan team will contact you if there’s a suitable opportunity."}
+                ? "شكرًا لك! تم استلام طلبك بنجاح وسيتواصل معك فريق ديدالي في حال توفر فرصة مناسبة."
+                : "Thank you! Your application has been received. The Dedali team will contact you if there’s a suitable opportunity."}
             </p>
           )}
 

@@ -17,7 +17,7 @@ self.addEventListener('push', function (event) {
         const title = data.title || 'New Notification';
         const options = {
             body: data.body || 'You have a new update.',
-            icon: '/logo.webp', // Diar Argan Logo
+            icon: '/logo.webp', // Dedali Logo
             badge: '/icon-light-32x32.png',
             data: {
                 url: data.url || '/admin/dashboard'

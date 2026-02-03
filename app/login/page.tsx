@@ -59,11 +59,11 @@ export default function LoginPage() {
                 <div className="relative z-10">
                     <Link href="/">
                         <Image
-                            src="/logo.png"
-                            alt="Dedali Store"
-                            width={180}
-                            height={90}
-                            className="h-20 w-auto"
+                            src={"/logo.png"}
+                            alt={"Dedali Store"}
+                            width={178}
+                            height={50}
+                            className={"h-12 w-auto"}
                         />
                     </Link>
                 </div>

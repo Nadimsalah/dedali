@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { useLanguage } from "@/components/language-provider"
 import { supabase } from "@/lib/supabase"
 import { Customer, Order, getCustomerOrders } from "@/lib/supabase-api"
-import { Loader2, Package, ShoppingBag, CreditCard, User, Building2, FileText, Globe, MapPin, LogOut } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, Package, ShoppingBag, CreditCard, User, Building2, FileText, Globe, MapPin, LogOut, Eye } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -99,168 +100,237 @@ export default function ResellerDashboard() {
         }
     }
 
-    return (
-        <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto space-y-8">
 
+    return (
+        <div className="min-h-screen bg-background relative overflow-hidden font-sans">
+            {/* Ambient Background Elements */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">
-                            {isArabic ? "لوحة تحكم الموزع" : "Reseller Dashboard"}
-                        </h1>
-                        <p className="text-gray-500 mt-1">
-                            {isArabic ? `مرحباً، ${profile?.name || user?.email}` : `Welcome back, ${profile?.name || user?.email}`}
-                        </p>
+                <header className="glass-strong p-6 sm:p-8 rounded-[2.5rem] border border-white/20 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 mb-12 animate-in fade-in slide-in-from-top-6 duration-700">
+                    <div className="flex items-center gap-6 w-full md:w-auto">
+                        <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-white/10 shrink-0">
+                            <User className="w-8 h-8 text-white" />
+                        </div>
+                        <div className={isArabic ? "text-right" : "text-left"}>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
+                                {profile?.company_name || (isArabic ? "لوحة تحكم الموزع" : "Reseller Dashboard")}
+                            </h1>
+                            <p className="text-muted-foreground font-medium mt-1">
+                                {isArabic ? `مرحباً بك مجدداً، ${profile?.name || user?.email}` : `Welcome back, ${profile?.name || user?.email}`}
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Link href="/">
-                            <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                                <ShoppingBag className={`w-4 h-4 ${isArabic ? "ml-2" : "mr-2"}`} />
-                                {isArabic ? "تصفح المنتجات" : "Browse Products"}
+
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <Link href="/" className="flex-1 md:flex-none">
+                            <Button className="w-full rounded-2xl h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 group">
+                                <ShoppingBag className={`w-5 h-5 ${isArabic ? "ml-2" : "mr-2"} group-hover:animate-bounce`} />
+                                {isArabic ? "تصفح الكتالوج" : "Browse Catalog"}
                             </Button>
                         </Link>
-                        <Button variant="outline" onClick={handleSignOut} className="bg-white border-gray-200 hover:bg-gray-50 text-red-600 hover:text-red-700">
-                            <LogOut className={`w-4 h-4 ${isArabic ? "ml-2" : "mr-2"}`} />
-                            {isArabic ? "خروج" : "Sign Out"}
+                        <Button
+                            variant="outline"
+                            onClick={handleSignOut}
+                            className="rounded-2xl h-14 px-6 bg-white/5 border-white/10 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 transition-all"
+                        >
+                            <LogOut className="w-5 h-5" />
                         </Button>
                     </div>
-                </div>
+                </header>
 
-
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    {/* Left Column: Stats & Profile */}
-                    <div className="space-y-8 lg:col-span-1">
-
-                        {/* Stats Cards */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Left Column: Metrics & Profile */}
+                    <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700 delay-100">
+                        {/* Metrics Grid */}
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4">
-                                    <Package className="w-5 h-5" />
+                            <div className="glass rounded-[2rem] p-6 border-white/10 shadow-xl group hover:border-primary/30 transition-all">
+                                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+                                    <Package className="w-6 h-6" />
                                 </div>
-                                <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
-                                <div className="text-sm text-gray-500 font-medium">{isArabic ? "إجمالي الطلبات" : "Total Orders"}</div>
+                                <div className="text-3xl font-black text-foreground tabular-nums">{orders.length}</div>
+                                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                                    {isArabic ? "إجمالي الطلبات" : "Total Orders"}
+                                </div>
                             </div>
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-green-600 mb-4">
-                                    <CreditCard className="w-5 h-5" />
+                            <div className="glass rounded-[2rem] p-6 border-white/10 shadow-xl group hover:border-green-500/30 transition-all">
+                                <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-600 mb-4 group-hover:scale-110 transition-transform">
+                                    <CreditCard className="w-6 h-6" />
                                 </div>
-                                <div className="text-2xl font-bold text-gray-900">
-                                    {orders.reduce((sum, o) => sum + Number(o.total), 0).toLocaleString()} MAD
+                                <div className="text-xl sm:text-2xl font-black text-foreground tabular-nums truncate">
+                                    {orders.reduce((sum, o) => sum + Number(o.total), 0).toLocaleString()} <span className="text-xs">MAD</span>
                                 </div>
-                                <div className="text-sm text-gray-500 font-medium">{isArabic ? "إجمالي الإنفاق" : "Total Spent"}</div>
+                                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                                    {isArabic ? "إجمالي المبلغ" : "Total Value"}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Profile Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-6 border-b border-gray-50">
-                                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                    <Building2 className="w-5 h-5 text-gray-400" />
-                                    {isArabic ? "معلومات الشركة" : "Company Profile"}
-                                </h3>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{isArabic ? "الشركة" : "Company"}</label>
-                                    <div className="text-gray-900 font-medium mt-1">{profile?.company_name || "-"}</div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{isArabic ? "رقم ICE" : "ICE Number"}</label>
-                                    <div className="text-gray-900 font-medium mt-1 uppercase tracking-widest">{profile?.ice || "-"}</div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{isArabic ? "الموقع" : "Website"}</label>
-                                    <div className="text-blue-600 font-medium mt-1 truncate">
-                                        {profile?.website ? (
-                                            <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noreferrer" className="hover:underline">
-                                                {profile.website}
-                                            </a>
-                                        ) : "-"}
+                        {/* Profile Info Card */}
+                        <div className="glass-strong rounded-[2.5rem] p-8 border-white/10 shadow-2xl relative overflow-hidden group">
+                            {/* Decorative element */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
+
+                            <h3 className={`text-lg font-bold text-foreground flex items-center gap-3 mb-8 ${isArabic ? "flex-row-reverse" : ""}`}>
+                                <Building2 className="w-5 h-5 text-primary" />
+                                {isArabic ? "بيانات المؤسسة" : "Organization Profile"}
+                            </h3>
+
+                            <div className="space-y-6">
+                                <div className={isArabic ? "text-right" : "text-left"}>
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "اسم الشركة" : "Company Name"}</label>
+                                    <div className="text-lg font-bold text-foreground">
+                                        {profile?.company_name || <span className="text-muted-foreground/30 italic">Not set</span>}
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{isArabic ? "المدينة" : "City"}</label>
-                                    <div className="text-gray-900 font-medium mt-1 flex items-center gap-2">
-                                        <MapPin className="w-4 h-4 text-gray-400" />
-                                        {profile?.city || "-"}
+
+                                <div className={isArabic ? "text-right" : "text-left"}>
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "رقم التعريف الموحد (ICE)" : "Business Identification (ICE)"}</label>
+                                    <div className="text-lg font-mono text-foreground tracking-widest bg-white/5 py-2 px-4 rounded-xl border border-white/5 inline-block min-w-40 text-center">
+                                        {profile?.ice || "XXXXXXXXXXX"}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className={isArabic ? "text-right" : "text-left"}>
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "المدينة" : "Location"}</label>
+                                        <div className="flex items-center gap-2 font-bold text-foreground">
+                                            <MapPin className="w-4 h-4 text-primary" />
+                                            {profile?.city || "N/A"}
+                                        </div>
+                                    </div>
+                                    <div className={isArabic ? "text-right" : "text-left"}>
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "الموقع" : "Site"}</label>
+                                        <div className="flex items-center gap-2 font-bold text-primary truncate">
+                                            <Globe className="w-4 h-4" />
+                                            {profile?.website ? (
+                                                <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" className="hover:underline">View</a>
+                                            ) : "N/A"}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Column: Orders History */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[500px]">
-                            <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-                                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-gray-400" />
-                                    {isArabic ? "سجل الطلبات" : "Order History"}
+                    {/* Right Column: Order History */}
+                    <div className="lg:col-span-8 animate-in fade-in slide-in-from-right-6 duration-700 delay-200">
+                        <div className="glass-strong rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden min-h-[600px] flex flex-col">
+                            <div className={`p-8 border-b border-white/5 flex justify-between items-center ${isArabic ? "flex-row-reverse" : ""}`}>
+                                <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
+                                    <FileText className="w-6 h-6 text-primary" />
+                                    {isArabic ? "سجل العمليات" : "Transaction History"}
                                 </h3>
+                                <Badge className="bg-primary/10 text-primary border-none hover:bg-primary/20 px-4 py-1.5 rounded-xl">
+                                    {orders.length} {orders.length === 1 ? "Order" : "Orders"}
+                                </Badge>
                             </div>
 
-                            {orders.length === 0 ? (
-                                <div className="p-12 text-center text-gray-500">
-                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
-                                        <Package className="w-8 h-8" />
+                            <div className="flex-1">
+                                {orders.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                                        <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center mb-6 text-muted-foreground/40">
+                                            <Package className="w-12 h-12" />
+                                        </div>
+                                        <h4 className="text-2xl font-bold text-foreground mb-3">
+                                            {isArabic ? "لا توجد طلبات مسجلة" : "No Transactions Recorded"}
+                                        </h4>
+                                        <p className="text-muted-foreground max-w-sm mb-10 leading-relaxed font-medium">
+                                            {isArabic ? "ابدأ عملياتك التجارية اليوم للحصول على أسعار الجملة الحصرية." : "Initialize your wholesale journey today and unlock Tier-1 inventory pricing."}
+                                        </p>
+                                        <Link href="/">
+                                            <Button size="lg" variant="outline" className="rounded-2xl h-14 px-10 border-white/10 hover:bg-white/5 font-bold tracking-wide">
+                                                {isArabic ? "ابدأ الآن" : "Initialize Trade"}
+                                            </Button>
+                                        </Link>
                                     </div>
-                                    <p className="text-lg font-medium text-gray-900 mb-1">
-                                        {isArabic ? "لا توجد طلبات حتى الآن" : "No orders yet"}
-                                    </p>
-                                    <p className="mb-6">
-                                        {isArabic ? "ابدأ التسوق اليوم واحصل على أفضل العروض." : "Start shopping today to get the best wholesale deals."}
-                                    </p>
-                                    <Link href="/">
-                                        <Button variant="outline">
-                                            {isArabic ? "تسوق الآن" : "Shop Now"}
-                                        </Button>
-                                    </Link>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-gray-500 uppercase bg-gray-50/50">
-                                            <tr>
-                                                <th className="px-6 py-4 font-semibold">{isArabic ? "رقم الطلب" : "Order ID"}</th>
-                                                <th className="px-6 py-4 font-semibold">{isArabic ? "التاريخ" : "Date"}</th>
-                                                <th className="px-6 py-4 font-semibold">{isArabic ? "الحالة" : "Status"}</th>
-                                                <th className="px-6 py-4 font-semibold text-right">{isArabic ? "المجموع" : "Total"}</th>
-                                                <th className="px-6 py-4 font-semibold text-center">{isArabic ? "إجراءات" : "Actions"}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                ) : (
+                                    <>
+                                        {/* Mobile Card View */}
+                                        <div className="md:hidden space-y-4 p-4">
                                             {orders.map((order) => (
-                                                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-gray-900">
-                                                        #{order.order_number}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-gray-500">
-                                                        {new Date(order.created_at).toLocaleDateString()}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
+                                                <div key={order.id} className="bg-white/5 rounded-2xl p-5 border border-white/5 space-y-4 hover:border-primary/30 transition-colors">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <span className="font-mono text-sm font-bold text-foreground block">#{order.order_number}</span>
+                                                            <div className="text-xs font-medium text-muted-foreground mt-1">
+                                                                {new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                            </div>
+                                                        </div>
+                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusColor(order.status)}`}>
                                                             {getStatusLabel(order.status)}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right font-medium text-gray-900">
-                                                        {order.total.toLocaleString()} MAD
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    </div>
+
+                                                    <div className="flex justify-between items-end pt-4 border-t border-white/5">
+                                                        <div>
+                                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">{isArabic ? "المجموع" : "Total"}</div>
+                                                            <div className="font-black text-xl text-foreground">
+                                                                {order.total.toLocaleString()} <span className="text-[10px] text-muted-foreground">MAD</span>
+                                                            </div>
+                                                        </div>
                                                         <Link href={`/reseller/orders/${order.id}`}>
-                                                            <Button size="sm" variant="ghost" className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                                                {isArabic ? "عرض التفاصيل" : "View Details"}
+                                                            <Button size="sm" className="rounded-xl h-9 px-4 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground shadow-none">
+                                                                {isArabic ? "عرض" : "View"}
                                                             </Button>
                                                         </Link>
-                                                    </td>
-                                                </tr>
+                                                    </div>
+                                                </div>
                                             ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                                        </div>
+
+                                        {/* Desktop Table View */}
+                                        <div className="hidden md:block overflow-x-auto p-4 sm:p-8">
+                                            <table className="w-full text-left border-separate border-spacing-y-4">
+                                                <thead>
+                                                    <tr className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
+                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-left"}`}>{isArabic ? "الرقم التسلسلي" : "Reference ID"}</th>
+                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-left"}`}>{isArabic ? "التاريخ" : "Timestamp"}</th>
+                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-left"}`}>{isArabic ? "الحالة" : "Fulfillment"}</th>
+                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-right"}`}>{isArabic ? "المجموع" : "Volume"}</th>
+                                                        <th className="pb-4 px-4 text-center">{isArabic ? "عرض" : "Action"}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {orders.map((order, idx) => (
+                                                        <tr key={order.id} className="group transition-all hover:-translate-y-1">
+                                                            <td className={`bg-white/5 py-5 px-4 rounded-l-[1.5rem] border-y border-l border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-left"}`}>
+                                                                <span className="font-mono text-xs font-bold text-foreground">#{order.order_number}</span>
+                                                            </td>
+                                                            <td className={`bg-white/5 py-5 px-4 border-y border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-left"}`}>
+                                                                <div className="text-sm font-semibold text-foreground/80">
+                                                                    {new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                                </div>
+                                                            </td>
+                                                            <td className={`bg-white/5 py-5 px-4 border-y border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-left"}`}>
+                                                                <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusColor(order.status)} shrink-0`}>
+                                                                    {getStatusLabel(order.status)}
+                                                                </span>
+                                                            </td>
+                                                            <td className={`bg-white/5 py-5 px-4 border-y border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-right"}`}>
+                                                                <span className="font-black text-foreground">
+                                                                    {order.total.toLocaleString()} <span className="text-[10px] text-muted-foreground mr-1">MAD</span>
+                                                                </span>
+                                                            </td>
+                                                            <td className="bg-white/5 py-5 px-4 rounded-r-[1.5rem] border-y border-r border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] text-center">
+                                                                <Link href={`/reseller/orders/${order.id}`}>
+                                                                    <Button size="sm" variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-primary/20 text-primary transition-all group-hover:scale-110">
+                                                                        <Eye className="w-5 h-5" />
+                                                                    </Button>
+                                                                </Link>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -250,7 +250,7 @@ export default function CheckoutPage() {
             <header className="sticky top-0 z-50 glass-strong border-b border-border/50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href="/" className="relative">
-                        <Image src="/logo.png" alt="Dedali Store" width={100} height={50} className="h-8 w-auto" />
+                        <Image src="/logo.png" alt="Dedali Store" width={106} height={30} className="h-6 w-auto" />
                     </Link>
                     <Link href="/cart" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
                         <ArrowLeft className="w-4 h-4" /> {t('checkout.return_cart')}
@@ -578,9 +578,9 @@ export default function CheckoutPage() {
                                 <Image
                                     src="/logo.png"
                                     alt="Dedali Store"
-                                    width={200}
-                                    height={100}
-                                    className="h-16 w-auto opacity-90 hover:opacity-100 transition-opacity"
+                                    width={142}
+                                    height={40}
+                                    className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
                                 />
                             </Link>
                             <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm text-left">

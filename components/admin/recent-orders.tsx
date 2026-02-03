@@ -46,7 +46,38 @@ export function RecentOrders() {
                 </Link>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {loading ? (
+                    <div className="py-8 text-center text-muted-foreground animate-pulse">Loading...</div>
+                ) : orders.length > 0 ? (
+                    orders.map((order) => (
+                        <div key={order.id} className="bg-background/50 rounded-xl p-4 border border-border/50 hover:border-primary/30 transition-colors">
+                            <div className="flex justify-between items-start mb-3">
+                                <div>
+                                    <div className="font-bold text-foreground">#{order.order_number}</div>
+                                    <div className="text-xs text-muted-foreground">{order.customer_name}</div>
+                                    <div className="text-[10px] text-muted-foreground/60 truncate max-w-[150px]">{order.customer_email}</div>
+                                </div>
+                                <Badge variant="outline" className={`border-0 ${getStatusColor(order.status)}`}>
+                                    {order.status}
+                                </Badge>
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <div className="font-semibold text-foreground">MAD {order.total}</div>
+                                <Link href={`/admin/orders/${order.id}`}>
+                                    <Button size="sm" variant="outline" className="h-8 text-xs">View</Button>
+                                </Link>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="py-8 text-center text-muted-foreground">No recent orders found.</div>
+                )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-border/50 text-left">

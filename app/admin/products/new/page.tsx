@@ -80,7 +80,7 @@ export default function NewProductPage() {
             if (catData) setCategories(catData)
         }
         fetchData()
-    })
+    }, [])
 
     const handleRewrite = async (field: string, currentText: string, setter: (val: string) => void) => {
         if (!currentText.trim()) return
