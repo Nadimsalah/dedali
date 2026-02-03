@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { supabase } from "@/lib/supabase"
 import { Loader2, ArrowLeft, ArrowRight, User, Lock, Mail } from "lucide-react"
 import { toast } from "sonner"
+import { getCurrentUserRole } from "@/lib/supabase-api"
 
 export default function LoginPage() {
     const { t, language, dir } = useLanguage()
@@ -37,7 +38,14 @@ export default function LoginPage() {
 
             if (data.user) {
                 toast.success(isArabic ? "تم تسجيل الدخول بنجاح" : "Logged in successfully")
-                router.push('/')
+
+                // key change: fetch role for redirect
+                const role = await getCurrentUserRole()
+                if (role === 'reseller') {
+                    router.push('/reseller/dashboard')
+                } else {
+                    router.push('/')
+                }
                 router.refresh()
             }
         } catch (error: any) {
@@ -92,6 +100,17 @@ export default function LoginPage() {
                         <XIcon className="w-6 h-6" />
                     </Link>
                     <div className="text-center space-y-2">
+                        {/* Mobile Logo */}
+                        <div className="lg:hidden flex justify-center mb-6">
+                            <Image
+                                src={"/logo.png"}
+                                alt={"Dedali Store"}
+                                width={140}
+                                height={40}
+                                className={"h-10 w-auto"}
+                            />
+                        </div>
+
                         <h2 className="text-3xl font-bold tracking-tight">
                             {isArabic ? "تسجيل الدخول" : "Sign In"}
                         </h2>

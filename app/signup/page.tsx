@@ -116,6 +116,17 @@ export default function SignupPage() {
                         <XIcon className="w-6 h-6" />
                     </Link>
                     <div className="text-center space-y-2">
+                        {/* Mobile Logo */}
+                        <div className="lg:hidden flex justify-center mb-6">
+                            <Image
+                                src={"/logo.png"}
+                                alt={"Dedali Store"}
+                                width={140}
+                                height={40}
+                                className={"h-10 w-auto"}
+                            />
+                        </div>
+
                         <h2 className="text-3xl font-bold tracking-tight">
                             {isArabic ? "إنشاء حساب" : "Create Account"}
                         </h2>

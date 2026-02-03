@@ -151,8 +151,8 @@ export default function ProductPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-8">
+        {/* Breadcrumb - Hidden on mobile for cleaner look */}
+        <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mb-8">
           <Link href="/" className="hover:text-primary transition-colors">Home</Link>
           <span>/</span>
           <Link href="/#shop" className="hover:text-primary transition-colors">Shop</Link>
@@ -161,63 +161,70 @@ export default function ProductPage() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16">
-          {/* Product Images */}
-          <div className="space-y-4">
-            <div className="glass rounded-3xl overflow-hidden aspect-square relative shadow-2xl">
+          {/* Product Images - Mobile Slide / Desktop Grid */}
+          <div className="space-y-4 -mx-4 sm:mx-0">
+            {/* Mobile: Horizontal Snap Scroll */}
+            <div className="flex sm:hidden overflow-x-auto snap-x snap-mandatory no-scrollbar pb-6 gap-4 px-4">
+              {productImages.map((image, idx) => (
+                <div key={idx} className="snap-center shrink-0 w-[85vw] aspect-square relative rounded-3xl overflow-hidden shadow-lg border border-white/10 glass-strong">
+                  <Image
+                    src={image}
+                    alt={`${displayTitle} ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    priority={idx === 0}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Featured Image */}
+            <div className="hidden sm:block glass rounded-3xl overflow-hidden aspect-square relative shadow-2xl group">
               <Image
                 src={productImages[selectedImage]}
                 alt={displayTitle}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
                 priority
               />
             </div>
 
-            {productImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-3 sm:gap-4">
-                {productImages.map((image, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`glass rounded-2xl overflow-hidden aspect-square transition-all ${selectedImage === idx ? "ring-2 ring-primary scale-95" : "hover:scale-105"
-                      }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.title} ${idx + 1}`}
-                      width={150}
-                      height={150}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Desktop: Thumbnails */}
+            <div className="hidden sm:grid grid-cols-4 gap-3 sm:gap-4">
+              {productImages.map((image, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImage(idx)}
+                  className={`glass rounded-2xl overflow-hidden aspect-square transition-all ${selectedImage === idx ? "ring-2 ring-primary scale-95 opacity-100" : "hover:scale-105 opacity-70 hover:opacity-100"
+                    }`}
+                >
+                  <Image
+                    src={image}
+                    alt={`${product.title} ${idx + 1}`}
+                    width={150}
+                    height={150}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Product Info */}
           <div className="flex flex-col">
-            <div className="mb-6">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight">
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-3 sm:mb-4 tracking-tight leading-tight">
                 {displayTitle}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-4 mb-6">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 ${i < Math.floor(rating) ? "fill-primary text-primary" : "text-muted"}`}
-                    />
-                  ))}
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="flex items-center gap-1 bg-white/5 rounded-full px-2 py-1 border border-white/5">
+                  <span className="text-xs font-bold text-primary">{rating}</span>
+                  <Star className="w-3 h-3 fill-primary text-primary" />
+                  <span className="text-[10px] text-muted-foreground ml-1">({reviewsCount})</span>
                 </div>
-                <span className="text-sm text-muted-foreground font-medium flex items-center gap-1">
-                  {rating} <span className="text-xs opacity-50">/ 5.0</span>
-                  <span className="mx-2">•</span>
-                  {reviewsCount} {t('product.reviews')}
-                </span>
 
-                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${inStock ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${inStock ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"
                   }`}>
                   {inStock ? (
                     <><Check className="w-3 h-3" /> {t('order.success.status') || 'In Stock'}</>
@@ -227,26 +234,26 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              <div className="flex items-baseline gap-4 mb-8">
+              <div className="flex items-baseline gap-3 sm:gap-4 mb-6 sm:mb-8 p-4 bg-primary/5 rounded-2xl border border-primary/10 w-fit">
                 {/* Dynamic Price Display */}
                 {userRole === 'reseller' && product.reseller_price ? (
                   <>
                     <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-primary uppercase tracking-wider mb-1">Reseller Price</span>
-                      <span className="text-4xl sm:text-5xl font-bold text-primary">{t('common.currency')} {product.reseller_price}</span>
+                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">Reseller Price</span>
+                      <span className="text-3xl sm:text-4xl font-extrabold text-primary">{t('common.currency')} {product.reseller_price}</span>
                     </div>
-                    <div className="flex flex-col items-start border-l pl-4 border-gray-200">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Regular Price</span>
-                      <span className="text-xl text-muted-foreground line-through decoration-destructive/30">
+                    <div className="flex flex-col items-start border-l pl-4 border-primary/20">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Regular</span>
+                      <span className="text-lg text-muted-foreground line-through decoration-destructive/30 decoration-2">
                         {t('common.currency')} {product.price}
                       </span>
                     </div>
                   </>
                 ) : (
                   <>
-                    <span className="text-4xl sm:text-5xl font-bold text-primary">{t('common.currency')} {product.price}</span>
+                    <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{t('common.currency')} {product.price}</span>
                     {product.compare_at_price && (
-                      <span className="text-2xl text-muted-foreground line-through decoration-destructive/30">
+                      <span className="text-xl text-muted-foreground line-through decoration-destructive/30 decoration-2">
                         {t('common.currency')} {product.compare_at_price}
                       </span>
                     )}
@@ -443,34 +450,25 @@ export default function ProductPage() {
       </main>
 
       {/* Mobile Sticky Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-white/10 z-50 lg:hidden safe-area-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.1)]">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/90 backdrop-blur-xl border-t border-white/10 z-50 lg:hidden safe-area-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.15)] pb-safe">
         <div className="flex gap-3">
-          <div className="flex items-center gap-2 bg-secondary/50 rounded-xl px-1 border border-white/5 h-14">
+          <div className="flex items-center gap-1 bg-secondary/80 rounded-2xl px-1 border border-white/5 h-14">
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-10 text-foreground hover:bg-white/10 rounded-lg"
+              className="h-12 w-10 text-foreground hover:bg-white/10 rounded-xl"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
               disabled={quantity <= 1}
             >
               <Minus className="w-4 h-4" />
             </Button>
-            <Input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => {
-                const val = parseInt(e.target.value)
-                if (!isNaN(val) && val >= 1) {
-                  setQuantity(val)
-                }
-              }}
-              className="w-12 text-center font-bold text-lg text-foreground bg-transparent border-none h-auto p-0 focus-visible:ring-0 [&::-webkit-inner-spin-button]:appearance-none"
-            />
+            <span className="w-8 text-center font-bold text-lg text-foreground">
+              {quantity}
+            </span>
             <Button
               variant="ghost"
               size="icon"
-              className="h-12 w-10 text-foreground hover:bg-white/10 rounded-lg"
+              className="h-12 w-10 text-foreground hover:bg-white/10 rounded-xl"
               onClick={() => setQuantity(quantity + 1)}
             >
               <Plus className="w-4 h-4" />
@@ -478,7 +476,7 @@ export default function ProductPage() {
           </div>
           <Button
             size="lg"
-            className="flex-1 h-14 rounded-xl text-base font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all"
+            className="flex-1 h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/25 active:scale-95 transition-all bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => {
               addItem({
                 id: product.id,
@@ -488,12 +486,16 @@ export default function ProductPage() {
                 image: productImages[0],
                 quantity: quantity,
                 inStock: inStock,
+                resellerPrice: product.reseller_price
               })
               router.push("/cart")
             }}
           >
             <ShoppingBag className="w-5 h-5 mr-2" />
-            {t('product.add_to_cart')} • {t('common.currency')} {(product.price * quantity).toFixed(2)}
+            <div className="flex flex-col items-start leading-none ml-1">
+              <span className="text-[10px] opacity-80 font-normal uppercase tracking-wider">{t('product.add_to_cart')}</span>
+              <span className="text-base font-bold">{t('common.currency')} {(product.price * quantity).toFixed(2)}</span>
+            </div>
           </Button>
         </div>
       </div>

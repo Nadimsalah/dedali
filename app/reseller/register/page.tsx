@@ -81,12 +81,19 @@ export default function ResellerRegisterPage() {
                     // We don't rollback auth for now, but in production you might want to.
                 }
 
-                toast.success(isArabic ? "تم إنشاء حساب الموزع بنجاح! يمكنك الآن الدخول." : "Reseller account created successfully! You can now log in.")
+                toast.success(isArabic ? "تم إنشاء حساب الموزع بنجاح!" : "Reseller account created successfully!")
 
-                // Delay redirect to let user read toast
-                setTimeout(() => {
-                    router.push('/login')
-                }, 2000)
+                // Check if session exists (user is logged in) and redirect
+                if (authData.session) {
+                    setTimeout(() => {
+                        router.push('/reseller/dashboard')
+                    }, 1000)
+                } else {
+                    // Email confirmation might be on
+                    setTimeout(() => {
+                        router.push('/login')
+                    }, 2000)
+                }
             }
 
         } catch (error: any) {
@@ -156,6 +163,17 @@ export default function ResellerRegisterPage() {
                         <XIcon className="w-6 h-6" />
                     </Link>
                     <div className="mb-8">
+                        {/* Mobile Logo */}
+                        <div className="lg:hidden flex justify-center mb-6">
+                            <Image
+                                src={"/logo.png"}
+                                alt={"Dedali Store"}
+                                width={140}
+                                height={40}
+                                className={"h-10 w-auto"}
+                            />
+                        </div>
+
                         <h2 className="text-3xl font-bold tracking-tight mb-2">
                             {isArabic ? "تسجيل حساب موزع" : "Register as a Reseller"}
                         </h2>
