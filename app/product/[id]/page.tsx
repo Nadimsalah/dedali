@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { ShoppingBag, Star, Minus, Plus, Truck, ShieldCheck, RotateCcw, Check, Sparkles, Search } from "lucide-react"
+import { ShoppingBag, Star, Minus, Plus, Truck, ShieldCheck, RotateCcw, Check, Sparkles, Search, AlertTriangle } from "lucide-react"
 import { ProductDetailsSkeleton } from "@/components/ui/store-skeletons"
 
 export default function ProductPage() {
@@ -107,6 +107,8 @@ export default function ProductPage() {
   const displayHowToUse = isArabic && product.how_to_use_ar ? product.how_to_use_ar : product.how_to_use || ""
 
   const inStock = product.stock > 0
+  const stockLevel = product.stock
+  const stockStatus = stockLevel > 5 ? 'in_stock' : stockLevel > 0 ? 'low_stock' : 'out_of_stock'
   const productImages = (product.images && product.images.length > 0) ? product.images : ["/placeholder.svg?height=600&width=600"]
   const rating = 5.0
   const reviewsCount = 127 // Placeholder
@@ -224,13 +226,15 @@ export default function ProductPage() {
                   <span className="text-[10px] text-muted-foreground ml-1">({reviewsCount})</span>
                 </div>
 
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${inStock ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${stockStatus === 'in_stock'
+                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                    : stockStatus === 'low_stock'
+                      ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
                   }`}>
-                  {inStock ? (
-                    <><Check className="w-3 h-3" /> {t('order.success.status') || 'In Stock'}</>
-                  ) : (
-                    'Out of Stock'
-                  )}
+                  {stockStatus === 'in_stock' && <Check className="w-3 h-3" />}
+                  {stockStatus === 'low_stock' && <AlertTriangle className="w-3 h-3" />}
+                  {t(`product.${stockStatus}`)}
                 </div>
               </div>
 
@@ -263,9 +267,10 @@ export default function ProductPage() {
               </div>
             </div>
 
-            <p className="text-muted-foreground leading-relaxed mb-10 text-lg border-l-4 border-primary/20 pl-6 italic">
-              {displayDescription}
-            </p>
+            <div
+              className="text-muted-foreground leading-relaxed mb-10 text-lg border-l-4 border-primary/20 pl-6 italic prose prose-lg dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: displayDescription }}
+            />
 
             {/* Quantity */}
             <div className="mb-8">
@@ -358,7 +363,7 @@ export default function ProductPage() {
                     {t('product.specifications')}
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2 text-muted-foreground leading-relaxed text-lg">
-                    {displayIngredients}
+                    <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: displayIngredients }} />
                   </AccordionContent>
                 </AccordionItem>
               )}
@@ -369,7 +374,7 @@ export default function ProductPage() {
                     {t('product.warranty')}
                   </AccordionTrigger>
                   <AccordionContent className="px-8 pb-8 pt-2 text-muted-foreground leading-relaxed text-lg">
-                    {displayHowToUse}
+                    <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: displayHowToUse }} />
                   </AccordionContent>
                 </AccordionItem>
               )}

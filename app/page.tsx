@@ -134,7 +134,7 @@ function ProductCard({ product, userRole }: { product: Product, userRole?: strin
           {isArabic && product.title_ar ? product.title_ar : product.title}
         </h3>
         <p className="text-sm text-muted-foreground line-clamp-2">
-          {isArabic && product.description_ar ? product.description_ar : product.description}
+          {(isArabic && product.description_ar ? product.description_ar : product.description)?.replace(/<[^>]*>?/gm, '') || ''}
         </p>
         <div className="flex items-center gap-1">
           {Array.from({ length: 5 }).map((_, i) => (
