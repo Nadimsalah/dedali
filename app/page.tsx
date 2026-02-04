@@ -33,6 +33,7 @@ import {
   ChevronDown,
   X,
   User,
+  LayoutDashboard,
 } from "lucide-react"
 
 import {
@@ -638,10 +639,13 @@ export default function HomePage() {
                           {language === 'en' ? '🇺🇸 EN' : language === 'fr' ? '🇫🇷 FR' : '🇲🇦 AR'}
                         </Button>
                         <SheetClose asChild>
-                          <Link href="/login" className="w-full">
+                          <Link href={userRole === 'reseller' ? "/reseller/dashboard" : "/login"} className="w-full">
                             <Button variant="outline" className="w-full h-12 rounded-full bg-primary/10 border-primary/20 hover:bg-primary hover:text-white transition-colors">
-                              <User className="w-4 h-4 mx-2" />
-                              {language === 'ar' ? "دخول / تسجيل" : "Login / Register"}
+                              {userRole === 'reseller' ? <LayoutDashboard className="w-4 h-4 mx-2" /> : <User className="w-4 h-4 mx-2" />}
+                              {userRole === 'reseller'
+                                ? (language === 'ar' ? "لوحة التحكم" : "Dashboard")
+                                : (language === 'ar' ? "دخول / تسجيل" : "Login / Register")
+                              }
                             </Button>
                           </Link>
                         </SheetClose>
