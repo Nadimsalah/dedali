@@ -6,19 +6,27 @@ import { useLanguage } from "@/components/language-provider"
 import { supabase } from "@/lib/supabase"
 import { Customer, Order, getCustomerOrders } from "@/lib/supabase-api"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Package, ShoppingBag, CreditCard, User, Building2, FileText, Globe, MapPin, LogOut, Eye } from "lucide-react"
+import { Loader2, Package, ShoppingBag, CreditCard, User, Building2, FileText, Globe, MapPin, LogOut, Eye, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
 export default function ResellerDashboard() {
-    const { t, language } = useLanguage()
+    const { t, language, setLanguage } = useLanguage()
     const router = useRouter()
-    const isArabic = language === "ar"
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     const [isLoading, setIsLoading] = useState(true)
     const [user, setUser] = useState<any>(null)
     const [profile, setProfile] = useState<Customer | null>(null)
+    const [manager, setManager] = useState<any>(null)
     const [orders, setOrders] = useState<Order[]>([])
 
     useEffect(() => {
@@ -34,7 +42,7 @@ export default function ResellerDashboard() {
 
                 // 2. Get Profile
                 const { data: profileData, error: profileError } = await supabase
-                    .from('customers')
+                    .from('profiles')
                     .select('*')
                     .eq('id', user.id)
                     .single()
@@ -45,7 +53,33 @@ export default function ResellerDashboard() {
                     setProfile(profileData)
                 }
 
-                // 3. Get Orders
+                // 3. Get Account Manager
+                const { data: resellerData } = await supabase
+                    .from('resellers')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .single()
+
+                if (resellerData) {
+                    const { data: assignmentData } = await supabase
+                        .from('account_manager_assignments')
+                        .select('account_manager_id')
+                        .eq('reseller_id', resellerData.id)
+                        .is('soft_deleted_at', null)
+                        .single()
+
+                    if (assignmentData) {
+                        const { data: managerData } = await supabase
+                            .from('profiles')
+                            .select('name, email')
+                            .eq('id', assignmentData.account_manager_id)
+                            .single()
+
+                        setManager(managerData)
+                    }
+                }
+
+                // 4. Get Orders
                 if (user.id) {
                     const ordersData = await getCustomerOrders(user.id)
                     setOrders(ordersData)
@@ -64,7 +98,7 @@ export default function ResellerDashboard() {
     const handleSignOut = async () => {
         await supabase.auth.signOut()
         router.push('/login')
-        toast.success(isArabic ? "تم تسجيل الخروج" : "Signed out successfully")
+        toast.success(t("reseller.dashboard.signed_out"))
     }
 
     if (isLoading) {
@@ -88,16 +122,10 @@ export default function ResellerDashboard() {
     }
 
     const getStatusLabel = (status: string) => {
-        if (!isArabic) return status.charAt(0).toUpperCase() + status.slice(1)
-
-        switch (status.toLowerCase()) {
-            case 'pending': return 'قيد الانتظار'
-            case 'processing': return 'جاري التنفيذ'
-            case 'shipped': return 'تم الشحن'
-            case 'delivered': return 'تم التوصيل'
-            case 'cancelled': return 'ملغي'
-            default: return status
-        }
+        const statusKey = `order.status.${status.toLowerCase()}`
+        const translated = t(statusKey)
+        // If translation exists, use it; otherwise capitalize first letter
+        return translated !== statusKey ? translated : status.charAt(0).toUpperCase() + status.slice(1)
     }
 
 
@@ -116,12 +144,12 @@ export default function ResellerDashboard() {
                         <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-white/10 shrink-0">
                             <User className="w-8 h-8 text-white" />
                         </div>
-                        <div className={isArabic ? "text-right" : "text-left"}>
+                        <div className="text-left">
                             <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                                {profile?.company_name || (isArabic ? "لوحة تحكم الموزع" : "Reseller Dashboard")}
+                                {profile?.company_name || t("reseller.dashboard.title")}
                             </h1>
                             <p className="text-muted-foreground font-medium mt-1">
-                                {isArabic ? `مرحباً بك مجدداً، ${profile?.name || user?.email}` : `Welcome back, ${profile?.name || user?.email}`}
+                                {t("reseller.dashboard.welcome_back").replace("{name}", profile?.name || user?.email || "")}
                             </p>
                         </div>
                     </div>
@@ -129,8 +157,8 @@ export default function ResellerDashboard() {
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <Link href="/" className="flex-1 md:flex-none">
                             <Button className="w-full rounded-2xl h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 group">
-                                <ShoppingBag className={`w-5 h-5 ${isArabic ? "ml-2" : "mr-2"} group-hover:animate-bounce`} />
-                                {isArabic ? "تصفح الكتالوج" : "Browse Catalog"}
+                                <ShoppingBag className="w-5 h-5 mr-2 group-hover:animate-bounce" />
+                                {t("reseller.dashboard.browse_catalog")}
                             </Button>
                         </Link>
                         <Button
@@ -154,7 +182,7 @@ export default function ResellerDashboard() {
                                 </div>
                                 <div className="text-3xl font-black text-foreground tabular-nums">{orders.length}</div>
                                 <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
-                                    {isArabic ? "إجمالي الطلبات" : "Total Orders"}
+                                    {t("reseller.dashboard.total_orders")}
                                 </div>
                             </div>
                             <div className="glass rounded-[2rem] p-6 border-white/10 shadow-xl group hover:border-green-500/30 transition-all">
@@ -165,7 +193,7 @@ export default function ResellerDashboard() {
                                     {orders.reduce((sum, o) => sum + Number(o.total), 0).toLocaleString()} <span className="text-xs">MAD</span>
                                 </div>
                                 <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">
-                                    {isArabic ? "إجمالي المبلغ" : "Total Value"}
+                                    {t("reseller.dashboard.total_value")}
                                 </div>
                             </div>
                         </div>
@@ -175,58 +203,97 @@ export default function ResellerDashboard() {
                             {/* Decorative element */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
 
-                            <h3 className={`text-lg font-bold text-foreground flex items-center gap-3 mb-8 ${isArabic ? "flex-row-reverse" : ""}`}>
+                            <h3 className="text-lg font-bold text-foreground flex items-center gap-3 mb-8">
                                 <Building2 className="w-5 h-5 text-primary" />
-                                {isArabic ? "بيانات المؤسسة" : "Organization Profile"}
+                                {t("reseller.dashboard.organization_profile")}
                             </h3>
 
                             <div className="space-y-6">
-                                <div className={isArabic ? "text-right" : "text-left"}>
-                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "اسم الشركة" : "Company Name"}</label>
+                                <div className="text-left">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{t("reseller.dashboard.company_name")}</label>
                                     <div className="text-lg font-bold text-foreground">
-                                        {profile?.company_name || <span className="text-muted-foreground/30 italic">Not set</span>}
+                                        {profile?.company_name || <span className="text-muted-foreground/30 italic">{t("reseller.dashboard.not_set")}</span>}
                                     </div>
                                 </div>
 
-                                <div className={isArabic ? "text-right" : "text-left"}>
-                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "رقم التعريف الموحد (ICE)" : "Business Identification (ICE)"}</label>
+                                <div className="text-left">
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{t("reseller.dashboard.business_identification")}</label>
                                     <div className="text-lg font-mono text-foreground tracking-widest bg-white/5 py-2 px-4 rounded-xl border border-white/5 inline-block min-w-40 text-center">
                                         {profile?.ice || "XXXXXXXXXXX"}
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className={isArabic ? "text-right" : "text-left"}>
-                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "المدينة" : "Location"}</label>
+                                    <div className="text-left">
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{t("reseller.dashboard.location")}</label>
                                         <div className="flex items-center gap-2 font-bold text-foreground">
                                             <MapPin className="w-4 h-4 text-primary" />
                                             {profile?.city || "N/A"}
                                         </div>
                                     </div>
-                                    <div className={isArabic ? "text-right" : "text-left"}>
-                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{isArabic ? "الموقع" : "Site"}</label>
+                                    <div className="text-left">
+                                        <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-2">{t("reseller.dashboard.site")}</label>
                                         <div className="flex items-center gap-2 font-bold text-primary truncate">
                                             <Globe className="w-4 h-4" />
                                             {profile?.website ? (
-                                                <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" className="hover:underline">View</a>
+                                                <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" className="hover:underline">{t("reseller.dashboard.view")}</a>
                                             ) : "N/A"}
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Integrated Account Manager Info */}
+                            <div className="mt-10 pt-8 border-t border-white/5 relative">
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary/20 rounded-full" />
+
+                                <h4 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] mb-6 text-left">
+                                    {t("reseller.dashboard.dedicated_account_manager")}
+                                </h4>
+
+                                {manager ? (
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-black text-2xl border border-white/5 shadow-inner">
+                                            {manager.name.charAt(0)}
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="text-lg font-black text-foreground mb-1 leading-none">{manager.name}</div>
+                                            <div className="flex flex-col gap-1.5 mt-2">
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                                    <Mail className="w-4 h-4 text-primary/60" />
+                                                    {manager.email}
+                                                </div>
+                                                {manager.phone && (
+                                                    <div className="flex items-center gap-2 text-sm text-primary font-bold">
+                                                        <Phone className="w-4 h-4" />
+                                                        {manager.phone}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 bg-white/5 rounded-2xl border border-white/5 border-dashed text-center">
+                                        <p className="text-sm text-muted-foreground italic font-medium">
+                                            {t("reseller.dashboard.no_account_manager")}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
+
                     </div>
 
                     {/* Right Column: Order History */}
                     <div className="lg:col-span-8 animate-in fade-in slide-in-from-right-6 duration-700 delay-200">
                         <div className="glass-strong rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden min-h-[600px] flex flex-col">
-                            <div className={`p-8 border-b border-white/5 flex justify-between items-center ${isArabic ? "flex-row-reverse" : ""}`}>
+                            <div className="p-8 border-b border-white/5 flex justify-between items-center">
                                 <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
                                     <FileText className="w-6 h-6 text-primary" />
-                                    {isArabic ? "سجل العمليات" : "Transaction History"}
+                                    {t("reseller.dashboard.transaction_history")}
                                 </h3>
                                 <Badge className="bg-primary/10 text-primary border-none hover:bg-primary/20 px-4 py-1.5 rounded-xl">
-                                    {orders.length} {orders.length === 1 ? "Order" : "Orders"}
+                                    {orders.length} {orders.length === 1 ? t("reseller.dashboard.order") : t("reseller.dashboard.orders")}
                                 </Badge>
                             </div>
 
@@ -237,14 +304,14 @@ export default function ResellerDashboard() {
                                             <Package className="w-12 h-12" />
                                         </div>
                                         <h4 className="text-2xl font-bold text-foreground mb-3">
-                                            {isArabic ? "لا توجد طلبات مسجلة" : "No Transactions Recorded"}
+                                            {t("reseller.dashboard.no_transactions")}
                                         </h4>
                                         <p className="text-muted-foreground max-w-sm mb-10 leading-relaxed font-medium">
-                                            {isArabic ? "ابدأ عملياتك التجارية اليوم للحصول على أسعار الجملة الحصرية." : "Initialize your wholesale journey today and unlock Tier-1 inventory pricing."}
+                                            {t("reseller.dashboard.initialize_desc")}
                                         </p>
                                         <Link href="/">
                                             <Button size="lg" variant="outline" className="rounded-2xl h-14 px-10 border-white/10 hover:bg-white/5 font-bold tracking-wide">
-                                                {isArabic ? "ابدأ الآن" : "Initialize Trade"}
+                                                {t("reseller.dashboard.start_now")}
                                             </Button>
                                         </Link>
                                     </div>
@@ -268,14 +335,14 @@ export default function ResellerDashboard() {
 
                                                     <div className="flex justify-between items-end pt-4 border-t border-white/5">
                                                         <div>
-                                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">{isArabic ? "المجموع" : "Total"}</div>
+                                                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">{t("reseller.dashboard.total")}</div>
                                                             <div className="font-black text-xl text-foreground">
                                                                 {order.total.toLocaleString()} <span className="text-[10px] text-muted-foreground">MAD</span>
                                                             </div>
                                                         </div>
                                                         <Link href={`/reseller/orders/${order.id}`}>
                                                             <Button size="sm" className="rounded-xl h-9 px-4 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground shadow-none">
-                                                                {isArabic ? "عرض" : "View"}
+                                                                {t("reseller.dashboard.view_order")}
                                                             </Button>
                                                         </Link>
                                                     </div>
@@ -288,17 +355,17 @@ export default function ResellerDashboard() {
                                             <table className="w-full text-left border-separate border-spacing-y-4">
                                                 <thead>
                                                     <tr className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-left"}`}>{isArabic ? "الرقم التسلسلي" : "Reference ID"}</th>
-                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-left"}`}>{isArabic ? "التاريخ" : "Timestamp"}</th>
-                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-left"}`}>{isArabic ? "الحالة" : "Fulfillment"}</th>
-                                                        <th className={`pb-4 px-4 ${isArabic ? "text-right" : "text-right"}`}>{isArabic ? "المجموع" : "Volume"}</th>
-                                                        <th className="pb-4 px-4 text-center">{isArabic ? "عرض" : "Action"}</th>
+                                                        <th className="pb-4 px-4 text-left">{t("reseller.dashboard.reference_id")}</th>
+                                                        <th className="pb-4 px-4 text-left">{t("reseller.dashboard.timestamp")}</th>
+                                                        <th className="pb-4 px-4 text-left">{t("reseller.dashboard.fulfillment")}</th>
+                                                        <th className="pb-4 px-4 text-right">{t("reseller.dashboard.volume")}</th>
+                                                        <th className="pb-4 px-4 text-center">{t("reseller.dashboard.action")}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {orders.map((order, idx) => (
                                                         <tr key={order.id} className="group transition-all hover:-translate-y-1">
-                                                            <td className={`bg-white/5 py-5 px-4 rounded-l-[1.5rem] border-y border-l border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-left"}`}>
+                                                            <td className="bg-white/5 py-5 px-4 rounded-l-[1.5rem] border-y border-l border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] text-left">
                                                                 <span className="font-mono text-xs font-bold text-foreground">#{order.order_number}</span>
                                                             </td>
                                                             <td className={`bg-white/5 py-5 px-4 border-y border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-left"}`}>
@@ -311,7 +378,7 @@ export default function ResellerDashboard() {
                                                                     {getStatusLabel(order.status)}
                                                                 </span>
                                                             </td>
-                                                            <td className={`bg-white/5 py-5 px-4 border-y border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] ${isArabic ? "text-right" : "text-right"}`}>
+                                                            <td className="bg-white/5 py-5 px-4 border-y border-white/5 group-hover:border-primary/20 group-hover:bg-primary/[0.02] text-right">
                                                                 <span className="font-black text-foreground">
                                                                     {order.total.toLocaleString()} <span className="text-[10px] text-muted-foreground mr-1">MAD</span>
                                                                 </span>

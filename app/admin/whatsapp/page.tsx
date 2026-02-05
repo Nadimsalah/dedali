@@ -10,8 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { listWhatsappSubscriptions, WhatsappSubscription } from "@/lib/supabase-api"
 
 export default function AdminWhatsappPage() {
-  const { language } = useLanguage()
-  const isArabic = language === "ar"
+  const { t } = useLanguage()
   const [leads, setLeads] = useState<WhatsappSubscription[]>([])
 
   useEffect(() => {
@@ -27,25 +26,23 @@ export default function AdminWhatsappPage() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{isArabic ? "العودة للوحة التحكم" : "Back to dashboard"}</span>
+            <span>{t("admin.whatsapp.back")}</span>
           </Link>
           <span className="text-xs text-muted-foreground uppercase tracking-[0.25em]">
-            {isArabic ? "أرقام واتساب" : "WhatsApp Leads"}
+            {t("admin.whatsapp.title")}
           </span>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         <Card className="p-4 sm:p-6 flex items-center justify-between gap-4">
-          <div className={isArabic ? "text-right space-y-1" : "space-y-1"}>
+          <div className="space-y-1">
             <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
               <Phone className="w-4 h-4 text-primary" />
-              {isArabic ? "قائمة المشتركين في واتساب" : "WhatsApp subscription list"}
+              {t("admin.whatsapp.list_title")}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              {isArabic
-                ? "هذه الصفحة مبدئية لعرض أرقام \"خليك على تواصل عبر واتساب\". يمكن ربطها لاحقاً بقاعدة بيانات Supabase."
-                : "This page is a placeholder to display numbers from the \"Stay in the Loop on WhatsApp\" form. You can later connect it to a Supabase table."}
+              {t("admin.whatsapp.subtitle")}
             </p>
           </div>
           <Button variant="outline" size="icon" className="rounded-full" disabled>
@@ -57,18 +54,16 @@ export default function AdminWhatsappPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{isArabic ? "الدولة" : "Country code"}</TableHead>
-                <TableHead>{isArabic ? "رقم الموبايل" : "Phone"}</TableHead>
-                <TableHead>{isArabic ? "تاريخ التسجيل" : "Subscribed at"}</TableHead>
+                <TableHead>{t("admin.whatsapp.table.country")}</TableHead>
+                <TableHead>{t("admin.whatsapp.table.phone")}</TableHead>
+                <TableHead>{t("admin.whatsapp.table.date")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {leads.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="py-8 text-center text-muted-foreground text-sm">
-                    {isArabic
-                      ? "لا توجد بيانات بعد. اربط النموذج بقاعدة البيانات لعرض الأرقام هنا."
-                      : "No data yet. Connect the WhatsApp form to a database to see numbers here."}
+                    {t("admin.whatsapp.no_data")}
                   </TableCell>
                 </TableRow>
               ) : (

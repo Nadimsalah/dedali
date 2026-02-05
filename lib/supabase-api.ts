@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, supabaseAdmin } from './supabase'
 
 export interface Product {
     id: string
@@ -455,7 +455,8 @@ export async function getOrders(filters?: {
     const { data, error, count } = await query
 
     if (error) {
-        console.error('Error fetching orders:', error)
+        console.error('Error fetching orders:', error.message || error);
+        if (error.details) console.error('Details:', error.details);
         return { data: [], count: 0 }
     }
 
@@ -485,7 +486,8 @@ export async function getOrderById(id: string) {
         .from('orders')
         .select(`
       *,
-      order_items (*)
+      order_items (*),
+      reseller:resellers (*, profile:profiles(name))
     `)
         .eq('id', id)
         .single()
@@ -495,7 +497,14 @@ export async function getOrderById(id: string) {
         return null
     }
 
-    return data as (Order & { order_items: OrderItem[] })
+    return data as (Order & {
+        order_items: OrderItem[],
+        reseller?: {
+            id: string,
+            company_name: string,
+            profile?: { name: string }
+        }
+    })
 }
 
 export async function createOrder(data: {
@@ -570,11 +579,24 @@ export async function createOrder(data: {
 
     // 2. Insert order
     const orderNumber = `ORD-${Math.floor(1000 + Math.random() * 9000)}`
+
+    // Check if customer is a reseller
+    let resellerId = null
+    if (customer?.id) {
+        const { data: resellerData } = await supabase
+            .from('resellers')
+            .select('id')
+            .eq('user_id', customer.id)
+            .maybeSingle()
+        if (resellerData) resellerId = resellerData.id
+    }
+
     const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
             order_number: orderNumber,
             customer_id: customer?.id || null,
+            reseller_id: resellerId,
             customer_name: data.customer.name,
             customer_email: data.customer.email,
             customer_phone: data.customer.phone,
@@ -636,7 +658,11 @@ export async function createOrder(data: {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
-    const { data, error } = await supabase
+    // USE ADMIN CLIENT to bypass RLS restrictions on triggers/logs
+    // If supabaseAdmin is not available (client-side), fall back to standard supabase client
+    const client = supabaseAdmin || supabase
+
+    const { data, error } = await client
         .from('orders')
         .update({ status })
         .eq('id', orderId)
@@ -644,7 +670,9 @@ export async function updateOrderStatus(orderId: string, status: string) {
         .single()
 
     if (error) {
-        console.error('Error updating order status:', error)
+        console.error('Error updating order status:', error.message || error)
+        if (error.details) console.error('Error details:', error.details)
+        if (error.hint) console.error('Error hint:', error.hint)
         return { error }
     }
 
@@ -730,14 +758,14 @@ export async function getCurrentUserRole(): Promise<string | null> {
     if (!user) return null
 
     const { data, error } = await supabase
-        .from('customers')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-    if (error || !data) return 'customer' // Default to customer if error
+    if (error || !data) return 'customer' // Default to customer if error or not found in profiles
 
-    return data.role
+    return data.role as string
 }
 
 // Analytics API

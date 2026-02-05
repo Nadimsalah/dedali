@@ -17,7 +17,9 @@ import {
     MessageSquare,
     Lock,
     Eye,
-    EyeOff
+    EyeOff,
+    Sparkles,
+    Users
 } from "lucide-react"
 import { toast } from "sonner"
 import { getAdminSettings, updateAdminSettings } from "@/lib/supabase-api"
@@ -26,8 +28,10 @@ import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useLanguage } from "@/components/language-provider"
 
 export default function SettingsPage() {
+    const { t } = useLanguage()
     const [settings, setSettings] = useState<Record<string, string>>({})
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -50,9 +54,9 @@ export default function SettingsPage() {
         setSaving(true)
         const result = await updateAdminSettings(settings)
         if (result.success) {
-            toast.success("Settings updated successfully")
+            toast.success(t("admin.settings.toast.success"))
         } else {
-            toast.error("Failed to update settings")
+            toast.error(t("admin.settings.toast.error"))
         }
         setSaving(false)
     }
@@ -75,12 +79,12 @@ export default function SettingsPage() {
             })
             const data = await response.json()
             if (data.sent > 0) {
-                toast.success(`Sent to ${data.sent} device(s)`)
+                toast.success(t("admin.settings.toast.push_sent").replace("{count}", data.sent.toString()))
             } else {
-                toast.error("No active subscriptions found for this store.")
+                toast.error(t("admin.settings.toast.push_no_sub"))
             }
         } catch (error) {
-            toast.error("Failed to trigger test notification")
+            toast.error(t("admin.settings.toast.push_fail"))
         } finally {
             setTesting(false)
         }
@@ -95,11 +99,11 @@ export default function SettingsPage() {
     }
 
     const sections = [
-        { id: "general", label: "General", icon: Globe },
-        { id: "marketing", label: "Marketing", icon: Megaphone },
-        { id: "payments", label: "Payments", icon: CreditCard },
-        { id: "notifications", label: "Alerts", icon: Bell },
-        { id: "security", label: "Security", icon: Lock },
+        { id: "general", label: t("admin.settings.tabs.general"), icon: Globe },
+        { id: "marketing", label: t("admin.settings.tabs.marketing"), icon: Megaphone },
+        { id: "payments", label: t("admin.settings.tabs.payments"), icon: CreditCard },
+        { id: "notifications", label: t("admin.settings.tabs.alerts"), icon: Bell },
+        { id: "security", label: t("admin.settings.tabs.security"), icon: Lock },
     ]
 
     return (
@@ -122,8 +126,8 @@ export default function SettingsPage() {
                                 <SettingsIcon className="w-7 h-7 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-foreground">Admin Configuration</h1>
-                                <p className="text-sm text-muted-foreground font-medium">Global settings for Dedali Store</p>
+                                <h1 className="text-2xl font-bold text-foreground">{t("admin.settings.title")}</h1>
+                                <p className="text-sm text-muted-foreground font-medium">{t("admin.settings.subtitle")}</p>
                             </div>
                         </div>
 
@@ -134,7 +138,7 @@ export default function SettingsPage() {
                                 className="rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all"
                             >
                                 <RotateCcw className="w-4 h-4 mr-2" />
-                                Reset
+                                {t("admin.settings.reset")}
                             </Button>
                             <Button
                                 onClick={handleSave}
@@ -142,7 +146,7 @@ export default function SettingsPage() {
                                 className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground px-8 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                                Update Systems
+                                {t("admin.settings.update")}
                             </Button>
                         </div>
                     </header>
@@ -159,23 +163,55 @@ export default function SettingsPage() {
                                     {section.label}
                                 </TabsTrigger>
                             ))}
+                            <TabsTrigger
+                                value="team"
+                                className="rounded-xl px-5 py-2.5 data-[state=active]:glass-strong data-[state=active]:shadow-md transition-all flex items-center gap-2"
+                            >
+                                <Users className="w-4 h-4" />
+                                {t("admin.settings.tabs.team")}
+                            </TabsTrigger>
                         </TabsList>
 
                         <div className="min-h-[500px] animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* General Settings */}
                             <TabsContent value="general" className="space-y-6 m-0">
+
+                                {/* ALERTS & REMINDERS WIDGET (Moved from Dashboard) */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="glass-strong rounded-3xl p-6 relative overflow-hidden flex flex-col justify-center items-center text-center group border-white/20 shadow-xl">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-green-500/20 transition-all" />
+                                        <div className="p-3 bg-green-500/10 text-green-500 rounded-full mb-4">
+                                            <Sparkles className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-foreground mb-1">{t("admin.settings.general.action_required")}</h3>
+                                        <p className="text-sm text-muted-foreground">{settings.manager_alert_fallback || t("admin.settings.general.caught_up")}</p>
+                                    </div>
+
+                                    <div className="glass-strong rounded-3xl p-6 relative overflow-hidden flex flex-col justify-center group border-white/20 shadow-xl">
+                                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -ml-10 -mb-10 group-hover:bg-blue-500/20 transition-all" />
+                                        <h3 className="text-lg font-bold text-foreground mb-2 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                            {t("admin.settings.general.reminders_title")}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            {settings.manager_internal_reminders || t("admin.settings.general.reminders_desc")}
+                                        </p>
+                                    </div>
+                                </div>
+                                {/* End Alerts & Reminders */}
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="glass rounded-3xl p-8 border-white/20 shadow-xl space-y-6">
                                         <div className="flex items-center gap-3 border-b border-border/10 pb-4">
                                             <div className="p-2 bg-blue-500/10 rounded-lg">
                                                 <Globe className="w-5 h-5 text-blue-500" />
                                             </div>
-                                            <h3 className="font-bold text-lg">Identity & Localization</h3>
+                                            <h3 className="font-bold text-lg">{t("admin.settings.general.identity_title")}</h3>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Store Name</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.general.label.store_name")}</label>
                                                 <Input
                                                     value={settings.store_name || ""}
                                                     onChange={(e) => handleChange("store_name", e.target.value)}
@@ -184,7 +220,7 @@ export default function SettingsPage() {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Support Email</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.general.label.support_email")}</label>
                                                 <Input
                                                     type="email"
                                                     value={settings.support_email || ""}
@@ -194,7 +230,7 @@ export default function SettingsPage() {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Main Currency</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.general.label.currency")}</label>
                                                 <Input
                                                     value={settings.currency || ""}
                                                     onChange={(e) => handleChange("currency", e.target.value)}
@@ -210,12 +246,12 @@ export default function SettingsPage() {
                                             <div className="p-2 bg-green-500/10 rounded-lg">
                                                 <MessageSquare className="w-5 h-5 text-green-500" />
                                             </div>
-                                            <h3 className="font-bold text-lg">Contact Channels</h3>
+                                            <h3 className="font-bold text-lg">{t("admin.settings.general.channels_title")}</h3>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">WhatsApp Business Number</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.general.label.whatsapp")}</label>
                                                 <div className="relative">
                                                     <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                                     <Input
@@ -227,7 +263,7 @@ export default function SettingsPage() {
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Direct Support Line</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.general.label.phone")}</label>
                                                 <Input
                                                     value={settings.contact_phone || ""}
                                                     onChange={(e) => handleChange("contact_phone", e.target.value)}
@@ -247,17 +283,17 @@ export default function SettingsPage() {
                                         <div className="p-2 bg-amber-500/10 rounded-lg">
                                             <Megaphone className="w-5 h-5 text-amber-500" />
                                         </div>
-                                        <h3 className="font-bold text-lg">Global Announcements & Promotions</h3>
+                                        <h3 className="font-bold text-lg">{t("admin.settings.marketing.title")}</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                         {/* EN Section */}
                                         <div className="space-y-6">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold tracking-widest uppercase">English Content</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold tracking-widest uppercase">{t("admin.settings.marketing.label.en_content")}</span>
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Header Announcement</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.marketing.label.announcement")}</label>
                                                 <textarea
                                                     rows={2}
                                                     value={settings.announcement_bar || ""}
@@ -267,7 +303,7 @@ export default function SettingsPage() {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Hero Section Title</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.marketing.label.hero_title")}</label>
                                                 <Input
                                                     value={settings.hero_title || ""}
                                                     onChange={(e) => handleChange("hero_title", e.target.value)}
@@ -276,7 +312,7 @@ export default function SettingsPage() {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-sm font-bold ml-1">Hero Subtitle</label>
+                                                <label className="text-sm font-bold ml-1">{t("admin.settings.marketing.label.hero_subtitle")}</label>
                                                 <textarea
                                                     rows={3}
                                                     value={settings.hero_subtitle || ""}
@@ -290,7 +326,7 @@ export default function SettingsPage() {
                                         {/* AR Section */}
                                         <div className="space-y-6" dir="rtl">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold tracking-widest uppercase">Arabic Content</span>
+                                                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-bold tracking-widest uppercase">{t("admin.settings.marketing.label.ar_content")}</span>
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-sm font-bold mr-1">الإعلان العلوي</label>
@@ -326,14 +362,14 @@ export default function SettingsPage() {
 
                                     <div className="space-y-4 pt-4 border-t border-border/10">
                                         <div className="max-w-xs space-y-2">
-                                            <label className="text-sm font-bold ml-1">Active Promo Code</label>
+                                            <label className="text-sm font-bold ml-1">{t("admin.settings.marketing.label.promo_code")}</label>
                                             <Input
                                                 value={settings.promo_code || ""}
                                                 onChange={(e) => handleChange("promo_code", e.target.value)}
                                                 className="rounded-xl h-12 bg-primary/5 border-primary/20 font-bold uppercase tracking-widest text-primary focus:bg-primary/10 transition-all placeholder:text-primary/30"
                                                 placeholder="TECH2026"
                                             />
-                                            <p className="text-[10px] text-muted-foreground ml-1 italic">Applied at checkout and displayed in some store sections.</p>
+                                            <p className="text-[10px] text-muted-foreground ml-1 italic">{t("admin.settings.marketing.promo_desc")}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -347,14 +383,14 @@ export default function SettingsPage() {
                                             <div className="p-2 bg-purple-500/10 rounded-lg">
                                                 <CreditCard className="w-5 h-5 text-purple-500" />
                                             </div>
-                                            <h3 className="font-bold text-lg">Standard Gateways</h3>
+                                            <h3 className="font-bold text-lg">{t("admin.settings.payments.gateways_title")}</h3>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between group hover:bg-white/10 transition-all">
                                                 <div className="space-y-1">
-                                                    <p className="font-bold text-sm">Cash on Delivery (COD)</p>
-                                                    <p className="text-xs text-muted-foreground">Standard Morocco payment</p>
+                                                    <p className="font-bold text-sm">{t("admin.settings.payments.cod_title")}</p>
+                                                    <p className="text-xs text-muted-foreground">{t("admin.settings.payments.cod_desc")}</p>
                                                 </div>
                                                 <Switch
                                                     checked={settings.payment_cod_enabled !== "false"}
@@ -364,8 +400,8 @@ export default function SettingsPage() {
 
                                             <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between group hover:bg-white/10 transition-all">
                                                 <div className="space-y-1">
-                                                    <p className="font-bold text-sm">Cheque Payment</p>
-                                                    <p className="text-xs text-muted-foreground">For corporate & enterprise</p>
+                                                    <p className="font-bold text-sm">{t("admin.settings.payments.cheque_title")}</p>
+                                                    <p className="text-xs text-muted-foreground">{t("admin.settings.payments.cheque_desc")}</p>
                                                 </div>
                                                 <Switch
                                                     checked={settings.payment_cheque_enabled === "true"}
@@ -375,7 +411,7 @@ export default function SettingsPage() {
 
                                             {settings.payment_cheque_enabled === "true" && (
                                                 <div className="animate-in slide-in-from-top-4 duration-300">
-                                                    <label className="text-xs font-bold text-muted-foreground m-1 mb-2 block tracking-wider uppercase">Payee Info</label>
+                                                    <label className="text-xs font-bold text-muted-foreground m-1 mb-2 block tracking-wider uppercase">{t("admin.settings.payments.label.payee_info")}</label>
                                                     <textarea
                                                         rows={3}
                                                         value={settings.payment_cheque_details || ""}
@@ -393,14 +429,14 @@ export default function SettingsPage() {
                                             <div className="p-2 bg-indigo-500/10 rounded-lg">
                                                 <RotateCcw className="w-5 h-5 text-indigo-500" />
                                             </div>
-                                            <h3 className="font-bold text-lg">Bank Wire Transfers</h3>
+                                            <h3 className="font-bold text-lg">{t("admin.settings.payments.wire_title")}</h3>
                                         </div>
 
                                         <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-1">
-                                                    <p className="font-bold text-sm">Transfer (Virement)</p>
-                                                    <p className="text-xs text-muted-foreground">IBAN / RIB based payment</p>
+                                                    <p className="font-bold text-sm">{t("admin.settings.payments.transfer_title")}</p>
+                                                    <p className="text-xs text-muted-foreground">{t("admin.settings.payments.transfer_desc")}</p>
                                                 </div>
                                                 <Switch
                                                     checked={settings.payment_virement_enabled === "true"}
@@ -410,7 +446,7 @@ export default function SettingsPage() {
 
                                             {settings.payment_virement_enabled === "true" && (
                                                 <div className="animate-in slide-in-from-top-4 duration-300 space-y-3">
-                                                    <label className="text-xs font-bold text-muted-foreground m-1 tracking-wider uppercase">Banking Details</label>
+                                                    <label className="text-xs font-bold text-muted-foreground m-1 tracking-wider uppercase">{t("admin.settings.payments.label.banking_details")}</label>
                                                     <textarea
                                                         rows={6}
                                                         value={settings.payment_virement_details || ""}
@@ -432,15 +468,15 @@ export default function SettingsPage() {
                                         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2 animate-pulse">
                                             <Bell className="w-10 h-10 text-primary" />
                                         </div>
-                                        <h2 className="text-2xl font-bold">Push Notifications</h2>
-                                        <p className="text-sm text-muted-foreground text-balance">Real-time system alerts for orders and inventory status directly to your mobile or desktop.</p>
+                                        <h2 className="text-2xl font-bold">{t("admin.settings.alerts.title")}</h2>
+                                        <p className="text-sm text-muted-foreground text-balance">{t("admin.settings.alerts.desc")}</p>
                                     </div>
 
                                     <div className="space-y-6">
                                         <div className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                                             <div className="space-y-1">
-                                                <p className="font-bold text-base">Global Push Service</p>
-                                                <p className="text-xs text-muted-foreground">Master toggle for the store notification engine.</p>
+                                                <p className="font-bold text-base">{t("admin.settings.alerts.global_toggle")}</p>
+                                                <p className="text-xs text-muted-foreground">{t("admin.settings.alerts.global_desc")}</p>
                                             </div>
                                             <Switch
                                                 checked={settings.push_notifications_enabled === "true"}
@@ -455,7 +491,7 @@ export default function SettingsPage() {
                                                 className="rounded-2xl h-14 border-white/10 hover:bg-white/5 transition-all text-sm font-bold"
                                             >
                                                 <Smartphone className="w-4 h-4 mr-3" />
-                                                Register Current Device
+                                                {t("admin.settings.alerts.register_device")}
                                             </Button>
                                             <Button
                                                 onClick={handleTestNotification}
@@ -463,23 +499,23 @@ export default function SettingsPage() {
                                                 className="rounded-2xl h-14 bg-primary/10 hover:bg-primary/20 text-primary border-none text-sm font-bold shadow-none"
                                             >
                                                 {testing ? <Loader2 className="w-4 h-4 animate-spin mr-3" /> : <Send className="w-4 h-4 mr-3" />}
-                                                Send System Ping
+                                                {t("admin.settings.alerts.send_ping")}
                                             </Button>
                                         </div>
 
                                         <div className="p-6 rounded-2xl bg-blue-500/5 border border-blue-500/20 space-y-4">
                                             <div className="flex items-center gap-2 text-blue-500">
                                                 <Shield className="w-4 h-4 font-bold" />
-                                                <h4 className="text-xs font-bold uppercase tracking-widest">Setup Guide</h4>
+                                                <h4 className="text-xs font-bold uppercase tracking-widest">{t("admin.settings.alerts.guide_title")}</h4>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[11px] text-blue-400/80 leading-relaxed font-medium">
                                                 <div className="space-y-2">
-                                                    <p className="text-blue-500 font-bold">iOS / iPhone</p>
-                                                    <p>1. Open this page in Safari<br />2. Tap Share → "Add to Home Screen"<br />3. Open from home screen and Subscribe.</p>
+                                                    <p className="text-blue-500 font-bold">{t("admin.settings.alerts.guide_ios_title")}</p>
+                                                    <p>{t("admin.settings.alerts.guide_ios_desc")}</p>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <p className="text-blue-500 font-bold">Android / Desktop</p>
-                                                    <p>Browser must be open or background tasks enabled. Works natively on Chrome/Edge.</p>
+                                                    <p className="text-blue-500 font-bold">{t("admin.settings.alerts.guide_android_title")}</p>
+                                                    <p>{t("admin.settings.alerts.guide_android_desc")}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -494,13 +530,13 @@ export default function SettingsPage() {
                                         <Lock className="w-10 h-10 text-red-500" />
                                     </div>
                                     <div className="space-y-2">
-                                        <h3 className="text-xl font-bold">Dashboard Protection</h3>
-                                        <p className="text-xs text-muted-foreground">The Admin PIN protects sensitive operations and dashboard entry.</p>
+                                        <h3 className="text-xl font-bold">{t("admin.settings.security.title")}</h3>
+                                        <p className="text-xs text-muted-foreground">{t("admin.settings.security.desc")}</p>
                                     </div>
 
                                     <div className="space-y-6">
                                         <div className="space-y-3">
-                                            <label className="text-xs font-bold tracking-widest uppercase text-muted-foreground">System Access PIN</label>
+                                            <label className="text-xs font-bold tracking-widest uppercase text-muted-foreground">{t("admin.settings.security.label.pin")}</label>
                                             <div className="relative">
                                                 <Input
                                                     type={showPin ? "text" : "password"}
@@ -521,7 +557,54 @@ export default function SettingsPage() {
                                         </div>
 
                                         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-500 font-medium">
-                                            ⚠️ Warning: Changing the PIN will take immediate effect across all administrative entry points.
+                                            {t("admin.settings.security.warning")}
+                                        </div>
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            {/* Team / Manager Dashboard Settings */}
+                            <TabsContent value="team" className="space-y-6 m-0">
+                                <div className="glass rounded-3xl p-8 border-white/20 shadow-xl space-y-8">
+                                    <div className="flex items-center gap-3 border-b border-border/10 pb-4">
+                                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                                            <Users className="w-5 h-5 text-blue-500" />
+                                        </div>
+                                        <h3 className="font-bold text-lg">{t("admin.settings.team.title")}</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="p-2 bg-green-500/10 rounded-lg text-green-500"><Sparkles className="w-4 h-4" /></span>
+                                                    <label className="text-sm font-bold">{t("admin.settings.team.label.fallback")}</label>
+                                                </div>
+                                                <Input
+                                                    value={settings.manager_alert_fallback || t("admin.settings.general.caught_up")}
+                                                    onChange={(e) => handleChange("manager_alert_fallback", e.target.value)}
+                                                    className="rounded-xl h-12 bg-white/5 border-white/10"
+                                                    placeholder="All caught up! No urgent alerts."
+                                                />
+                                                <p className="text-[10px] text-muted-foreground ml-1">{t("admin.settings.team.fallback_desc")}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="p-2 bg-primary/10 rounded-lg text-primary"><MessageSquare className="w-4 h-4" /></span>
+                                                    <label className="text-sm font-bold">{t("admin.settings.team.label.guidance")}</label>
+                                                </div>
+                                                <textarea
+                                                    rows={4}
+                                                    value={settings.manager_internal_reminders || t("admin.settings.general.reminders_desc")}
+                                                    onChange={(e) => handleChange("manager_internal_reminders", e.target.value)}
+                                                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary/50 focus:outline-none transition-all text-sm resize-none"
+                                                    placeholder="Instructions for account managers..."
+                                                />
+                                                <p className="text-[10px] text-muted-foreground ml-1">{t("admin.settings.team.guidance_desc")}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

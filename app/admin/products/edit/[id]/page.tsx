@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,12 +22,21 @@ import { getProductById } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 
 export default function EditProductPage() {
+    const { t, setLanguage } = useLanguage()
     const router = useRouter()
     const params = useParams()
     const productId = params.id as string
 
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     // Form state
     const [title, setTitle] = useState("")

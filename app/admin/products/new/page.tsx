@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +59,15 @@ export default function NewProductPage() {
     // AI Rewrite State
     const [rewriting, setRewriting] = useState<string | null>(null)
     const [relatedProducts, setRelatedProducts] = useState<any[]>([])
+    const { t, setLanguage } = useLanguage()
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     // Fetch related products & categories
     useEffect(() => {

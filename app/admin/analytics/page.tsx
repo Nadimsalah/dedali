@@ -30,8 +30,10 @@ import {
     Cell
 } from "recharts"
 import { getDashboardStats, getRevenueAnalytics, getTopProducts } from "@/lib/supabase-api"
+import { useLanguage } from "@/components/language-provider"
 
 export default function AnalyticsPage() {
+    const { t } = useLanguage()
     const [stats, setStats] = useState<any>(null)
     const [revenueData, setRevenueData] = useState<any[]>([])
     const [topProducts, setTopProducts] = useState<any[]>([])
@@ -58,7 +60,7 @@ export default function AnalyticsPage() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                    <p className="text-muted-foreground animate-pulse">Gathering intelligence...</p>
+                    <p className="text-muted-foreground animate-pulse">{t("admin.analytics.loading")}</p>
                 </div>
             </div>
         )
@@ -76,8 +78,8 @@ export default function AnalyticsPage() {
                             <Activity className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Analytics</h1>
-                            <p className="text-xs text-muted-foreground">Deep dive into performance</p>
+                            <h1 className="text-xl font-bold text-foreground">{t("admin.analytics.title")}</h1>
+                            <p className="text-xs text-muted-foreground">{t("admin.analytics.subtitle")}</p>
                         </div>
                     </div>
 
@@ -92,29 +94,29 @@ export default function AnalyticsPage() {
                 {/* Key Metrics */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <StatCard
-                        title="Total Revenue"
-                        value={`MAD ${stats?.totalRevenue?.toLocaleString()}`}
+                        title={t("admin.analytics.total_revenue")}
+                        value={`${t("common.currency")} ${stats?.totalRevenue?.toLocaleString()}`}
                         change="+12.5%"
                         trend="up"
                         icon={CreditCard}
                     />
                     <StatCard
-                        title="Conversion Rate"
+                        title={t("admin.analytics.conversion_rate")}
                         value="3.2%"
                         change="+0.4%"
                         trend="up"
                         icon={TrendingUp}
                     />
                     <StatCard
-                        title="Active Sessions"
+                        title={t("admin.analytics.active_sessions")}
                         value="1,284"
                         change="-2.1%"
                         trend="down"
                         icon={Users}
                     />
                     <StatCard
-                        title="Avg. Order Value"
-                        value={`MAD ${(stats?.totalRevenue / (stats?.totalOrders || 1))?.toFixed(0)}`}
+                        title={t("admin.analytics.avg_order_value")}
+                        value={`${t("common.currency")} ${(stats?.totalRevenue / (stats?.totalOrders || 1))?.toFixed(0)}`}
                         change="+5.2%"
                         trend="up"
                         icon={ShoppingBag}
@@ -125,7 +127,7 @@ export default function AnalyticsPage() {
                     {/* Revenue Trends */}
                     <div className="lg:col-span-2 glass-strong rounded-3xl p-6 h-[450px]">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-bold text-foreground">Revenue Over Time</h3>
+                            <h3 className="text-lg font-bold text-foreground">{t("admin.analytics.revenue_over_time")}</h3>
                         </div>
                         <div className="h-[340px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -146,7 +148,7 @@ export default function AnalyticsPage() {
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                                        tickFormatter={(val) => `MAD ${val}`}
+                                        tickFormatter={(val) => `${t("common.currency")} ${val}`}
                                     />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: '16px', border: 'none', color: '#fff' }}
@@ -166,7 +168,7 @@ export default function AnalyticsPage() {
 
                     {/* Top Products */}
                     <div className="glass-strong rounded-3xl p-6 h-[450px]">
-                        <h3 className="text-lg font-bold text-foreground mb-6">Top Products</h3>
+                        <h3 className="text-lg font-bold text-foreground mb-6">{t("admin.analytics.top_products")}</h3>
                         <div className="space-y-6">
                             {topProducts.map((product, i) => (
                                 <div key={i} className="flex items-center gap-4">
@@ -175,13 +177,13 @@ export default function AnalyticsPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="font-semibold text-foreground truncate">{product.name}</p>
-                                        <p className="text-xs text-muted-foreground">{product.sales} sales</p>
+                                        <p className="text-xs text-muted-foreground">{t("admin.analytics.sales_count").replace("{count}", product.sales.toString())}</p>
                                     </div>
-                                    <p className="font-bold text-foreground">MAD {product.revenue.toLocaleString()}</p>
+                                    <p className="font-bold text-foreground">{t("common.currency")} {product.revenue.toLocaleString()}</p>
                                 </div>
                             ))}
                             {topProducts.length === 0 && (
-                                <div className="py-12 text-center text-muted-foreground italic">No sales data yet</div>
+                                <div className="py-12 text-center text-muted-foreground italic">{t("admin.analytics.no_sales_data")}</div>
                             )}
                         </div>
                     </div>
@@ -191,7 +193,7 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="glass-strong rounded-3xl p-6 h-[400px]">
                         <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                            Channel Performance
+                            {t("admin.analytics.channel_performance")}
                         </h3>
                         <div className="h-[280px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
@@ -213,9 +215,9 @@ export default function AnalyticsPage() {
                         <div className="p-4 bg-primary/10 rounded-full mb-4">
                             <Globe className="w-8 h-8 text-primary" />
                         </div>
-                        <h3 className="text-xl font-bold text-foreground mb-2">Visitor Locality</h3>
+                        <h3 className="text-xl font-bold text-foreground mb-2">{t("admin.analytics.visitor_locality")}</h3>
                         <p className="text-sm text-muted-foreground max-w-[300px]">
-                            Implement session tracking to see real-time visitor geographic data.
+                            {t("admin.analytics.visitor_locality_desc")}
                         </p>
                     </div>
                 </div>

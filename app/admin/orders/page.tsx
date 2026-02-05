@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,7 @@ import {
 } from "lucide-react"
 
 export default function AdminOrdersPage() {
+    const { t, setLanguage } = useLanguage()
     const searchParams = useSearchParams()
     const customerId = searchParams.get('customer_id')
     const [activeTab, setActiveTab] = useState("All")
@@ -29,6 +31,14 @@ export default function AdminOrdersPage() {
     const [orders, setOrders] = useState<Order[]>([])
     const [totalOrders, setTotalOrders] = useState(0)
     const [loading, setLoading] = useState(true)
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     useEffect(() => {
         async function loadOrders() {
@@ -44,7 +54,7 @@ export default function AdminOrdersPage() {
         loadOrders()
     }, [activeTab, customerId])
 
-    const tabs = ["All", "Processing", "Delivered", "Pending", "Cancelled"]
+    const tabs = ["All", "Processing", "Delivered", "Pending", "Cancelled"] as const
 
     const filteredOrders = orders.filter(order => {
         const matchesSearch =
@@ -82,17 +92,17 @@ export default function AdminOrdersPage() {
                             <ShoppingBag className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Orders</h1>
-                            <p className="text-xs text-muted-foreground">Manage and track orders</p>
+                            <h1 className="text-xl font-bold text-foreground">{t("admin.orders.title")}</h1>
+                            <p className="text-xs text-muted-foreground">{t("admin.orders.subtitle")}</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Button variant="outline" className="rounded-full h-9 bg-background/50 border-white/10 hidden sm:flex">
-                            <Download className="w-4 h-4 mr-2" /> Export
+                            <Download className="w-4 h-4 mr-2" /> {t("admin.orders.export")}
                         </Button>
                         <Button className="rounded-full h-9 shadow-lg shadow-primary/20">
-                            <span className="hidden sm:inline">Create Order</span>
+                            <span className="hidden sm:inline">{t("admin.orders.create_order")}</span>
                             <span className="sm:hidden">+</span>
                         </Button>
                         <Notifications />
@@ -113,7 +123,7 @@ export default function AdminOrdersPage() {
                                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                                         }`}
                                 >
-                                    {tab}
+                                    {t(`admin.orders.status.${tab.toLowerCase()}` as any)}
                                 </button>
                             ))}
                         </div>
@@ -123,7 +133,7 @@ export default function AdminOrdersPage() {
                             <div className="relative flex-1 sm:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search orders..."
+                                    placeholder={t("admin.orders.search_placeholder")}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-9 rounded-xl bg-white/5 border-white/10 focus:bg-white/10 h-10"
@@ -154,12 +164,12 @@ export default function AdminOrdersPage() {
                                         </div>
                                         <div className="flex justify-between items-end pt-2 border-t border-white/5">
                                             <div>
-                                                <div className="text-[10px] text-muted-foreground uppercase">Total</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">{t("admin.orders.table.total")}</div>
                                                 <div className="font-bold text-foreground">MAD {order.total}</div>
                                             </div>
                                             <Link href={`/admin/orders/${order.id}`}>
                                                 <Button size="sm" variant="outline" className="h-8 text-xs bg-white/5 hover:bg-white/10 border-white/10">
-                                                    View Details
+                                                    {t("admin.orders.view_details")}
                                                 </Button>
                                             </Link>
                                         </div>
@@ -167,7 +177,7 @@ export default function AdminOrdersPage() {
                                 ))
                             ) : (
                                 <div className="text-center text-muted-foreground py-8">
-                                    {loading ? "Loading orders..." : "No orders found"}
+                                    {loading ? t("admin.orders.loading") : t("admin.orders.no_orders")}
                                 </div>
                             )}
                         </div>
@@ -177,13 +187,13 @@ export default function AdminOrdersPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5 text-left">
-                                        <th className="py-4 pl-4 sm:pl-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order</th>
-                                        <th className="py-4 px-2 sm:px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Date</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Customer</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Items</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                                        <th className="py-4 pr-6 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                                        <th className="py-4 pl-4 sm:pl-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.orders.table.order")}</th>
+                                        <th className="py-4 px-2 sm:px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">{t("admin.orders.table.date")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">{t("admin.orders.table.customer")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">{t("admin.orders.table.items")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.orders.table.total")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.orders.table.status")}</th>
+                                        <th className="py-4 pr-6 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.orders.table.actions")}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -228,7 +238,7 @@ export default function AdminOrdersPage() {
                                     ) : (
                                         <tr>
                                             <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                                                {loading ? "Loading orders..." : "No orders found matching your criteria"}
+                                                {loading ? t("admin.orders.loading") : t("admin.orders.no_orders_match")}
                                             </td>
                                         </tr>
                                     )}
@@ -238,7 +248,7 @@ export default function AdminOrdersPage() {
 
                         {/* Pagination */}
                         <div className="p-4 border-t border-white/10 flex items-center justify-between">
-                            <p className="text-sm text-muted-foreground">Showing 1-{orders.length} of {totalOrders} orders</p>
+                            <p className="text-sm text-muted-foreground">{t("admin.orders.showing").replace("{current}", `1-${orders.length}`).replace("{total}", totalOrders.toString())}</p>
                             <div className="flex gap-2">
                                 <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-transparent border-white/10" disabled>
                                     <ChevronLeft className="w-4 h-4" />

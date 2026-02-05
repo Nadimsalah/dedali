@@ -11,8 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 
 export default function AdminContactsPage() {
-  const { language } = useLanguage()
-  const isArabic = language === "ar"
+  const { t } = useLanguage()
   const [rows, setRows] = useState<ContactMessage[]>([])
   const [active, setActive] = useState<ContactMessage | null>(null)
 
@@ -29,10 +28,10 @@ export default function AdminContactsPage() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{isArabic ? "العودة للوحة التحكم" : "Back to dashboard"}</span>
+            <span>{t("admin.contacts.back")}</span>
           </Link>
           <span className="text-xs text-muted-foreground uppercase tracking-[0.25em]">
-            {isArabic ? "رسائل اتصل بنا" : "Contact messages"}
+            {t("admin.contacts.title")}
           </span>
         </div>
       </header>
@@ -41,12 +40,10 @@ export default function AdminContactsPage() {
         <Card className="p-4 sm:p-6">
           <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
-            {isArabic ? "رسائل العملاء والشركاء" : "Messages from clients, partners & distributors"}
+            {t("admin.contacts.list_title")}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-            {isArabic
-              ? "يمكنك عرض نص الرسالة كاملًا بالضغط على زر \"عرض\"."
-              : "Click the \"View\" button to read full message content in a dialog."}
+            {t("admin.contacts.subtitle")}
           </p>
         </Card>
 
@@ -54,21 +51,19 @@ export default function AdminContactsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{isArabic ? "الاسم" : "Name"}</TableHead>
-                <TableHead>{isArabic ? "البريد" : "Email"}</TableHead>
-                <TableHead>{isArabic ? "الموبايل" : "Phone"}</TableHead>
-                <TableHead>{isArabic ? "النوع" : "Type"}</TableHead>
-                <TableHead>{isArabic ? "الرسالة" : "Message"}</TableHead>
-                <TableHead>{isArabic ? "التاريخ" : "Date"}</TableHead>
+                <TableHead>{t("admin.contacts.table.name")}</TableHead>
+                <TableHead>{t("admin.contacts.table.email")}</TableHead>
+                <TableHead>{t("admin.contacts.table.phone")}</TableHead>
+                <TableHead>{t("admin.contacts.table.type")}</TableHead>
+                <TableHead>{t("admin.contacts.table.message")}</TableHead>
+                <TableHead>{t("admin.contacts.table.date")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-muted-foreground text-sm">
-                    {isArabic
-                      ? "لا توجد رسائل بعد. اربط صفحة اتصل بنا بقاعدة البيانات لعرض الرسائل هنا."
-                      : "No messages yet. Connect the Contact Us form to a database to see messages here."}
+                    {t("admin.contacts.no_messages")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -91,20 +86,20 @@ export default function AdminContactsPage() {
                             className="whitespace-nowrap"
                             onClick={() => setActive(row)}
                           >
-                            {isArabic ? "عرض" : "View"}
+                            {t("admin.contacts.view")}
                           </Button>
                           <DialogContent className="max-w-xl">
                             <DialogHeader>
                               <DialogTitle>
-                                {isArabic ? "تفاصيل الرسالة" : "Message details"}
+                                {t("admin.contacts.details_title")}
                               </DialogTitle>
                             </DialogHeader>
                             <div className="space-y-2 text-sm">
-                              <p><strong>{isArabic ? "الاسم:" : "Name:"}</strong> {row.name}</p>
-                              {row.email && <p><strong>{isArabic ? "البريد:" : "Email:"}</strong> {row.email}</p>}
-                              <p><strong>{isArabic ? "الموبايل:" : "Phone:"}</strong> {row.phone}</p>
-                              {row.company && <p><strong>{isArabic ? "الشركة:" : "Company:"}</strong> {row.company}</p>}
-                              {row.type && <p><strong>{isArabic ? "النوع:" : "Type:"}</strong> {row.type}</p>}
+                              <p><strong>{t("admin.contacts.label.name")}</strong> {row.name}</p>
+                              {row.email && <p><strong>{t("admin.contacts.label.email")}</strong> {row.email}</p>}
+                              <p><strong>{t("admin.contacts.label.phone")}</strong> {row.phone}</p>
+                              {row.company && <p><strong>{t("admin.contacts.label.company")}</strong> {row.company}</p>}
+                              {row.type && <p><strong>{t("admin.contacts.label.type")}</strong> {row.type}</p>}
                               <p className="mt-4 whitespace-pre-line break-words">
                                 {row.message}
                               </p>

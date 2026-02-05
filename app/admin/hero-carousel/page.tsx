@@ -14,8 +14,10 @@ import {
 } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 import { Plus, Trash2, CheckCircle2, XCircle } from "lucide-react"
+import { useLanguage } from "@/components/language-provider"
 
 export default function HeroCarouselPage() {
+    const { t } = useLanguage()
     const [items, setItems] = useState<HeroCarouselItem[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -43,16 +45,16 @@ export default function HeroCarouselPage() {
 
     async function handleImageUpload(itemId: string, position: number, file: File) {
         if (!file.type.startsWith('image/')) {
-            toast.error('Please upload an image file')
+            toast.error(t("admin.hero.toast.upload_image"))
             return
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            toast.error('Image size must be less than 5MB')
+            toast.error(t("admin.hero.toast.image_large"))
             return
         }
 
-        const uploadToast = toast.loading('Uploading image...')
+        const uploadToast = toast.loading(t("admin.hero.toast.uploading"))
 
         const result = await uploadHeroCarouselImage(file, position)
 
@@ -60,23 +62,23 @@ export default function HeroCarouselPage() {
             const updateResult = await updateHeroCarouselItem(itemId, { image_url: result.url })
 
             if (updateResult.success) {
-                toast.success('Image uploaded successfully', { id: uploadToast })
+                toast.success(t("admin.hero.toast.upload_success"), { id: uploadToast })
                 loadCarouselItems()
             } else {
-                toast.error('Failed to update image', { id: uploadToast })
+                toast.error(t("admin.hero.toast.upload_fail"), { id: uploadToast })
             }
         } else {
-            toast.error(result.error || 'Failed to upload image', { id: uploadToast })
+            toast.error(result.error || t("admin.hero.toast.upload_fail"), { id: uploadToast })
         }
     }
 
     async function handleAddSlide() {
         const nextPosition = items.length > 0 ? Math.max(...items.map(i => i.position)) + 1 : 1
-        const addToast = toast.loading('Adding new slide...')
+        const addToast = toast.loading(t("admin.hero.toast.adding"))
 
         const newItem = {
-            title: 'New Slide',
-            subtitle: 'Add a description',
+            title: t("admin.hero.placeholder_title"),
+            subtitle: t("admin.hero.placeholder_subtitle"),
             image_url: '', // Empty initially, user will upload
             position: nextPosition,
             is_active: false // Inactive by default until image is uploaded
@@ -85,43 +87,43 @@ export default function HeroCarouselPage() {
         const result = await addHeroCarouselItem(newItem)
 
         if (result.success && result.data) {
-            toast.success('Slide added! Now upload an image.', { id: addToast })
+            toast.success(t("admin.hero.toast.add_success"), { id: addToast })
             setItems(prev => [...prev, result.data!])
             setEditingId(result.data.id)
         } else {
-            toast.error(result.error || 'Failed to add slide', { id: addToast })
+            toast.error(result.error || t("admin.hero.toast.add_fail"), { id: addToast })
         }
     }
 
     async function handleDeleteSlide(id: string) {
-        if (!confirm('Are you sure you want to delete this slide?')) return
+        if (!confirm(t("admin.hero.toast.delete_confirm"))) return
 
-        const deleteToast = toast.loading('Deleting slide...')
+        const deleteToast = toast.loading(t("admin.hero.toast.deleting"))
         const result = await deleteHeroCarouselItem(id)
 
         if (result.success) {
-            toast.success('Slide deleted', { id: deleteToast })
+            toast.success(t("admin.hero.toast.delete_success"), { id: deleteToast })
             setItems(prev => prev.filter(item => item.id !== id))
         } else {
-            toast.error(result.error || 'Failed to delete slide', { id: deleteToast })
+            toast.error(result.error || t("admin.hero.toast.delete_fail"), { id: deleteToast })
         }
     }
 
     async function handleToggleActive(item: HeroCarouselItem) {
         const newStatus = !item.is_active
         if (newStatus && !item.image_url) {
-            toast.error('Cannot activate a slide without an image')
+            toast.error(t("admin.hero.toast.no_image_fail"))
             return
         }
 
-        const updateToast = toast.loading(newStatus ? 'Activating...' : 'Deactivating...')
+        const updateToast = toast.loading(newStatus ? t("admin.hero.toast.activating") : t("admin.hero.toast.deactivating"))
         const result = await updateHeroCarouselItem(item.id, { is_active: newStatus })
 
         if (result.success) {
-            toast.success(newStatus ? 'Slide activated' : 'Slide deactivated', { id: updateToast })
+            toast.success(newStatus ? t("admin.hero.toast.status_success_on") : t("admin.hero.toast.status_success_off"), { id: updateToast })
             setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: newStatus } : i))
         } else {
-            toast.error(result.error || 'Failed to update status', { id: updateToast })
+            toast.error(result.error || t("admin.hero.toast.status_fail"), { id: updateToast })
         }
     }
 
@@ -134,10 +136,10 @@ export default function HeroCarouselPage() {
         })
 
         if (result.success) {
-            toast.success('Saved successfully')
+            toast.success(t("admin.hero.toast.save_success"))
             setEditingId(null)
         } else {
-            toast.error(result.error || 'Failed to save')
+            toast.error(result.error || t("admin.hero.toast.save_fail"))
         }
         setSaving(false)
     }
@@ -162,11 +164,10 @@ export default function HeroCarouselPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        Hero Carousel
+                        {t("admin.hero.title")}
                     </h1>
                     <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
-                        Customize your homepage slider. High-quality images (16:9 or 4:3) work best.
-                        Link slides to products to drive sales. <span className="text-primary font-bold">Important: Make sure to set slides to "Active" for them to appear in the store.</span>
+                        {t("admin.hero.subtitle")}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -175,14 +176,14 @@ export default function HeroCarouselPage() {
                         className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center justify-center gap-2 text-sm font-semibold shadow-lg shadow-primary/20"
                     >
                         <Plus className="w-4 h-4" />
-                        Add Slide
+                        {t("admin.hero.add_slide")}
                     </button>
                     <button
                         onClick={loadCarouselItems}
                         className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
                     >
                         <RotateCcw className="w-4 h-4" />
-                        Refresh
+                        {t("admin.hero.refresh")}
                     </button>
                 </div>
             </div>
@@ -220,7 +221,7 @@ export default function HeroCarouselPage() {
                                 <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex flex-col items-center justify-center gap-2">
                                     <Upload className="w-6 h-6 text-white" />
                                     <span className="text-xs font-medium text-white px-3 py-1 rounded-full bg-white/10 border border-white/20">
-                                        Change Image
+                                        {t("admin.hero.change_image")}
                                     </span>
                                     <input
                                         type="file"
@@ -241,7 +242,7 @@ export default function HeroCarouselPage() {
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1">
                                             <Type className="w-3.5 h-3.5" />
-                                            Title
+                                            {t("admin.hero.title_label")}
                                         </div>
                                         <input
                                             type="text"
@@ -249,7 +250,7 @@ export default function HeroCarouselPage() {
                                             onChange={(e) => handleInputChange(item.id, 'title', e.target.value)}
                                             onFocus={() => setEditingId(item.id)}
                                             className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm font-medium placeholder:text-muted-foreground/30"
-                                            placeholder="Slide Title"
+                                            placeholder={t("admin.hero.placeholder_title")}
                                         />
                                     </div>
 
@@ -257,7 +258,7 @@ export default function HeroCarouselPage() {
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1">
                                             <Type className="w-3.5 h-3.5" />
-                                            Subtitle
+                                            {t("admin.hero.subtitle_label")}
                                         </div>
                                         <input
                                             type="text"
@@ -265,7 +266,7 @@ export default function HeroCarouselPage() {
                                             onChange={(e) => handleInputChange(item.id, 'subtitle', e.target.value)}
                                             onFocus={() => setEditingId(item.id)}
                                             className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
-                                            placeholder="Small text above title"
+                                            placeholder={t("admin.hero.placeholder_subtitle")}
                                         />
                                     </div>
                                 </div>
@@ -274,7 +275,7 @@ export default function HeroCarouselPage() {
                                 <div className="space-y-1.5">
                                     <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1">
                                         <LinkIcon className="w-3.5 h-3.5" />
-                                        Linked Product
+                                        {t("admin.hero.linked_product")}
                                     </div>
                                     <div className="relative">
                                         <select
@@ -283,8 +284,8 @@ export default function HeroCarouselPage() {
                                             onFocus={() => setEditingId(item.id)}
                                             className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm appearance-none cursor-pointer hover:bg-white/[0.08]"
                                         >
-                                            <option value="" className="bg-background text-foreground">No Link (Just Image)</option>
-                                            <optgroup label="Select Product" className="bg-background text-foreground">
+                                            <option value="" className="bg-background text-foreground">{t("admin.hero.no_link")}</option>
+                                            <optgroup label={t("admin.hero.select_product")} className="bg-background text-foreground">
                                                 {products.map(p => (
                                                     <option key={p.id} value={`/product/${p.id}`} className="bg-background">
                                                         {p.title}
@@ -315,7 +316,7 @@ export default function HeroCarouselPage() {
                                         }`}
                                 >
                                     {item.is_active ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                    {item.is_active ? 'Active' : 'Inactive'}
+                                    {item.is_active ? t("admin.hero.active") : t("admin.hero.inactive")}
                                 </button>
 
                                 {editingId === item.id ? (
@@ -325,11 +326,11 @@ export default function HeroCarouselPage() {
                                         className="h-10 px-6 md:w-32 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
                                     >
                                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                        Save
+                                        {t("admin.hero.save")}
                                     </button>
                                 ) : (
                                     <div className="h-10 flex items-center text-sm text-muted-foreground px-4 md:w-32 justify-center italic bg-white/[0.02] rounded-xl border border-white/5">
-                                        Saved
+                                        {t("admin.hero.saved")}
                                     </div>
                                 )}
 
@@ -338,7 +339,7 @@ export default function HeroCarouselPage() {
                                     className="h-10 px-4 md:w-32 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-all flex items-center justify-center gap-2 text-sm font-medium"
                                 >
                                     <Trash2 className="w-4 h-4" />
-                                    Delete
+                                    {t("admin.hero.delete")}
                                 </button>
                             </div>
                         </div>
@@ -350,12 +351,12 @@ export default function HeroCarouselPage() {
             <div className="flex flex-wrap gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                     <ImageIcon className="w-3.5 h-3.5" />
-                    Max 5MB images
+                    {t("admin.hero.max_size")}
                 </span>
                 <span className="w-px h-4 bg-white/10" />
-                <span>Recommended: 1920x1080px or 1200x1200px</span>
+                <span>{t("admin.hero.recommended_size")}</span>
                 <div className="ml-auto">
-                    {items.length} Slides configured
+                    {t("admin.hero.slides_configured").replace("{count}", items.length.toString())}
                 </div>
             </div>
         </div>

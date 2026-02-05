@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
     Search,
-    Download,
     Mail,
     Ban,
     Users,
@@ -18,10 +18,19 @@ import { getOrders, type Customer } from "@/lib/supabase-api"
 import Link from "next/link"
 
 export default function CustomersPage() {
+    const { t, setLanguage } = useLanguage()
     const [customers, setCustomers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [activeTab, setActiveTab] = useState("all") // all, top-spend
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     useEffect(() => {
         loadGuestData()
@@ -83,8 +92,8 @@ export default function CustomersPage() {
     const totalSpend = customers.reduce((acc, c) => acc + (c.total_spent || 0), 0)
 
     const stats = [
-        { label: "Guest Database", value: customers.length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { label: "Total Guest Spend", value: `MAD ${totalSpend.toLocaleString()}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+        { label: t("admin.customers.guest_database"), value: customers.length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { label: t("admin.customers.total_guest_spend"), value: `MAD ${totalSpend.toLocaleString()}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     ]
 
     return (
@@ -103,8 +112,8 @@ export default function CustomersPage() {
                             <ShoppingBag className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Guest Sales</h1>
-                            <p className="text-sm text-muted-foreground font-medium">Monitoring {customers.length} direct retail customers</p>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("admin.customers.title")}</h1>
+                            <p className="text-sm text-muted-foreground font-medium">{t("admin.customers.subtitle").replace("{count}", customers.length.toString())}</p>
                         </div>
                     </div>
                 </header>
@@ -131,8 +140,8 @@ export default function CustomersPage() {
                 <div className="flex flex-col xl:flex-row gap-4 items-center justify-between mb-8">
                     <div className="flex p-1 bg-white/5 border border-white/5 rounded-2xl w-full xl:w-auto">
                         {[
-                            { id: "all", label: "All Guests" },
-                            { id: "top-spend", label: "Top Spend" }
+                            { id: "all", label: t("admin.customers.all_guests") },
+                            { id: "top-spend", label: t("admin.customers.top_spend") }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -151,16 +160,12 @@ export default function CustomersPage() {
                         <div className="relative flex-1 xl:w-[400px]">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search guests by name, email, phone or Order ID..."
+                                placeholder={t("admin.customers.search_placeholder")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-primary transition-all"
                             />
                         </div>
-                        <Button className="h-12 rounded-2xl px-6 gap-2 font-bold shadow-lg shadow-primary/20">
-                            <Download className="w-4 h-4" />
-                            Export CSV
-                        </Button>
                     </div>
                 </div>
 
@@ -168,7 +173,7 @@ export default function CustomersPage() {
                     {/* Mobile Card View */}
                     <div className="md:hidden space-y-4 p-4">
                         {loading ? (
-                            <div className="text-center py-20 animate-pulse text-muted-foreground font-bold">Initializing Guest Data...</div>
+                            <div className="text-center py-20 animate-pulse text-muted-foreground font-bold">{t("admin.customers.loading")}</div>
                         ) : filteredCustomers.length > 0 ? (
                             filteredCustomers.map((customer) => (
                                 <div key={customer.id} className="bg-white/5 rounded-2xl p-6 border border-white/5 space-y-6">
@@ -177,7 +182,7 @@ export default function CustomersPage() {
                                             {customer.name && customer.name.length > 0 ? customer.name.charAt(0) : 'G'}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-bold text-foreground text-lg tracking-tight truncate">{customer.name || 'Guest User'}</p>
+                                            <p className="font-bold text-foreground text-lg tracking-tight truncate">{customer.name || t("admin.customers.guest_user")}</p>
                                             <div className="flex flex-col gap-1.5 mt-2">
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium truncate">
                                                     <Mail className="w-3.5 h-3.5 flex-shrink-0" />
@@ -195,14 +200,14 @@ export default function CustomersPage() {
 
                                     <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                                         <div>
-                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Spend</p>
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t("admin.customers.spend")}</p>
                                             <p className="font-black text-sm text-foreground">MAD {(customer.total_spent || 0).toLocaleString()}</p>
-                                            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{customer.total_orders || 0} Orders</p>
+                                            <p className="text-[10px] font-medium text-muted-foreground mt-0.5">{customer.total_orders || 0} {t("admin.customers.orders")}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Last Order</p>
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t("admin.customers.last_order")}</p>
                                             <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-mono font-bold inline-block border border-primary/20">
-                                                {customer.last_order || 'N/A'}
+                                                {customer.last_order || t("admin.customers.na")}
                                             </span>
                                         </div>
                                     </div>
@@ -210,7 +215,7 @@ export default function CustomersPage() {
                                     <div className="flex items-center justify-between pt-2">
                                         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                                             <MapPin className="w-3.5 h-3.5 text-primary/60" />
-                                            {customer.city || "Unknown"}
+                                            {customer.city || t("admin.customers.unknown")}
                                         </div>
                                         <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-xl">
                                             <Ban className="w-4 h-4" />
@@ -219,7 +224,7 @@ export default function CustomersPage() {
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center py-20 text-muted-foreground">No guests found</div>
+                            <div className="text-center py-20 text-muted-foreground">{t("admin.customers.no_guests")}</div>
                         )}
                     </div>
 
@@ -228,17 +233,17 @@ export default function CustomersPage() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                                    <th className="py-6 px-8">Customer Identity</th>
-                                    <th className="py-6 px-6">Performance</th>
-                                    <th className="py-6 px-6">Last Order</th>
-                                    <th className="py-6 px-6">Location</th>
-                                    <th className="py-6 px-8 text-right">Actions</th>
+                                    <th className="py-6 px-8">{t("admin.customers.customer_identity")}</th>
+                                    <th className="py-6 px-6">{t("admin.customers.performance")}</th>
+                                    <th className="py-6 px-6">{t("admin.customers.last_order")}</th>
+                                    <th className="py-6 px-6">{t("admin.customers.location")}</th>
+                                    <th className="py-6 px-8 text-right">{t("admin.customers.actions")}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={5} className="py-20 text-center text-muted-foreground animate-pulse font-bold">Initalizing Guest Data...</td>
+                                        <td colSpan={5} className="py-20 text-center text-muted-foreground animate-pulse font-bold">{t("admin.customers.loading")}</td>
                                     </tr>
                                 ) : filteredCustomers.length > 0 ? (
                                     filteredCustomers.map((customer) => (
@@ -249,7 +254,7 @@ export default function CustomersPage() {
                                                         {customer.name && customer.name.length > 0 ? customer.name.charAt(0) : 'G'}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-foreground text-base tracking-tight">{customer.name || 'Guest User'}</p>
+                                                        <p className="font-bold text-foreground text-base tracking-tight">{customer.name || t("admin.customers.guest_user")}</p>
                                                         <div className="flex flex-col gap-1 mt-1">
                                                             <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                                                                 <Mail className="w-3 h-3" />
@@ -268,12 +273,12 @@ export default function CustomersPage() {
                                             <td className="py-6 px-6">
                                                 <div className="flex gap-6">
                                                     <div className={activeTab === 'top-spend' ? 'scale-110 transition-transform origin-left' : ''}>
-                                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Spend</p>
+                                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t("admin.customers.total_spent")}</p>
                                                         <p className={`font-black text-sm ${activeTab === 'top-spend' ? 'text-primary' : 'text-foreground'}`}>
                                                             MAD {(customer.total_spent || 0).toLocaleString()}
                                                         </p>
                                                         <p className="text-[10px] font-medium text-muted-foreground mt-1">
-                                                            {customer.total_orders || 0} Orders
+                                                            {customer.total_orders || 0} {t("admin.customers.orders")}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -281,14 +286,14 @@ export default function CustomersPage() {
                                             <td className="py-6 px-6">
                                                 <div className="flex items-center gap-2">
                                                     <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg font-mono text-xs font-bold border border-primary/20">
-                                                        {customer.last_order || 'N/A'}
+                                                        {customer.last_order || t("admin.customers.na")}
                                                     </span>
                                                 </div>
                                             </td>
                                             <td className="py-6 px-6">
                                                 <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                                                     <MapPin className="w-4 h-4 text-primary/60" />
-                                                    {customer.city || "Unknown"}
+                                                    {customer.city || t("admin.customers.unknown")}
                                                 </div>
                                             </td>
                                             <td className="py-6 px-8 text-right">
@@ -307,8 +312,8 @@ export default function CustomersPage() {
                                                 <div className="p-6 bg-white/5 rounded-full text-muted-foreground/20">
                                                     <Users className="w-16 h-16" />
                                                 </div>
-                                                <h3 className="text-xl font-bold text-foreground">No Guests Found</h3>
-                                                <p className="text-muted-foreground max-w-xs text-center">There are no guest customers matching your filters yet.</p>
+                                                <h3 className="text-xl font-bold text-foreground">{t("admin.customers.no_guests_found")}</h3>
+                                                <p className="text-muted-foreground max-w-xs text-center">{t("admin.customers.no_guests_description")}</p>
                                             </div>
                                         </td>
                                     </tr>

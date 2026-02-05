@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
     Search,
-    Download,
     Filter,
     MoreHorizontal,
     Mail,
@@ -21,17 +21,28 @@ import {
     ShoppingBag,
     Eye,
     MapPin,
-    ArrowLeft
+    ArrowLeft,
+    Shield
 } from "lucide-react"
 import { getCustomers, updateCustomerStatus, type Customer } from "@/lib/supabase-api"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import Link from "next/link"
 
 export default function ResellersPage() {
+    const { t, setLanguage } = useLanguage()
     const [resellers, setResellers] = useState<Customer[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [activeTab, setActiveTab] = useState("all") // all, top-spend
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     useEffect(() => {
         loadResellers()
@@ -39,9 +50,37 @@ export default function ResellersPage() {
 
     async function loadResellers() {
         setLoading(true)
-        const data = await getCustomers({ role: 'reseller' })
-        setResellers(data)
-        setLoading(false)
+        try {
+            // Fetch customers with reseller role, including reseller_type
+            const { data: customersData } = await supabase
+                .from('customers')
+                .select('*')
+                .eq('role', 'reseller')
+                .order('created_at', { ascending: false })
+
+            // Fetch assignments with AM names
+            const { data: assignments } = await supabase
+                .from('account_manager_assignments')
+                .select(`
+                    reseller:resellers(user_id),
+                    account_manager:profiles(name)
+                `)
+                .is('soft_deleted_at', null)
+
+            const resellersWithAM = (customersData || []).map((r: any) => {
+                const assignment = assignments?.find((a: any) => a.reseller?.user_id === r.id)
+                return {
+                    ...r,
+                    account_manager_name: (assignment as any)?.account_manager?.name
+                }
+            })
+
+            setResellers(resellersWithAM as any)
+        } catch (error: any) {
+            toast.error(t("admin.resellers.error_loading"))
+        } finally {
+            setLoading(false)
+        }
     }
 
     const filteredResellers = resellers
@@ -64,9 +103,20 @@ export default function ResellersPage() {
     const totalSpend = resellers.reduce((acc, r) => acc + (r.total_spent || 0), 0)
     const totalProfit = totalSpend * 0.28 // Mocking 28% margin for now
 
+    // Calculate counts by type
+    const totalResellers = resellers.filter(r => (r as any).reseller_type === 'reseller' || !(r as any).reseller_type).length
+    const totalPartners = resellers.filter(r => (r as any).reseller_type === 'partner').length
+    const totalWholesalers = resellers.filter(r => (r as any).reseller_type === 'wholesaler').length
+
+    const overviewStats = [
+        { label: t("admin.resellers.total_resellers"), value: totalResellers, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { label: t("admin.resellers.total_partners"), value: totalPartners, icon: Briefcase, color: "text-purple-500", bg: "bg-purple-500/10" },
+        { label: t("admin.resellers.total_wholesalers"), value: totalWholesalers, icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    ]
+
     const stats = [
-        { label: "Partner Network", value: resellers.length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { label: "Total Spend", value: `MAD ${totalSpend.toLocaleString()}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+        { label: t("admin.resellers.partner_network"), value: resellers.length, icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+        { label: t("admin.resellers.total_spend"), value: `${t("common.currency")} ${totalSpend.toLocaleString()}`, icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     ]
 
     return (
@@ -87,11 +137,31 @@ export default function ResellersPage() {
                             <Briefcase className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Reseller Performance</h1>
-                            <p className="text-sm text-muted-foreground font-medium">Monitoring {resellers.length} active wholesale distribution partners</p>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("admin.resellers.title")}</h1>
+                            <p className="text-sm text-muted-foreground font-medium">{t("admin.resellers.subtitle").replace("{count}", resellers.length.toString())}</p>
                         </div>
                     </div>
                 </header>
+
+                {/* Overview Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    {overviewStats.map((stat, i) => (
+                        <div key={i} className="glass-strong rounded-[2rem] p-6 border-white/5 relative overflow-hidden group hover:border-white/20 transition-all duration-300">
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color}`}>
+                                    <stat.icon className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">{stat.label}</p>
+                                    <h3 className="text-2xl font-black text-foreground">{stat.value}</h3>
+                                </div>
+                            </div>
+                            <div className="absolute right-[-20px] bottom-[-20px] opacity-5 group-hover:opacity-10 transition-opacity">
+                                <stat.icon className="w-32 h-32" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
                 {/* Top Metrics */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -117,8 +187,8 @@ export default function ResellersPage() {
                 <div className="flex flex-col xl:flex-row gap-4 items-center justify-between mb-8">
                     <div className="flex p-1 bg-white/5 border border-white/5 rounded-2xl w-full xl:w-auto">
                         {[
-                            { id: "all", label: "All Partners" },
-                            { id: "top-spend", label: "Top Spend" }
+                            { id: "all", label: t("admin.resellers.all_partners") },
+                            { id: "top-spend", label: t("admin.resellers.top_spend") }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -137,16 +207,12 @@ export default function ResellersPage() {
                         <div className="relative flex-1 xl:w-[400px]">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                placeholder="Filter partners by name or company..."
+                                placeholder={t("admin.resellers.search_placeholder")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-primary transition-all"
                             />
                         </div>
-                        <Button className="h-12 rounded-2xl px-6 gap-2 font-bold shadow-lg shadow-primary/20">
-                            <Download className="w-4 h-4" />
-                            Export Data
-                        </Button>
                     </div>
                 </div>
 
@@ -156,17 +222,18 @@ export default function ResellersPage() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                                    <th className="py-6 px-8">Reseller Identity</th>
-                                    <th className="py-6 px-6">Company / ICE</th>
-                                    <th className="py-6 px-6">Performance</th>
-                                    <th className="py-6 px-6">Location</th>
-                                    <th className="py-6 px-8 text-right">Nexus Profile</th>
+                                    <th className="py-6 px-8">{t("admin.resellers.reseller_identity")}</th>
+                                    <th className="py-6 px-6">{t("admin.resellers.company_ice")}</th>
+                                    <th className="py-6 px-6">{t("admin.resellers.performance")}</th>
+                                    <th className="py-6 px-6">{t("admin.resellers.location")}</th>
+                                    <th className="py-6 px-6">{t("admin.resellers.account_manager")}</th>
+                                    <th className="py-6 px-8 text-right">{t("admin.resellers.nexus_profile")}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={5} className="py-20 text-center text-muted-foreground animate-pulse font-bold">Initalizing Partner Data...</td>
+                                        <td colSpan={6} className="py-20 text-center text-muted-foreground animate-pulse font-bold">{t("admin.resellers.loading")}</td>
                                     </tr>
                                 ) : filteredResellers.length > 0 ? (
                                     filteredResellers.map((reseller) => (
@@ -177,7 +244,19 @@ export default function ResellersPage() {
                                                         {reseller.name.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-foreground text-base tracking-tight">{reseller.name}</p>
+                                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                            <p className="font-bold text-foreground text-base tracking-tight">{reseller.name}</p>
+                                                            {(reseller as any).reseller_type && (
+                                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(reseller as any).reseller_type === 'partner' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                                                                        (reseller as any).reseller_type === 'wholesaler' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                                                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                                                    }`}>
+                                                                    {(reseller as any).reseller_type === 'partner' ? t("admin.resellers.partner") :
+                                                                        (reseller as any).reseller_type === 'wholesaler' ? t("admin.resellers.wholesaler") :
+                                                                            t("admin.resellers.reseller")}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                                                             <Mail className="w-3 h-3" />
                                                             {reseller.email}
@@ -187,16 +266,16 @@ export default function ResellersPage() {
                                             </td>
                                             <td className="py-6 px-6">
                                                 <div>
-                                                    <p className="font-bold text-foreground text-sm">{reseller.company_name || "Personal Account"}</p>
-                                                    <p className="text-xs font-mono text-muted-foreground uppercase mt-1 tracking-tighter">ICE: {reseller.ice || "N/A"}</p>
+                                                    <p className="font-bold text-foreground text-sm">{reseller.company_name || t("admin.resellers.personal_account")}</p>
+                                                    <p className="text-xs font-mono text-muted-foreground uppercase mt-1 tracking-tighter">{t("admin.resellers.ice")}: {reseller.ice || t("admin.resellers.na")}</p>
                                                 </div>
                                             </td>
                                             <td className="py-6 px-6">
                                                 <div className="flex gap-6">
                                                     <div className={activeTab === 'top-spend' ? 'scale-110 transition-transform origin-left' : ''}>
-                                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Spend</p>
+                                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{t("admin.resellers.total_spend")}</p>
                                                         <p className={`font-black text-sm ${activeTab === 'top-spend' ? 'text-primary' : 'text-foreground'}`}>
-                                                            MAD {(reseller.total_spent || 0).toLocaleString()}
+                                                            {t("common.currency")} {(reseller.total_spent || 0).toLocaleString()}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -204,15 +283,25 @@ export default function ResellersPage() {
                                             <td className="py-6 px-6">
                                                 <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                                                     <MapPin className="w-4 h-4 text-primary/60" />
-                                                    {reseller.city || "Unknown"}
+                                                    {reseller.city || t("admin.resellers.unknown")}
                                                 </div>
+                                            </td>
+                                            <td className="py-6 px-6">
+                                                {(reseller as any).account_manager_name ? (
+                                                    <Badge className="bg-primary/10 text-primary border-primary/20 rounded-lg px-3 py-1 font-bold whitespace-nowrap">
+                                                        <Shield className="w-3 h-3 mr-1" />
+                                                        {(reseller as any).account_manager_name}
+                                                    </Badge>
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground/40 italic">{t("admin.resellers.unassigned")}</span>
+                                                )}
                                             </td>
                                             <td className="py-6 px-8 text-right">
                                                 <div className="flex items-center justify-end gap-3">
                                                     <Link href={`/admin/resellers/${reseller.id}`}>
                                                         <Button variant="ghost" className="rounded-xl h-12 gap-2 px-5 hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/20 transition-all font-bold">
                                                             <Eye className="w-4 h-4" />
-                                                            View Profile
+                                                            {t("admin.resellers.view_profile")}
                                                         </Button>
                                                     </Link>
                                                     <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl group-hover:bg-red-500/10 hover:text-red-500">
@@ -224,13 +313,13 @@ export default function ResellersPage() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="py-40 text-center">
+                                        <td colSpan={6} className="py-40 text-center">
                                             <div className="flex flex-col items-center gap-4">
                                                 <div className="p-6 bg-white/5 rounded-full text-muted-foreground/20">
                                                     <Users className="w-16 h-16" />
                                                 </div>
-                                                <h3 className="text-xl font-bold text-foreground">Zero Partners Detected</h3>
-                                                <p className="text-muted-foreground max-w-xs text-center">Try adjusting your spectral filters to find matching distribution entities.</p>
+                                                <h3 className="text-xl font-bold text-foreground">{t("admin.resellers.no_resellers")}</h3>
+                                                <p className="text-muted-foreground max-w-xs text-center">{t("admin.resellers.no_resellers_description")}</p>
                                             </div>
                                         </td>
                                     </tr>

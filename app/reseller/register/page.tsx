@@ -46,7 +46,12 @@ export default function ResellerRegisterPage() {
                 options: {
                     data: {
                         full_name: formData.name,
-                        role: 'reseller' // Directly set as reseller
+                        role: 'reseller',
+                        company_name: formData.companyName,
+                        ice: formData.ice,
+                        website: formData.website,
+                        city: formData.city,
+                        phone: formData.phone
                     },
                 },
             })

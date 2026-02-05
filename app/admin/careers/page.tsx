@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button"
 import { CareerApplication, listCareerApplications } from "@/lib/supabase-api"
 
 export default function AdminCareersPage() {
-  const { language } = useLanguage()
-  const isArabic = language === "ar"
+  const { t } = useLanguage()
   const [rows, setRows] = useState<CareerApplication[]>([])
   const [active, setActive] = useState<CareerApplication | null>(null)
 
@@ -29,10 +28,10 @@ export default function AdminCareersPage() {
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{isArabic ? "العودة للوحة التحكم" : "Back to dashboard"}</span>
+            <span>{t("admin.careers.back")}</span>
           </Link>
           <span className="text-xs text-muted-foreground uppercase tracking-[0.25em]">
-            {isArabic ? "طلبات التوظيف" : "Career applications"}
+            {t("admin.careers.title")}
           </span>
         </div>
       </header>
@@ -41,12 +40,10 @@ export default function AdminCareersPage() {
         <Card className="p-4 sm:p-6">
           <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-primary" />
-            {isArabic ? "طلبات الانضمام إلى الفريق" : "Applications to join the team"}
+            {t("admin.careers.list_title")}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-            {isArabic
-              ? "يمكنك عرض نص النبذة كاملة بالضغط على زر \"عرض\" لكل طلب."
-              : "Click the \"View\" button on each row to read the full application summary in a dialog."}
+            {t("admin.careers.subtitle")}
           </p>
         </Card>
 
@@ -54,22 +51,20 @@ export default function AdminCareersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{isArabic ? "الاسم" : "Name"}</TableHead>
-                <TableHead>{isArabic ? "البريد" : "Email"}</TableHead>
-                <TableHead>{isArabic ? "الموبايل" : "Phone"}</TableHead>
-                <TableHead>{isArabic ? "الوظيفة" : "Role"}</TableHead>
-                <TableHead>{isArabic ? "اسم ملف الـ CV" : "CV file"}</TableHead>
-                <TableHead>{isArabic ? "نبذة" : "Summary"}</TableHead>
-                <TableHead>{isArabic ? "التاريخ" : "Date"}</TableHead>
+                <TableHead>{t("admin.careers.table.name")}</TableHead>
+                <TableHead>{t("admin.careers.table.email")}</TableHead>
+                <TableHead>{t("admin.careers.table.phone")}</TableHead>
+                <TableHead>{t("admin.careers.table.role")}</TableHead>
+                <TableHead>{t("admin.careers.table.cv")}</TableHead>
+                <TableHead>{t("admin.careers.table.summary")}</TableHead>
+                <TableHead>{t("admin.careers.table.date")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-8 text-center text-muted-foreground text-sm">
-                    {isArabic
-                      ? "لا توجد طلبات بعد. اربط صفحة الوظائف بقاعدة البيانات لعرض الطلبات هنا."
-                      : "No applications yet. Connect the Careers form to a database to see applications here."}
+                    {t("admin.careers.no_applications")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -87,11 +82,11 @@ export default function AdminCareersPage() {
                           rel="noopener noreferrer"
                           className="text-xs text-primary underline"
                         >
-                          {isArabic ? "فتح الملف" : "Open CV"}
+                          {t("admin.careers.open_cv")}
                         </a>
                       ) : (
                         <span className="text-xs text-muted-foreground">
-                          {isArabic ? "لا يوجد ملف" : "No file"}
+                          {t("admin.careers.no_file")}
                         </span>
                       )}
                     </TableCell>
@@ -108,21 +103,21 @@ export default function AdminCareersPage() {
                             className="whitespace-nowrap"
                             onClick={() => setActive(row)}
                           >
-                            {isArabic ? "عرض" : "View"}
+                            {t("admin.careers.view")}
                           </Button>
                           <DialogContent className="max-w-xl">
                             <DialogHeader>
                               <DialogTitle>
-                                {isArabic ? "تفاصيل طلب التوظيف" : "Application details"}
+                                {t("admin.careers.details_title")}
                               </DialogTitle>
                             </DialogHeader>
                             <div className="space-y-2 text-sm">
-                              <p><strong>{isArabic ? "الاسم:" : "Name:"}</strong> {row.name}</p>
-                              <p><strong>{isArabic ? "البريد:" : "Email:"}</strong> {row.email}</p>
-                              <p><strong>{isArabic ? "الموبايل:" : "Phone:"}</strong> {row.phone}</p>
-                              <p><strong>{isArabic ? "الوظيفة:" : "Role:"}</strong> {row.role}</p>
+                              <p><strong>{t("admin.careers.label.name")}</strong> {row.name}</p>
+                              <p><strong>{t("admin.careers.label.email")}</strong> {row.email}</p>
+                              <p><strong>{t("admin.careers.label.phone")}</strong> {row.phone}</p>
+                              <p><strong>{t("admin.careers.label.role")}</strong> {row.role}</p>
                               {row.cv_file_name && (
-                                <p><strong>{isArabic ? "ملف الـ CV:" : "CV file:"}</strong> {row.cv_file_name}</p>
+                                <p><strong>{t("admin.careers.label.cv")}</strong> {row.cv_file_name}</p>
                               )}
                               <p className="mt-4 whitespace-pre-line break-words">
                                 {row.summary}

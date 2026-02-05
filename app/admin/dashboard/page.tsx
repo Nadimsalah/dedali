@@ -4,12 +4,14 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { DashboardStats } from "@/components/admin/dashboard-stats"
 import { RecentOrders } from "@/components/admin/recent-orders"
 import { Notifications } from "@/components/admin/notifications"
+import { useLanguage } from "@/components/language-provider"
 import { Search, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PushNotificationManager } from "@/components/admin/push-notification-manager"
 
 export default function AdminDashboard() {
+    const { language, toggleLanguage, t } = useLanguage()
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
             <PushNotificationManager />
@@ -29,8 +31,8 @@ export default function AdminDashboard() {
                             <Sparkles className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-                            <p className="text-xs text-muted-foreground">Detailed overview</p>
+                            <h1 className="text-xl font-bold text-foreground">{t("dashboard.admin.title")}</h1>
+                            <p className="text-xs text-muted-foreground">{t("dashboard.admin.overview")}</p>
                         </div>
                     </div>
 
@@ -38,10 +40,22 @@ export default function AdminDashboard() {
                         <div className="relative hidden md:block">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search anything..."
+                                placeholder={t("dashboard.admin.search_placeholder")}
                                 className="pl-9 w-64 rounded-full bg-background/50 border-white/10 focus:bg-background transition-all h-10"
                             />
                         </div>
+                        <Button
+                            onClick={toggleLanguage}
+                            variant="outline"
+                            className="gap-2 rounded-full border-white/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 font-bold h-10 px-3"
+                        >
+                            <span className="text-lg">
+                                {language === 'en' ? '🇺🇸' : '🇫🇷'}
+                            </span>
+                            <span className="text-xs uppercase tracking-wider">
+                                {language === 'en' ? 'EN' : 'FR'}
+                            </span>
+                        </Button>
                         <Notifications />
 
                     </div>
@@ -50,10 +64,10 @@ export default function AdminDashboard() {
                 {/* Bento Grid Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
+
+
                     {/* Top Row: Stats (Spawn across all columns) */}
                     <DashboardStats />
-
-                    {/* Removed RevenueChart and QuickActions */}
 
                     {/* Bottom Row: Recent Orders (Full Width) */}
                     <div className="lg:col-span-4 min-h-[400px]">

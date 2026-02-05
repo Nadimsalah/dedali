@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { getProducts, type Product } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useLanguage } from "@/components/language-provider"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -98,6 +99,7 @@ const allProducts = [
 ]
 
 export default function AdminProductsPage() {
+    const { t, setLanguage } = useLanguage()
     const [activeTab, setActiveTab] = useState("All")
     const [searchQuery, setSearchQuery] = useState("")
     const [products, setProducts] = useState<Product[]>([])
@@ -108,6 +110,14 @@ export default function AdminProductsPage() {
     const [isTranslating, setIsTranslating] = useState(false)
     const [showCategoryDialog, setShowCategoryDialog] = useState(false)
     const [categorySearch, setCategorySearch] = useState("")
+
+    // Set French as default for dashboard
+    useEffect(() => {
+        const savedLang = localStorage.getItem("language")
+        if (!savedLang) {
+            setLanguage("fr")
+        }
+    }, [setLanguage])
 
     // Fetch products from Supabase
     useEffect(() => {
@@ -184,7 +194,7 @@ export default function AdminProductsPage() {
     }
 
     async function handleDeleteCategory(id: string) {
-        if (!confirm('Delete this category? Products using it will need to be recategorized.')) return
+        if (!confirm(t("admin.products.delete_category_confirm"))) return
 
         const { error } = await supabase
             .from('categories')
@@ -206,7 +216,7 @@ export default function AdminProductsPage() {
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('Are you sure you want to delete this product?')) return
+        if (!confirm(t("admin.products.delete_product_confirm"))) return
 
         const { error } = await supabase
             .from('products')
@@ -448,8 +458,8 @@ export default function AdminProductsPage() {
                             <Package className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Products</h1>
-                            <p className="text-xs text-muted-foreground">Manage your inventory</p>
+                            <h1 className="text-xl font-bold text-foreground">{t("admin.products.title")}</h1>
+                            <p className="text-xs text-muted-foreground">{t("admin.products.subtitle")}</p>
                         </div>
                     </div>
 
@@ -479,7 +489,7 @@ export default function AdminProductsPage() {
                             ) : (
                                 <>
                                     <Upload className="w-4 h-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Import CSV</span>
+                                    <span className="hidden sm:inline">{t("admin.products.import_csv")}</span>
                                 </>
                             )}
                         </Button>
@@ -487,19 +497,19 @@ export default function AdminProductsPage() {
                             <DialogTrigger asChild>
                                 <Button variant="outline" className="rounded-full h-9">
                                     <Tag className="w-4 h-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Manage Categories</span>
+                                    <span className="hidden sm:inline">{t("admin.products.manage_categories")}</span>
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md">
                                 <DialogHeader>
-                                    <DialogTitle>Manage Categories</DialogTitle>
+                                    <DialogTitle>{t("admin.products.manage_categories")}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                     {/* Add Category */}
                                     <div className="flex flex-col gap-3">
                                         <div className="flex gap-2">
                                             <Input
-                                                placeholder="Category Name (English)"
+                                                placeholder={t("admin.products.category_name_en")}
                                                 value={newCategoryName}
                                                 onChange={(e) => setNewCategoryName(e.target.value)}
                                                 onBlur={handleAutoTranslate}
@@ -509,7 +519,7 @@ export default function AdminProductsPage() {
                                         <div className="flex gap-2">
                                             <div className="relative flex-1">
                                                 <Input
-                                                    placeholder="اسم القسم (Arabic)"
+                                                    placeholder={t("admin.products.category_name_ar")}
                                                     value={newCategoryNameAr}
                                                     onChange={(e) => setNewCategoryNameAr(e.target.value)}
                                                     className="flex-1 text-right"
@@ -522,7 +532,7 @@ export default function AdminProductsPage() {
                                                 )}
                                             </div>
                                             <Button onClick={handleAddCategory}>
-                                                <Plus className="w-4 h-4 mr-1" /> Add
+                                                <Plus className="w-4 h-4 mr-1" /> {t("admin.products.add")}
                                             </Button>
                                         </div>
                                     </div>
@@ -531,7 +541,7 @@ export default function AdminProductsPage() {
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                                         <Input
-                                            placeholder="Search categories..."
+                                            placeholder={t("admin.products.search_categories")}
                                             value={categorySearch}
                                             onChange={(e) => setCategorySearch(e.target.value)}
                                             className="pl-8 h-8 text-xs mb-2"
@@ -566,7 +576,7 @@ export default function AdminProductsPage() {
                         <Link href="/admin/products/new">
                             <Button className="rounded-full h-9 shadow-lg shadow-primary/20">
                                 <Plus className="w-4 h-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Add Product</span>
+                                <span className="hidden sm:inline">{t("admin.products.add_product")}</span>
                             </Button>
                         </Link>
                         <Notifications />
@@ -576,23 +586,23 @@ export default function AdminProductsPage() {
                 {/* Inventory Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
-                        <span className="text-sm text-muted-foreground font-medium">Total Products</span>
+                        <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.total_products")}</span>
                         <span className="text-2xl font-bold text-foreground mt-1">{products.length}</span>
                     </div>
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
-                        <span className="text-sm text-muted-foreground font-medium">Total Inventory</span>
+                        <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.total_inventory")}</span>
                         <span className="text-2xl font-bold text-foreground mt-1">
                             {products.reduce((acc, curr) => acc + curr.stock, 0).toLocaleString()}
                         </span>
                     </div>
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
-                        <span className="text-sm text-muted-foreground font-medium">Low Stock</span>
+                        <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.low_stock")}</span>
                         <span className="text-2xl font-bold text-orange-500 mt-1">
                             {products.filter(p => p.stock < 10 && p.stock > 0).length}
                         </span>
                     </div>
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
-                        <span className="text-sm text-muted-foreground font-medium">Out of Stock</span>
+                        <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.out_of_stock")}</span>
                         <span className="text-2xl font-bold text-red-500 mt-1">
                             {products.filter(p => p.stock === 0).length}
                         </span>
@@ -622,7 +632,7 @@ export default function AdminProductsPage() {
                         <div className="relative w-full sm:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search products..."
+                                placeholder={t("admin.products.search_placeholder")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-9 rounded-xl bg-white/5 border-white/10 focus:bg-white/10 h-10"
@@ -638,7 +648,7 @@ export default function AdminProductsPage() {
                                 filteredProducts.map((product) => (
                                     <div key={product.id} className="bg-white/5 rounded-xl p-4 border border-white/5 flex gap-4">
                                         {/* Image */}
-                                        <div className="h-20 w-20 bg-white rounded-lg overflow-hidden flex-shrink-0 relative">
+                                        <div className="h-20 w-20 bg-white rounded-lg overflow-hidden flex-shrink-0 relative" >
                                             {product.images && product.images.length > 0 ? (
                                                 <Image
                                                     src={product.images[0]}
@@ -688,7 +698,7 @@ export default function AdminProductsPage() {
                                 ))
                             ) : (
                                 <div className="text-center text-muted-foreground py-8">
-                                    No products found matching your criteria.
+                                    {t("admin.products.no_products")}
                                 </div>
                             )}
                         </div>
@@ -698,12 +708,12 @@ export default function AdminProductsPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5 text-left">
-                                        <th className="py-4 pl-4 sm:pl-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Product</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Category</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Price</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Stock</th>
-                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                                        <th className="py-4 pr-6 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                                        <th className="py-4 pl-4 sm:pl-6 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.products.table.product")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">{t("admin.products.table.category")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.products.table.price")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">{t("admin.products.table.stock")}</th>
+                                        <th className="py-4 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.products.table.status")}</th>
+                                        <th className="py-4 pr-6 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("admin.products.table.actions")}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
@@ -729,7 +739,7 @@ export default function AdminProductsPage() {
                                                         <div>
                                                             <p className="font-semibold text-foreground text-sm">{product.title}</p>
                                                             <p className="text-xs text-muted-foreground md:hidden">
-                                                                Qty: {product.stock}
+                                                                {t("admin.products.qty")}: {product.stock}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -737,7 +747,7 @@ export default function AdminProductsPage() {
                                                 <td className="py-4 px-4 text-sm text-foreground/80 hidden sm:table-cell">{product.category}</td>
                                                 <td className="py-4 px-4 text-sm font-bold text-foreground">MAD {product.price}</td>
                                                 <td className="py-4 px-4 text-sm text-muted-foreground hidden md:table-cell font-medium">
-                                                    {product.stock} units
+                                                    {product.stock} {t("admin.products.units")}
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <Badge className={getStatusColor(getStockStatus(product.stock))}>
@@ -766,7 +776,7 @@ export default function AdminProductsPage() {
                                     ) : (
                                         <tr>
                                             <td colSpan={6} className="py-12 text-center text-muted-foreground">
-                                                No products found matching your criteria.
+                                                {t("admin.products.no_products")}
                                             </td>
                                         </tr>
                                     )}

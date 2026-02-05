@@ -27,8 +27,9 @@ export default function LoginPage() {
         setIsLoading(true)
 
         try {
+            const normalizedEmail = email.trim().toLowerCase()
             const { data, error } = await supabase.auth.signInWithPassword({
-                email,
+                email: normalizedEmail,
                 password,
             })
 
@@ -43,6 +44,8 @@ export default function LoginPage() {
                 const role = await getCurrentUserRole()
                 if (role === 'reseller') {
                     router.push('/reseller/dashboard')
+                } else if (role === 'ACCOUNT_MANAGER') {
+                    router.push('/manager/resellers')
                 } else {
                     router.push('/')
                 }

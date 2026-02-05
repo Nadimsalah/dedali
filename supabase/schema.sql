@@ -231,7 +231,12 @@ CREATE TRIGGER update_admin_settings_updated_at BEFORE UPDATE ON admin_settings
 
 -- Insert sample products
 INSERT INTO products (title, description, sku, category, price, compare_at_price, stock, status, images, benefits) VALUES
-    ('Pure Argan Oil', 'Premium organic argan oil from Morocco', 'ARG-1001', 'face', 299.00, 399.00, 50, 'active', 
+    ('Pure Argan Oil', 'Premium organic argan oil from Morocco', 'ARG-1001', 'face'
+CREATE POLICY "Allow all for authenticated users" ON orders
+    FOR ALL USING (true);
+
+CREATE POLICY "Allow all for authenticated users" ON order_items
+    FOR ALL USING (true);, 299.00, 399.00, 50, 'active', 
      ARRAY['/placeholder.svg'], 
      ARRAY['Deeply moisturizes skin', 'Rich in Vitamin E', 'Anti-aging properties']),
     ('Nourishing Face Serum', 'Lightweight serum for all skin types', 'SER-2001', 'face', 450.00, 550.00, 30, 'active',

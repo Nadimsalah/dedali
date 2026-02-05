@@ -516,7 +516,7 @@ export default function HomePage() {
                 className="hidden sm:flex gap-2 rounded-full ml-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-300 font-bold min-w-[80px]"
               >
                 <span className="text-lg">
-                  {language === 'en' ? '🇺🇸' : language === 'fr' ? '🇫🇷' : '🇲🇦'}
+                  {language === 'en' ? '🇺🇸' : '🇫🇷'}
                 </span>
                 <span className="text-xs uppercase tracking-wider">
                   {language === 'en' ? 'EN' : language === 'fr' ? 'FR' : 'AR'}
@@ -636,7 +636,7 @@ export default function HomePage() {
                           className="w-full h-12 rounded-full bg-secondary/30 border-border/50 font-bold"
                           onClick={toggleLanguage}
                         >
-                          {language === 'en' ? '🇺🇸 EN' : language === 'fr' ? '🇫🇷 FR' : '🇲🇦 AR'}
+                          {language === 'en' ? '🇺🇸 EN' : '🇫🇷 FR'}
                         </Button>
                         <SheetClose asChild>
                           <Link href={userRole === 'reseller' ? "/reseller/dashboard" : "/login"} className="w-full">
