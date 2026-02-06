@@ -3,10 +3,21 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function PrivacyPolicyPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Privacy Policy"
+      titleFr="Politique de confidentialité"
+      subtitleEn="Our updated privacy and data protection policy for Didali Store will be published here very soon."
+      subtitleFr="Notre politique de confidentialité et de protection des données pour Didali Store sera publiée ici très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -27,13 +38,13 @@ export default function PrivacyPolicyPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الخصوصية لديدالي – مصر" : "Dedali Egypt – Privacy Policy"}
+          {isArabic ? "سياسة الخصوصية لديدالي – مصر" : "Didali Egypt – Privacy Policy"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
               ? "هذه السياسة تشرح كيفية قيام ديدالي مصر بجمع واستخدام وحماية بياناتك الشخصية وفقًا لأحكام قانون حماية البيانات الشخصية المصري رقم 151 لسنة 2020 واللوائح ذات الصلة."
-              : "This policy explains how Dedali Egypt collects, uses, and protects your personal data in accordance with Egyptian Personal Data Protection Law No. 151 of 2020 and applicable regulations."}
+              : "This policy explains how Didali Egypt collects, uses, and protects your personal data in accordance with Egyptian Personal Data Protection Law No. 151 of 2020 and applicable regulations."}
           </p>
 
           <h2 className="font-semibold text-foreground">

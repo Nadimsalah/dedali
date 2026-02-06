@@ -5,10 +5,21 @@ import { ArrowLeft, Search } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function TrackOrderPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Track Order"
+      titleFr="Suivre une commande"
+      subtitleEn="Live order tracking and status updates from Didali Store are coming very soon."
+      subtitleFr="Le suivi en temps réel de vos commandes Didali Store arrive très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>

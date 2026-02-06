@@ -3,10 +3,21 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function TermsPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Terms of Service"
+      titleFr="Conditions d’utilisation"
+      subtitleEn="The updated terms and conditions for using Didali Store will be published here very soon."
+      subtitleFr="Les conditions générales d’utilisation de Didali Store seront publiées ici très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -27,13 +38,13 @@ export default function TermsPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "شروط وأحكام استخدام موقع ديدالي – مصر" : "Dedali Egypt – Terms of Service"}
+          {isArabic ? "شروط وأحكام استخدام موقع ديدالي – مصر" : "Didali Egypt – Terms of Service"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
               ? "باستخدامك لموقع ديدالي في مصر أو إجرائك لأي طلب شراء، فأنت توافق على الشروط والأحكام الموضحة أدناه، والمطبقة وفقًا لأحكام القانون المصري."
-              : "By accessing Dedali&apos;s website in Egypt or placing an order, you agree to the terms and conditions below, applied in accordance with Egyptian law."}
+              : "By accessing Didali&apos;s website in Egypt or placing an order, you agree to the terms and conditions below, applied in accordance with Egyptian law."}
           </p>
 
           <h2 className="font-semibold text-foreground">
@@ -42,7 +53,7 @@ export default function TermsPage() {
           <p>
             {isArabic
               ? "يُسمح لك باستخدام الموقع لعرض المنتجات وطلبها لأغراض شخصية وغير تجارية فقط. لا يُسمح بأي استخدام غير قانوني أو يضر بديدالي أو بعملائها."
-              : "You may use the website to browse and purchase products for personal, non‑commercial use only. Any unlawful use or use that may harm Dedali or its customers is prohibited."}
+              : "You may use the website to browse and purchase products for personal, non‑commercial use only. Any unlawful use or use that may harm Didali or its customers is prohibited."}
           </p>
 
           <h2 className="font-semibold text-foreground">
@@ -78,7 +89,7 @@ export default function TermsPage() {
           <p>
             {isArabic
               ? "يحق لدیار أرجان تعديل هذه الشروط من وقت لآخر. يسري أي تحديث من تاريخ نشره على هذه الصفحة، ويُعد استمرار استخدامك للموقع بعد التعديل موافقة ضمنية على الشروط المحدثة."
-              : "Dedali may update these terms from time to time. Any changes take effect from the date they are published on this page, and your continued use of the website constitutes acceptance of the updated terms."}
+              : "Didali may update these terms from time to time. Any changes take effect from the date they are published on this page, and your continued use of the website constitutes acceptance of the updated terms."}
           </p>
         </div>
       </main>

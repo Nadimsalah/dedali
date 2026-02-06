@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, Users, Briefcase } from "lucide-react"
 import { getDashboardStats } from "@/lib/supabase-api"
+import { useLanguage } from "@/components/language-provider"
 
 export function DashboardStats() {
+    const { t } = useLanguage()
     const [statsData, setStatsData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
@@ -29,7 +31,7 @@ export function DashboardStats() {
 
     const stats = [
         {
-            label: "Total Revenue",
+            label: t("admin.dashboard.stats.total_revenue"),
             value: `MAD ${statsData?.totalRevenue?.toLocaleString()}`,
             change: "+12.5%", // Mock change for now
             trend: "up",
@@ -38,7 +40,7 @@ export function DashboardStats() {
             textColor: "text-primary",
         },
         {
-            label: "Total Orders",
+            label: t("admin.dashboard.stats.total_orders"),
             value: statsData?.totalOrders?.toString(),
             change: `+${statsData?.pendingOrders}`,
             trend: "up",
@@ -47,18 +49,18 @@ export function DashboardStats() {
             textColor: "text-blue-500",
         },
         {
-            label: "Total Resellers",
+            label: t("admin.dashboard.stats.total_resellers"),
             value: statsData?.totalResellers?.toString(),
-            change: "Partners",
+            change: t("admin.dashboard.stats.partners_label"),
             trend: "up",
             icon: Briefcase,
             color: "from-orange-500/20 to-red-500/20",
             textColor: "text-orange-500",
         },
         {
-            label: "Guest Customers",
+            label: t("admin.dashboard.stats.total_customers"),
             value: statsData?.totalCustomers?.toString(),
-            change: "Direct",
+            change: t("admin.dashboard.stats.direct_label"),
             trend: "up",
             icon: Users,
             color: "from-purple-500/20 to-pink-500/20",

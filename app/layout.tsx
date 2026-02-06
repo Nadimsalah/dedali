@@ -12,7 +12,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 const almarai = Almarai({ subsets: ["arabic"], weight: ["300", "400", "700", "800"], variable: "--font-almarai" });
 
 export const metadata: Metadata = {
-  title: 'Dedali Store | Premium IT Equipment',
+  title: 'Didali Store | Premium IT Equipment',
   description: 'Whole seller of IT material like PC, servers, printers. We are leader in Morocco.',
   icons: {
     icon: [

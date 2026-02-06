@@ -71,7 +71,7 @@ export default function ResellerRegisterPage() {
                         name: formData.name,
                         email: formData.email,
                         phone: formData.phone,
-                        status: 'active',
+                        status: 'pending',
                         role: 'reseller',
                         company_name: formData.companyName, // This needs column in DB
                         ice: formData.ice, // This needs column in DB
@@ -86,19 +86,16 @@ export default function ResellerRegisterPage() {
                     // We don't rollback auth for now, but in production you might want to.
                 }
 
-                toast.success(isArabic ? "تم إنشاء حساب الموزع بنجاح!" : "Reseller account created successfully!")
+                toast.success(
+                    isArabic
+                        ? "تم إنشاء حسابك بنجاح، وهو قيد المراجعة. سيتم تفعيل حسابك قريبًا."
+                        : "Your reseller account has been created and is pending activation. We will activate your account soon."
+                )
 
-                // Check if session exists (user is logged in) and redirect
-                if (authData.session) {
-                    setTimeout(() => {
-                        router.push('/reseller/dashboard')
-                    }, 1000)
-                } else {
-                    // Email confirmation might be on
-                    setTimeout(() => {
-                        router.push('/login')
-                    }, 2000)
-                }
+                // Redirect to login while account awaits activation
+                setTimeout(() => {
+                    router.push('/login')
+                }, 2000)
             }
 
         } catch (error: any) {
@@ -120,7 +117,7 @@ export default function ResellerRegisterPage() {
                     <Link href="/">
                         <Image
                             src={"/logo.png"}
-                            alt={"Dedali Store"}
+                            alt={"Didali Store"}
                             width={178}
                             height={50}
                             className={"h-12 w-auto"}
@@ -132,7 +129,7 @@ export default function ResellerRegisterPage() {
                         {isArabic ? "برنامج الشركاء" : "Partner Program"}
                     </div>
                     <h1 className="text-4xl lg:text-5xl font-bold text-foreground mb-6 leading-tight">
-                        {isArabic ? "كن شريك نجاح ديدالي" : "Become a Dedali Succes Partner"}
+                        {isArabic ? "كن شريك نجاح ديدالي" : "Become a Didali Succes Partner"}
                     </h1>
                     <p className="text-lg text-muted-foreground leading-relaxed">
                         {isArabic
@@ -156,7 +153,7 @@ export default function ResellerRegisterPage() {
                     </ul>
                 </div>
                 <div className="relative z-10 text-sm text-muted-foreground">
-                    © 2026 Dedali Store Partner Program.
+                    © 2026 Didali Store Partner Program.
                 </div>
                 <div className="absolute inset-4 glass-liquid bg-white/10 rounded-[3rem] -z-0" />
             </div>
@@ -172,7 +169,7 @@ export default function ResellerRegisterPage() {
                         <div className="lg:hidden flex justify-center mb-6">
                             <Image
                                 src={"/logo.png"}
-                                alt={"Dedali Store"}
+                                alt={"Didali Store"}
                                 width={140}
                                 height={40}
                                 className={"h-10 w-auto"}

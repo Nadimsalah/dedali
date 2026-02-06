@@ -23,7 +23,7 @@ import {
 } from "lucide-react"
 
 export default function AdminOrdersPage() {
-    const { t, setLanguage } = useLanguage()
+    const { t, setLanguage, language } = useLanguage()
     const searchParams = useSearchParams()
     const customerId = searchParams.get('customer_id')
     const [activeTab, setActiveTab] = useState("All")
@@ -74,6 +74,30 @@ export default function AdminOrdersPage() {
         }
     }
 
+    const getStatusLabel = (status: string) => {
+        const s = status.toLowerCase()
+
+        if (language === "fr") {
+            switch (s) {
+                case "pending": return "En attente"
+                case "processing": return "En traitement"
+                case "shipped": return "Expédiée"
+                case "delivered": return "Livrée"
+                case "cancelled": return "Annulée"
+                default: return s.charAt(0).toUpperCase() + s.slice(1)
+            }
+        }
+
+        switch (s) {
+            case "pending": return "Pending"
+            case "processing": return "Processing"
+            case "shipped": return "Shipped"
+            case "delivered": return "Delivered"
+            case "cancelled": return "Cancelled"
+            default: return s.charAt(0).toUpperCase() + s.slice(1)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
             {/* Background gradients */}
@@ -98,13 +122,6 @@ export default function AdminOrdersPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" className="rounded-full h-9 bg-background/50 border-white/10 hidden sm:flex">
-                            <Download className="w-4 h-4 mr-2" /> {t("admin.orders.export")}
-                        </Button>
-                        <Button className="rounded-full h-9 shadow-lg shadow-primary/20">
-                            <span className="hidden sm:inline">{t("admin.orders.create_order")}</span>
-                            <span className="sm:hidden">+</span>
-                        </Button>
                         <Notifications />
                     </div>
                 </header>
@@ -159,7 +176,7 @@ export default function AdminOrdersPage() {
                                                 <div className="text-[10px] text-muted-foreground/60">{new Date(order.created_at).toLocaleDateString()}</div>
                                             </div>
                                             <Badge variant="outline" className={`border ${getStatusColor(order.status)} text-[10px]`}>
-                                                {order.status}
+                                                {getStatusLabel(order.status)}
                                             </Badge>
                                         </div>
                                         <div className="flex justify-between items-end pt-2 border-t border-white/5">
@@ -218,7 +235,7 @@ export default function AdminOrdersPage() {
                                                 <td className="py-4 px-4 text-sm font-bold text-foreground">MAD {order.total}</td>
                                                 <td className="py-4 px-4">
                                                     <Badge variant="outline" className={`border ${getStatusColor(order.status)} text-[10px] sm:text-xs py-0.5 px-2`}>
-                                                        {order.status}
+                                                        {getStatusLabel(order.status)}
                                                     </Badge>
                                                 </td>
                                                 <td className="py-4 pr-6 text-right">

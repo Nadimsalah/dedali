@@ -370,7 +370,7 @@ export default function OrderDetailsPage() {
                         <div>
                             <img src="/logo.png" alt="Logo" className="h-8 w-auto mb-2" />
                             <div className="space-y-0.5 text-[10px] text-slate-500">
-                                <p className="font-black text-slate-900 text-xs text-nowrap">Dedali Store SARL</p>
+                                <p className="font-black text-slate-900 text-xs text-nowrap">Didali Store SARL</p>
                                 <p>Casablanca, Morocco</p>
                             </div>
                         </div>

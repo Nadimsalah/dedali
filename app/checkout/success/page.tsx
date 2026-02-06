@@ -68,7 +68,7 @@ export default function CheckoutSuccessPage() {
                 <div className="glass rounded-3xl p-8 sm:p-12 text-center border-primary/10 shadow-2xl shadow-primary/5">
                     {/* Logo */}
                     <div className="mb-8">
-                        <Image src="/logo.png" alt="Dedali Store" width={142} height={40} className="h-8 w-auto mx-auto" />
+                        <Image src="/logo.png" alt="Didali Store" width={142} height={40} className="h-8 w-auto mx-auto" />
                     </div>
 
                     <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-500">

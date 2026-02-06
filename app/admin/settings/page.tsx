@@ -73,7 +73,7 @@ export default function SettingsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     title: "System Test ⚡",
-                    body: "Connection established. You are now receiving administrative alerts for Dedali Store.",
+                    body: "Connection established. You are now receiving administrative alerts for Didali Store.",
                     tag: 'test-push'
                 })
             })
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                                                     value={settings.store_name || ""}
                                                     onChange={(e) => handleChange("store_name", e.target.value)}
                                                     className="rounded-xl h-12 bg-white/5 border-white/10 focus:bg-white/10"
-                                                    placeholder="Dedali Store"
+                                                    placeholder="Didali Store"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -417,7 +417,7 @@ export default function SettingsPage() {
                                                         value={settings.payment_cheque_details || ""}
                                                         onChange={(e) => handleChange("payment_cheque_details", e.target.value)}
                                                         className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-xs font-mono"
-                                                        placeholder="Payable to: Dedali Store SARL..."
+                                                        placeholder="Payable to: Didali Store SARL..."
                                                     />
                                                 </div>
                                             )}

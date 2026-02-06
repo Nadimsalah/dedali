@@ -5,10 +5,21 @@ import Link from "next/link"
 import { ArrowLeft, Leaf, Recycle, Droplets, Globe2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function SustainabilityPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Sustainability"
+      titleFr="Durabilité"
+      subtitleEn="Our full sustainability commitments and initiatives will be detailed here very soon."
+      subtitleFr="Nos engagements et initiatives en matière de durabilité seront détaillés ici très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -25,7 +36,7 @@ export default function SustainabilityPage() {
           <Link href="/" className="flex-shrink-0 relative group">
             <Image
               src="/logo.webp"
-              alt="Dedali Store"
+              alt="Didali Store"
               width={142}
               height={40}
               className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -47,12 +58,12 @@ export default function SustainabilityPage() {
               {isArabic ? "جمال مسؤول • من المغرب إلى مصر" : "Responsible Beauty • From Morocco to Egypt"}
             </p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-              {isArabic ? "الاستدامة في ديدالي" : "Sustainability at Dedali"}
+              {isArabic ? "الاستدامة في ديدالي" : "Sustainability at Didali"}
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               {isArabic
                 ? "منذ عام 1999 ونحن نؤمن أن جمال الأرغان الحقيقي لا يكتمل إلا عندما يحترم الأرض والناس الذين يقفون وراءه. في ديدالي، الاستدامة ليست مجرد كلمة، بل طريقة عمل يومية."
-                : "Since 1999, we believe that the true beauty of argan oil is only complete when it respects both the earth and the people behind it. At Dedali, sustainability is not a slogan – it is a daily way of working."}
+                : "Since 1999, we believe that the true beauty of argan oil is only complete when it respects both the earth and the people behind it. At Didali, sustainability is not a slogan – it is a daily way of working."}
             </p>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -117,7 +128,7 @@ export default function SustainabilityPage() {
         <div className="container mx-auto px-4 max-w-5xl space-y-12">
           <div className={`space-y-4 text-center max-w-2xl mx-auto ${isArabic ? "rtl" : ""}`}>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-              {isArabic ? "ثلاث ركائز للاستدامة في ديدالي" : "Three Pillars of Sustainability at Dedali"}
+              {isArabic ? "ثلاث ركائز للاستدامة في ديدالي" : "Three Pillars of Sustainability at Didali"}
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -181,7 +192,7 @@ export default function SustainabilityPage() {
           <p className="text-muted-foreground leading-relaxed">
             {isArabic
               ? "كل منتج من ديدالي هو خطوة صغيرة نحو روتين عناية أجمل وأكثر وعياً. اختاري منتجات تعكس قيمك وتدلّل بشرتك في نفس الوقت."
-              : "Every Dedali product is a small step towards a more beautiful and conscious routine. Choose treatments that reflect your values and pamper your skin at the same time."}
+              : "Every Didali product is a small step towards a more beautiful and conscious routine. Choose treatments that reflect your values and pamper your skin at the same time."}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="rounded-full shadow-lg shadow-primary/25">

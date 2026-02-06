@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { createCareerApplication } from "@/lib/supabase-api"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function CareersPage() {
   const { language } = useLanguage()
@@ -24,6 +25,16 @@ export default function CareersPage() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Careers"
+      titleFr="Carrières"
+      subtitleEn="We’re crafting the careers space for Didali. Soon you’ll be able to discover open roles and join the journey."
+      subtitleFr="Nous préparons l’espace carrières de Didali. Bientôt, vous pourrez découvrir les postes ouverts et rejoindre l’aventure."
+    />
+  )
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -98,7 +109,7 @@ export default function CareersPage() {
       <main className="container mx-auto px-4 py-10 sm:py-16 max-w-4xl">
         <div className={cn("space-y-6 mb-10", isArabic && "text-right")}>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            {isArabic ? "انضمي إلى فريق ديدالي" : "Join the Dedali team"}
+            {isArabic ? "انضمي إلى فريق ديدالي" : "Join the Didali team"}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
             {isArabic
@@ -223,7 +234,7 @@ export default function CareersPage() {
               placeholder={
                 isArabic
                   ? "اكتبي بإيجاز خبراتك السابقة ولماذا ترغبين في الانضمام إلى ديدالي..."
-                  : "Briefly describe your background and why you’d like to join Dedali..."
+                  : "Briefly describe your background and why you’d like to join Didali..."
               }
             />
           </div>
@@ -254,7 +265,7 @@ export default function CareersPage() {
             <p className="mt-3 text-xs sm:text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
               {isArabic
                 ? "شكرًا لك! تم استلام طلبك بنجاح وسيتواصل معك فريق ديدالي في حال توفر فرصة مناسبة."
-                : "Thank you! Your application has been received. The Dedali team will contact you if there’s a suitable opportunity."}
+                : "Thank you! Your application has been received. The Didali team will contact you if there’s a suitable opportunity."}
             </p>
           )}
 

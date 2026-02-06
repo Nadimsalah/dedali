@@ -93,12 +93,14 @@ export default function CheckoutPage() {
         fetchUserAndProfile()
     }, [])
 
+    const isResellerAccount = userRole === 'reseller'
+
     // Get current shipping rule
-    const currentShippingRule = shippingSettings.find(s => s.role === (userRole === 'reseller' ? 'reseller' : 'retail'))
+    const currentShippingRule = shippingSettings.find(s => s.role === (isResellerAccount ? 'reseller' : 'retail'))
 
     // Calculate totals
     const subtotal = items.reduce((total, item) => {
-        const price = (userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price
+        const price = (isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price
         return total + price * item.quantity
     }, 0)
 
@@ -181,7 +183,7 @@ export default function CheckoutPage() {
         try {
             const itemsWithPrices = items.map(item => ({
                 ...item,
-                price: (userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price
+                price: (isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price
             }))
 
             // Updated user profile if requested
@@ -250,7 +252,7 @@ export default function CheckoutPage() {
             <header className="sticky top-0 z-50 glass-strong border-b border-border/50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href="/" className="relative">
-                        <Image src="/logo.png" alt="Dedali Store" width={106} height={30} className="h-6 w-auto" />
+                        <Image src="/logo.png" alt="Didali Store" width={106} height={30} className="h-6 w-auto" />
                     </Link>
                     <Link href="/cart" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
                         <ArrowLeft className="w-4 h-4" /> {t('checkout.return_cart')}
@@ -490,7 +492,7 @@ export default function CheckoutPage() {
                                                 </h4>
                                                 {item.size && <p className="text-xs text-muted-foreground">{item.size}</p>}
                                                 <p className="text-sm font-semibold text-primary mt-1">
-                                                    {t('common.currency')} {(((userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price) * item.quantity).toFixed(2)}
+                                                    {t('common.currency')} {(((isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price) * item.quantity).toFixed(2)}
                                                 </p>
                                             </div>
                                         </div>
@@ -577,14 +579,14 @@ export default function CheckoutPage() {
                             <Link href="/" className="inline-block">
                                 <Image
                                     src="/logo.png"
-                                    alt="Dedali Store"
+                                    alt="Didali Store"
                                     width={142}
                                     height={40}
                                     className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
                                 />
                             </Link>
                             <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm text-left">
-                                Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+                                Didali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
                             </p>
                         </div>
 
@@ -624,7 +626,7 @@ export default function CheckoutPage() {
 
                     {/* Bottom Bar */}
                     <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-                        <p>© {new Date().getFullYear()} Dedali Store. All rights reserved.</p>
+                        <p>© {new Date().getFullYear()} Didali Store. All rights reserved.</p>
                         <div className="flex items-center gap-6">
                             <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
                             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>

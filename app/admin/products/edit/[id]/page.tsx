@@ -20,6 +20,7 @@ import {
 import Link from "next/link"
 import { getProductById } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
+import Image from "next/image"
 
 export default function EditProductPage() {
     const { t, setLanguage } = useLanguage()
@@ -45,6 +46,11 @@ export default function EditProductPage() {
     const [price, setPrice] = useState("")
     const [compareAtPrice, setCompareAtPrice] = useState("")
     const [resellerPrice, setResellerPrice] = useState("")
+    const [partnerPrice, setPartnerPrice] = useState("")
+    const [wholesalerPrice, setWholesalerPrice] = useState("")
+    const [resellerMinQty, setResellerMinQty] = useState("")
+    const [partnerMinQty, setPartnerMinQty] = useState("")
+    const [wholesalerMinQty, setWholesalerMinQty] = useState("")
     const [stock, setStock] = useState("")
     const [sku, setSku] = useState("")
     const [status, setStatus] = useState("active")
@@ -52,6 +58,8 @@ export default function EditProductPage() {
     const [ingredients, setIngredients] = useState("")
     const [howToUse, setHowToUse] = useState("")
     const [categories, setCategories] = useState<{ id: string, name: string, slug: string }[]>([])
+    const [images, setImages] = useState<string[]>([])
+    const [uploading, setUploading] = useState(false)
 
     // AI Rewrite State
     const [rewriting, setRewriting] = useState<string | null>(null)
@@ -72,12 +80,18 @@ export default function EditProductPage() {
                 setPrice(product.price.toString())
                 setCompareAtPrice(product.compare_at_price?.toString() || "")
                 setResellerPrice(product.reseller_price?.toString() || "")
+                setPartnerPrice(product.partner_price?.toString() || "")
+                setWholesalerPrice(product.wholesaler_price?.toString() || "")
+                setResellerMinQty(product.reseller_min_qty?.toString() || "")
+                setPartnerMinQty(product.partner_min_qty?.toString() || "")
+                setWholesalerMinQty(product.wholesaler_min_qty?.toString() || "")
                 setStock(product.stock.toString())
                 setSku(product.sku)
                 setStatus(product.status)
                 setBenefits(product.benefits || [])
                 setIngredients(product.ingredients || "")
                 setHowToUse(product.how_to_use || "")
+                setImages(product.images || [])
             }
 
             if (categoriesData.data) {
@@ -138,12 +152,18 @@ export default function EditProductPage() {
                 price: parseFloat(price),
                 compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
                 reseller_price: resellerPrice ? parseFloat(resellerPrice) : null,
+                partner_price: partnerPrice ? parseFloat(partnerPrice) : null,
+                wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) : null,
+                reseller_min_qty: resellerMinQty ? parseInt(resellerMinQty) : null,
+                partner_min_qty: partnerMinQty ? parseInt(partnerMinQty) : null,
+                wholesaler_min_qty: wholesalerMinQty ? parseInt(wholesalerMinQty) : null,
                 stock: parseInt(stock),
                 sku,
                 status,
                 benefits,
                 ingredients,
                 how_to_use: howToUse,
+                images,
                 updated_at: new Date().toISOString()
             })
             .eq('id', productId)
@@ -169,6 +189,47 @@ export default function EditProductPage() {
 
     const removeBenefit = (index: number) => {
         setBenefits(benefits.filter((_, i) => i !== index))
+    }
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files
+        if (!files || files.length === 0) return
+
+        setUploading(true)
+        const uploadedUrls: string[] = []
+
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i]
+                const fileExt = file.name.split('.').pop()
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+                const filePath = `${fileName}`
+
+                const { data, error } = await supabase.storage
+                    .from('product-images')
+                    .upload(filePath, file)
+
+                if (error) {
+                    console.error('Error uploading image:', error.message)
+                    continue
+                }
+
+                const publicUrl = supabase.storage.from('product-images').getPublicUrl(data.path).data.publicUrl
+                uploadedUrls.push(publicUrl)
+            }
+
+            if (uploadedUrls.length > 0) {
+                setImages(prev => [...prev, ...uploadedUrls])
+            }
+        } catch (error) {
+            console.error('Upload error:', error)
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    const removeImage = (index: number) => {
+        setImages(prev => prev.filter((_, i) => i !== index))
     }
 
     if (loading) {
@@ -277,6 +338,42 @@ export default function EditProductPage() {
                                             </button>
                                         )}
                                     </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Media Gallery */}
+                        <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                                <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800">
+                                    Media Gallery
+                                </h3>
+                            </div>
+                            <div className="p-6">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    {images.map((img, i) => (
+                                        <div key={i} className="relative aspect-square rounded-2xl overflow-hidden group border border-gray-200 bg-gray-50">
+                                            <Image src={img} alt="Product" fill className="object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                                <button onClick={() => removeImage(i)} className="p-3 bg-white text-red-500 shadow-lg rounded-full hover:bg-red-50 transition-all transform hover:scale-110">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <label className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-500 hover:bg-blue-50/50 transition-all flex flex-col items-center justify-center cursor-pointer text-gray-400 hover:text-blue-600 group">
+                                        <div className="p-4 rounded-full bg-gray-50 group-hover:bg-blue-100 transition-colors mb-3">
+                                            {uploading ? (
+                                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                                            ) : (
+                                                <Upload className="w-6 h-6 text-gray-400 group-hover:text-blue-600" />
+                                            )}
+                                        </div>
+                                        <span className="text-xs font-bold uppercase tracking-wide">
+                                            {uploading ? 'Uploading...' : 'Upload Image'}
+                                        </span>
+                                        <input type="file" className="hidden" multiple onChange={handleImageUpload} accept="image/*" disabled={uploading} />
+                                    </label>
                                 </div>
                             </div>
                         </section>
@@ -430,16 +527,60 @@ export default function EditProductPage() {
                                 />
                             </div>
 
-                            <div className="space-y-3">
-                                <label className="text-sm font-semibold text-gray-700">Reseller Price (MAD)</label>
-                                <Input
-                                    type="number"
-                                    value={resellerPrice || ""}
-                                    onChange={(e) => setResellerPrice(e.target.value)}
-                                    placeholder="0.00"
-                                    className="h-12 text-base bg-blue-50/50 border-blue-200 text-blue-900 focus:bg-white transition-colors"
-                                />
-                                <p className="text-xs text-blue-600/80">Visible only to resellers</p>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-gray-700">Reseller Price (MAD)</label>
+                                    <Input
+                                        type="number"
+                                        value={resellerPrice || ""}
+                                        onChange={(e) => setResellerPrice(e.target.value)}
+                                        placeholder="0.00"
+                                        className="h-12 text-base bg-blue-50/50 border-blue-200 text-blue-900 focus:bg-white transition-colors"
+                                    />
+                                    <Input
+                                        type="number"
+                                        value={resellerMinQty || ""}
+                                        onChange={(e) => setResellerMinQty(e.target.value)}
+                                        placeholder="Min quantity for reseller pricing"
+                                        className="h-10 text-sm bg-blue-50/80 border-blue-200 text-blue-900"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-gray-700">Partner Price (MAD)</label>
+                                    <Input
+                                        type="number"
+                                        value={partnerPrice || ""}
+                                        onChange={(e) => setPartnerPrice(e.target.value)}
+                                        placeholder="0.00"
+                                        className="h-12 text-base bg-purple-50/50 border-purple-200 text-purple-900 focus:bg-white transition-colors"
+                                    />
+                                    <Input
+                                        type="number"
+                                        value={partnerMinQty || ""}
+                                        onChange={(e) => setPartnerMinQty(e.target.value)}
+                                        placeholder="Min quantity for partner pricing"
+                                        className="h-10 text-sm bg-purple-50/80 border-purple-200 text-purple-900"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-gray-700">Wholesaler Price (MAD)</label>
+                                    <Input
+                                        type="number"
+                                        value={wholesalerPrice || ""}
+                                        onChange={(e) => setWholesalerPrice(e.target.value)}
+                                        placeholder="0.00"
+                                        className="h-12 text-base bg-emerald-50/50 border-emerald-200 text-emerald-900 focus:bg-white transition-colors"
+                                    />
+                                    <Input
+                                        type="number"
+                                        value={wholesalerMinQty || ""}
+                                        onChange={(e) => setWholesalerMinQty(e.target.value)}
+                                        placeholder="Min quantity for wholesaler pricing"
+                                        className="h-10 text-sm bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                                    />
+                                </div>
                             </div>
 
                             <div className="space-y-3">

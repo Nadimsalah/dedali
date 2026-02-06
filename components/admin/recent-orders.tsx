@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import Link from "next/link"
 import { getOrders, type Order } from "@/lib/supabase-api"
+import { useLanguage } from "@/components/language-provider"
 
 export function RecentOrders() {
+    const { t } = useLanguage()
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -37,19 +39,28 @@ export function RecentOrders() {
         }
     }
 
+    const getStatusLabel = (status: string) => {
+        const key = `order.status.${status.toLowerCase()}`
+        return t(key)
+    }
+
     return (
         <div className="glass rounded-2xl p-6 overflow-hidden">
             <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-foreground">Recent Orders</h3>
+                <h3 className="text-lg font-bold text-foreground">{t("admin.dashboard.recent_orders.title")}</h3>
                 <Link href="/admin/orders">
-                    <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">View All</Button>
+                    <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                        {t("admin.dashboard.recent_orders.view_all")}
+                    </Button>
                 </Link>
             </div>
 
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
                 {loading ? (
-                    <div className="py-8 text-center text-muted-foreground animate-pulse">Loading...</div>
+                    <div className="py-8 text-center text-muted-foreground animate-pulse">
+                        {t("admin.dashboard.recent_orders.loading")}
+                    </div>
                 ) : orders.length > 0 ? (
                     orders.map((order) => (
                         <div key={order.id} className="bg-background/50 rounded-xl p-4 border border-border/50 hover:border-primary/30 transition-colors">
@@ -60,7 +71,7 @@ export function RecentOrders() {
                                     <div className="text-[10px] text-muted-foreground/60 truncate max-w-[150px]">{order.customer_email}</div>
                                 </div>
                                 <Badge variant="outline" className={`border-0 ${getStatusColor(order.status)}`}>
-                                    {order.status}
+                                    {getStatusLabel(order.status)}
                                 </Badge>
                             </div>
                             <div className="flex justify-between items-end">
@@ -72,7 +83,9 @@ export function RecentOrders() {
                         </div>
                     ))
                 ) : (
-                    <div className="py-8 text-center text-muted-foreground">No recent orders found.</div>
+                    <div className="py-8 text-center text-muted-foreground">
+                        {t("admin.dashboard.recent_orders.empty")}
+                    </div>
                 )}
             </div>
 
@@ -81,18 +94,32 @@ export function RecentOrders() {
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-border/50 text-left">
-                            <th className="pb-3 text-sm font-medium text-muted-foreground pl-2">Order ID</th>
-                            <th className="pb-3 text-sm font-medium text-muted-foreground hidden sm:table-cell">Customer</th>
-                            <th className="pb-3 text-sm font-medium text-muted-foreground hidden md:table-cell">Email</th>
-                            <th className="pb-3 text-sm font-medium text-muted-foreground">Amount</th>
-                            <th className="pb-3 text-sm font-medium text-muted-foreground">Status</th>
-                            <th className="pb-3 text-sm font-medium text-muted-foreground text-right pr-2">Action</th>
+                            <th className="pb-3 text-sm font-medium text-muted-foreground pl-2">
+                                {t("admin.dashboard.recent_orders.col_order_id")}
+                            </th>
+                            <th className="pb-3 text-sm font-medium text-muted-foreground hidden sm:table-cell">
+                                {t("admin.dashboard.recent_orders.col_customer")}
+                            </th>
+                            <th className="pb-3 text-sm font-medium text-muted-foreground hidden md:table-cell">
+                                {t("admin.dashboard.recent_orders.col_email")}
+                            </th>
+                            <th className="pb-3 text-sm font-medium text-muted-foreground">
+                                {t("admin.dashboard.recent_orders.col_amount")}
+                            </th>
+                            <th className="pb-3 text-sm font-medium text-muted-foreground">
+                                {t("admin.dashboard.recent_orders.col_status")}
+                            </th>
+                            <th className="pb-3 text-sm font-medium text-muted-foreground text-right pr-2">
+                                {t("admin.dashboard.recent_orders.col_action")}
+                            </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="py-8 text-center text-muted-foreground animate-pulse">Loading recent orders...</td>
+                                <td colSpan={6} className="py-8 text-center text-muted-foreground animate-pulse">
+                                    {t("admin.dashboard.recent_orders.loading")}
+                                </td>
                             </tr>
                         ) : orders.length > 0 ? (
                             orders.map((order) => (
@@ -103,7 +130,7 @@ export function RecentOrders() {
                                     <td className="py-4 font-semibold text-foreground text-xs sm:text-base">MAD {order.total}</td>
                                     <td className="py-4">
                                         <Badge variant="outline" className={`border-0 ${getStatusColor(order.status)} text-[10px] sm:text-xs`}>
-                                            {order.status}
+                                            {getStatusLabel(order.status)}
                                         </Badge>
                                     </td>
                                     <td className="py-4 text-right pr-2">
@@ -117,7 +144,9 @@ export function RecentOrders() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="py-8 text-center text-muted-foreground">No recent orders found.</td>
+                                <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                                    {t("admin.dashboard.recent_orders.empty")}
+                                </td>
                             </tr>
                         )}
                     </tbody>

@@ -3,10 +3,21 @@
 import Link from "next/link"
 import { ArrowLeft, Truck } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function ShippingInfoPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Shipping Info"
+      titleFr="Informations de livraison"
+      subtitleEn="Detailed shipping information for Didali Store will be available here very soon."
+      subtitleFr="Les informations détaillées sur la livraison pour Didali Store seront disponibles ici très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -27,13 +38,13 @@ export default function ShippingInfoPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الشحن لدى ديدالي – مصر" : "Dedali Egypt – Shipping Information"}
+          {isArabic ? "سياسة الشحن لدى ديدالي – مصر" : "Didali Egypt – Shipping Information"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
               ? "نقدم خدمة توصيل للطلبات داخل جمهورية مصر العربية من خلال شركاء شحن موثوقين، مع الحرص على توصيل منتجات ديدالي بأفضل حالة."
-              : "We deliver orders across Egypt using trusted courier partners, ensuring your Dedali products arrive in the best condition."}
+              : "We deliver orders across Egypt using trusted courier partners, ensuring your Didali products arrive in the best condition."}
           </p>
 
           <h2 className="font-semibold text-foreground flex items-center gap-2">

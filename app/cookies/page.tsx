@@ -3,10 +3,21 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function CookiesPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Cookie Policy"
+      titleFr="Politique de cookies"
+      subtitleEn="Our cookie and tracking policy for Didali Store will be available here very soon."
+      subtitleFr="Notre politique de cookies et de suivi pour Didali Store sera disponible ici très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -27,13 +38,13 @@ export default function CookiesPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الكوكيز لديدالي – مصر" : "Dedali Egypt – Cookie Policy"}
+          {isArabic ? "سياسة الكوكيز لديدالي – مصر" : "Didali Egypt – Cookie Policy"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
               ? "يستخدم موقع ديدالي ملفات تعريف الارتباط (الكوكيز) لتحسين تجربة التصفح وقياس الأداء، بما يتوافق مع القوانين المصرية المنظمة لاستخدام البيانات الإلكترونية."
-              : "Dedali&apos;s website uses cookies to improve your browsing experience and measure performance, in line with Egyptian regulations on electronic data usage."}
+              : "Didali&apos;s website uses cookies to improve your browsing experience and measure performance, in line with Egyptian regulations on electronic data usage."}
           </p>
 
           <h2 className="font-semibold text-foreground">

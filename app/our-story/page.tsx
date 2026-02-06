@@ -5,10 +5,21 @@ import Link from "next/link"
 import { ArrowLeft, Globe2, MapPin, Droplets, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function OurStoryPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Our Story"
+      titleFr="Notre histoire"
+      subtitleEn="Very soon you’ll be able to explore the full Didali story, our origins and our vision for the future."
+      subtitleFr="Très bientôt, vous pourrez découvrir toute l’histoire de Didali, nos origines et notre vision pour l’avenir."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -25,7 +36,7 @@ export default function OurStoryPage() {
           <Link href="/" className="flex-shrink-0 relative group">
             <Image
               src="/logo.webp"
-              alt="Dedali Store"
+              alt="Didali Store"
               width={142}
               height={40}
               className="h-8 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -53,14 +64,14 @@ export default function OurStoryPage() {
                 </>
               ) : (
                 <>
-                  Our Story at <span className="text-primary">Dedali</span>
+                  Our Story at <span className="text-primary">Didali</span>
                 </>
               )}
             </h1>
             <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
               {isArabic
                 ? "ديدالي تصدّر زيت الأرجان المغربي النقي منذ عام 1999. لأكثر من عشرين عامًا، عملنا جنبًا إلى جنب مع التعاونيات والحرفيين المحليين لنحوّل هذا الزيت النادر إلى طقوس عناية فاخرة للبشرة والشعر."
-                : "Dedali has been exporting pure Moroccan argan oil since 1999. For more than two decades, we have worked hand in hand with local cooperatives and artisans to transform this rare oil into high‑performance skincare and haircare rituals."}
+                : "Didali has been exporting pure Moroccan argan oil since 1999. For more than two decades, we have worked hand in hand with local cooperatives and artisans to transform this rare oil into high‑performance skincare and haircare rituals."}
             </p>
             <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
               {isArabic
@@ -81,7 +92,7 @@ export default function OurStoryPage() {
               <p className="text-xs sm:text-sm text-muted-foreground">
                 {isArabic
                   ? "ديدالي حاصلة على عدة شهادات للجودة والنقاء من جهات رقابية دولية وإقليمية، تؤكد مصدر زيتنا وطريقة استخلاصه."
-                  : "Dedali holds multiple quality and purity certifications from international and regional bodies, confirming the origin of our oil and our extraction methods."}
+                  : "Didali holds multiple quality and purity certifications from international and regional bodies, confirming the origin of our oil and our extraction methods."}
               </p>
               <div className="flex flex-wrap items-center gap-4 opacity-80">
                 <div className="relative w-14 h-14 sm:w-16 sm:h-16">
@@ -169,7 +180,7 @@ export default function OurStoryPage() {
               <p className="text-muted-foreground leading-relaxed">
                 {isArabic
                   ? "منذ عام 1999، تكرّس ديدالي لمشاركة أسرار الجمال المغربي مع العالم. ما بدأ كشغف بزيت الأرجان النقي تحوّل إلى مجموعة كاملة من منتجات العناية التي تحترم بشرتك والأرض التي تأتي منها."
-                  : "Since 1999, Dedali has been dedicated to sharing the secrets of Moroccan beauty with the world. What started as a passion for pure argan oil has grown into a full range of care products that respect both your skin and the land they come from."}
+                : "Since 1999, Didali has been dedicated to sharing the secrets of Moroccan beauty with the world. What started as a passion for pure argan oil has grown into a full range of care products that respect both your skin and the land they come from."}
               </p>
             </div>
             <div className={`space-y-4 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
@@ -193,17 +204,17 @@ export default function OurStoryPage() {
                 {isArabic ? "الآن في السوق المصري" : "Now in Egypt"}
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                {isArabic ? "ديدالي تصل إلى السوق المصري" : "Dedali arrives in the Egyptian market"}
+                {isArabic ? "ديدالي تصل إلى السوق المصري" : "Didali arrives in the Egyptian market"}
               </h2>
               <p className="text-muted-foreground leading-relaxed">
                 {isArabic
                   ? "بعد سنوات من خدمة العملاء حول العالم، أصبحت ديدالي اليوم حاضرة في مصر. تظل رسالتنا واحدة: أن نقدّم لك عناية مغربية أصيلة بزيت الأرجان، تناسب روتينك اليومي وطبيعة المناخ من حولك."
-                  : "After years of serving customers around the world, Dedali is now present in Egypt. Our mission remains the same: to offer you authentic Moroccan argan care, adapted to your daily rituals and climate."}
+                  : "After years of serving customers around the world, Didali is now present in Egypt. Our mission remains the same: to offer you authentic Moroccan argan care, adapted to your daily rituals and climate."}
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 {isArabic
                   ? "من القاهرة إلى الإسكندرية وما بعدها، نلتزم بتقديم منتجات أرجان عالية الجودة، حتى تعيشي نفس تجربة الفخامة والنتائج الموثوقة التي صنعت اسم ديدالي منذ 1999."
-                  : "From Cairo to Alexandria and beyond, we are committed to making premium argan‑based products accessible, so you can experience the same luxurious textures and results that made Dedali a trusted name since 1999."}
+                  : "From Cairo to Alexandria and beyond, we are committed to making premium argan‑based products accessible, so you can experience the same luxurious textures and results that made Didali a trusted name since 1999."}
               </p>
             </div>
             <div className={`glass-subtle rounded-3xl p-6 space-y-3 text-sm sm:text-base ${isArabic ? "text-right" : ""}`}>
@@ -236,7 +247,7 @@ export default function OurStoryPage() {
       <section className="py-16 sm:py-20 bg-secondary/5 border-t border-border/40">
         <div className={`container mx-auto px-4 max-w-3xl text-center space-y-6 ${isArabic ? "rtl" : ""}`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-            {isArabic ? "عيشي طقس العناية مع ديدالي" : "Experience the Dedali ritual"}
+            {isArabic ? "عيشي طقس العناية مع ديدالي" : "Experience the Didali ritual"}
           </h2>
           <p className="text-muted-foreground leading-relaxed">
             {isArabic

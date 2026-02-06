@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useCart } from "@/components/cart-provider"
 import { useLanguage } from "@/components/language-provider"
-import { getProductById, getProducts, getCurrentUserRole, type Product } from "@/lib/supabase-api"
+import { getProductById, getProducts, getCurrentUserRole, getCurrentResellerTier, type Product, ResellerTier } from "@/lib/supabase-api"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -30,17 +30,20 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [resellerTier, setResellerTier] = useState<ResellerTier>(null)
 
   useEffect(() => {
     async function loadData() {
       setLoading(true)
-      const [productData, roleData] = await Promise.all([
+      const [productData, roleData, tierData] = await Promise.all([
         getProductById(productId),
-        getCurrentUserRole()
+        getCurrentUserRole(),
+        getCurrentResellerTier()
       ])
 
       setProduct(productData)
       setUserRole(roleData)
+      setResellerTier(tierData)
 
       if (productData) {
         // Fetch related products from same category
@@ -122,7 +125,7 @@ export default function ProductPage() {
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
                 src="/logo.png"
-                alt="Dedali Store"
+                alt="Didali Store"
                 width={120}
                 height={34}
                 className="h-8 sm:h-10 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -240,22 +243,64 @@ export default function ProductPage() {
 
               <div className="flex items-baseline gap-3 sm:gap-4 mb-6 sm:mb-8 p-4 bg-primary/5 rounded-2xl border border-primary/10 w-fit">
                 {/* Dynamic Price Display */}
-                {userRole === 'reseller' && product.reseller_price ? (
-                  <>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">Reseller Price</span>
-                      <span className="text-3xl sm:text-4xl font-extrabold text-primary">{t('common.currency')} {product.reseller_price}</span>
-                    </div>
-                    <div className="flex flex-col items-start border-l pl-4 border-primary/20">
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Regular</span>
-                      <span className="text-lg text-muted-foreground line-through decoration-destructive/30 decoration-2">
-                        {t('common.currency')} {product.price}
-                      </span>
-                    </div>
-                  </>
+                {resellerTier ? (
+                  (() => {
+                    const tier = resellerTier || 'reseller'
+                    const tierPrice =
+                      tier === 'wholesaler'
+                        ? product.wholesaler_price
+                        : tier === 'partner'
+                          ? product.partner_price
+                          : product.reseller_price
+
+                    if (tierPrice) {
+                      const label =
+                        tier === 'wholesaler'
+                          ? 'Wholesaler Price'
+                          : tier === 'partner'
+                            ? 'Partner Price'
+                            : 'Reseller Price'
+
+                      return (
+                        <>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider mb-0.5">
+                              {label}
+                            </span>
+                            <span className="text-3xl sm:text-4xl font-extrabold text-primary">
+                              {t('common.currency')} {tierPrice} <span className="text-sm font-normal text-muted-foreground align-middle">TTC</span>
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-start border-l pl-4 border-primary/20">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                              Regular
+                            </span>
+                            <span className="text-lg text-muted-foreground line-through decoration-destructive/30 decoration-2">
+                              {t('common.currency')} {product.price}
+                            </span>
+                          </div>
+                        </>
+                      )
+                    }
+
+                    return (
+                      <>
+                        <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">
+                          {t('common.currency')} {product.price} <span className="text-sm font-normal text-muted-foreground align-middle">TTC</span>
+                        </span>
+                        {product.compare_at_price && (
+                          <span className="text-xl text-muted-foreground line-through decoration-destructive/30 decoration-2">
+                            {t('common.currency')} {product.compare_at_price}
+                          </span>
+                        )}
+                      </>
+                    )
+                  })()
                 ) : (
                   <>
-                    <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">{t('common.currency')} {product.price}</span>
+                    <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">
+                      {t('common.currency')} {product.price}
+                    </span>
                     {product.compare_at_price && (
                       <span className="text-xl text-muted-foreground line-through decoration-destructive/30 decoration-2">
                         {t('common.currency')} {product.compare_at_price}
@@ -263,7 +308,6 @@ export default function ProductPage() {
                     )}
                   </>
                 )}
-
               </div>
             </div>
 
@@ -316,6 +360,16 @@ export default function ProductPage() {
                 size="lg"
                 className="flex-1 h-16 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 onClick={() => {
+                  const tier = resellerTier || 'reseller'
+                  const tierPrice =
+                    resellerTier
+                      ? tier === 'wholesaler'
+                        ? product.wholesaler_price
+                        : tier === 'partner'
+                          ? product.partner_price
+                          : product.reseller_price
+                      : undefined
+
                   addItem({
                     id: product.id,
                     name: product.title,
@@ -324,7 +378,7 @@ export default function ProductPage() {
                     image: productImages[0],
                     quantity: quantity,
                     inStock: inStock,
-                    resellerPrice: product.reseller_price
+                    resellerPrice: tierPrice ?? product.reseller_price ?? undefined
                   })
                   router.push("/cart")
                 }}
@@ -513,14 +567,14 @@ export default function ProductPage() {
               <Link href="/" className="inline-block">
                 <Image
                   src="/logo.png"
-                  alt="Dedali Store"
+                  alt="Didali Store"
                   width={142}
                   height={40}
                   className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
                 />
               </Link>
               <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm">
-                Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+                Didali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
               </p>
             </div>
 
@@ -560,7 +614,7 @@ export default function ProductPage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <p>© {new Date().getFullYear()} Dedali Store. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Didali Store. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>

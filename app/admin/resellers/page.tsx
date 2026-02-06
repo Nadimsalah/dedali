@@ -90,7 +90,10 @@ export default function ResellersPage() {
                 reseller.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 reseller.company_name?.toLowerCase().includes(searchQuery.toLowerCase())
 
-            return matchesSearch
+            const matchesStatus =
+                activeTab !== "pending" || reseller.status === "pending"
+
+            return matchesSearch && matchesStatus
         })
         .sort((a, b) => {
             if (activeTab === "top-spend") {
@@ -188,6 +191,7 @@ export default function ResellersPage() {
                     <div className="flex p-1 bg-white/5 border border-white/5 rounded-2xl w-full xl:w-auto">
                         {[
                             { id: "all", label: t("admin.resellers.all_partners") },
+                            { id: "pending", label: "Pending approval" },
                             { id: "top-spend", label: t("admin.resellers.top_spend") }
                         ].map((tab) => (
                             <button

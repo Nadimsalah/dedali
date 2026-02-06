@@ -324,14 +324,14 @@ export default function ResellerOrderDetailsPage() {
                                 <div className="relative w-32 h-9 mb-2">
                                     <Image
                                         src="/logo.png"
-                                        alt="Dedali Store Logo"
+                                        alt="Didali Store Logo"
                                         fill
                                         className="object-contain object-left"
                                         priority
                                     />
                                 </div>
                                 <div className="space-y-0 text-[10px] text-black/70 text-left">
-                                    <p className="font-black text-[#1a1a1a] text-xs">Dedali Store</p>
+                                    <p className="font-black text-[#1a1a1a] text-xs">Didali Store</p>
                                     <p className="italic">Premium IT Equipment</p>
                                     <p>Casablanca, Morocco</p>
                                     <p>Email: contact@dedalistore.com</p>
@@ -431,7 +431,7 @@ export default function ResellerOrderDetailsPage() {
                         </div>
 
                         <div className="mt-4 text-center">
-                            <p className="text-[8px] text-black/30 font-bold uppercase tracking-[0.2em]">Dedali Store SARL — RC: 123456 — ICE: 0000000000000000</p>
+                            <p className="text-[8px] text-black/30 font-bold uppercase tracking-[0.2em]">Didali Store SARL — RC: 123456 — ICE: 0000000000000000</p>
                         </div>
                     </div>
                 )}

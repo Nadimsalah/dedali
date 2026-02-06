@@ -44,7 +44,7 @@ const translations = {
         "header.premium": "Gaming",
 
         // Hero
-        "hero.title_prefix": "Dedali",
+        "hero.title_prefix": "Didali",
         "hero.title_suffix": "Store",
         "hero.subtitle": "Leader in IT distribution in Morocco. Wholesale provider of PCs, servers, printers, and more.",
         "hero.shop_collection": "Browse Products",
@@ -63,7 +63,7 @@ const translations = {
         "section.all_categories": "All",
         "section.view_all_products": "View All Products",
         "section.load_more": "Load More",
-        "section.why_choose": "Why Choose Dedali Store?",
+        "section.why_choose": "Why Choose Didali Store?",
         "section.organic": "100% Genuine",
         "section.organic_desc": "Authentic products from top brands",
         "section.award_winning": "Industry Leader",
@@ -137,6 +137,13 @@ const translations = {
         "cart.trust.secure": "Secure Payment",
         "cart.trust.returns": "30-Day Returns",
 
+        // Order statuses (for labels/badges)
+        "order.status.pending": "Pending",
+        "order.status.processing": "Processing",
+        "order.status.shipped": "Shipped",
+        "order.status.delivered": "Delivered",
+        "order.status.cancelled": "Cancelled",
+
         // FAQ
         "faq.title": "Frequently Asked Questions",
         "faq.subtitle": "Everything you need to know about our products",
@@ -180,7 +187,7 @@ const translations = {
         "success.coupon_title": "A special gift for you",
         "success.coupon_desc": "Use this code for 20% off your next purchase",
         "success.order_summary": "Order Summary",
-        "footer.about_desc": "Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.",
+        "footer.about_desc": "Didali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.",
         "footer.privacy_short": "Privacy",
         "footer.terms_short": "Terms",
         "footer.system_status": "System Normal",
@@ -237,6 +244,15 @@ const translations = {
         "admin.orders.no_orders_match": "No orders found matching your criteria",
         "admin.orders.showing": "Showing {current} of {total} orders",
         "admin.orders.view_details": "View Details",
+
+        // Admin Order details (extra labels)
+        "admin.orders.update_status": "Update Status",
+        "admin.orders.timeline_title": "Timeline Logs",
+        "admin.orders.timeline_empty": "No logs available.",
+        "admin.orders.customer_title": "Customer",
+        "admin.orders.customer_company": "Company",
+        "admin.orders.customer_contact": "Contact",
+        "admin.orders.customer_email": "Email",
 
         // Admin Products
         "admin.products.title": "Products",
@@ -367,9 +383,18 @@ const translations = {
         "admin.careers.label.role": "Role:",
         "admin.careers.label.cv": "CV file:",
 
+        // Admin Order details (extra labels)
+        "admin.orders.update_status": "Update Status",
+        "admin.orders.timeline_title": "Timeline Logs",
+        "admin.orders.timeline_empty": "No logs available.",
+        "admin.orders.customer_title": "Customer",
+        "admin.orders.customer_company": "Company",
+        "admin.orders.customer_contact": "Contact",
+        "admin.orders.customer_email": "Email",
+
         // Admin Settings
         "admin.settings.title": "Admin Configuration",
-        "admin.settings.subtitle": "Global settings for Dedali Store",
+        "admin.settings.subtitle": "Global settings for Didali Store",
         "admin.settings.reset": "Reset",
         "admin.settings.update": "Update Systems",
         "admin.settings.toast.success": "Settings updated successfully",
@@ -468,7 +493,7 @@ const translations = {
         "admin.shipping.success_update": "Shipping settings updated successfully",
         "admin.shipping.error_update": "Failed to update settings",
 
-        // Admin Analytics
+        // Admin Analytics / Dashboard Stats
         "admin.analytics.title": "Analytics",
         "admin.analytics.subtitle": "Deep dive into performance",
         "admin.analytics.loading": "Gathering intelligence...",
@@ -477,6 +502,22 @@ const translations = {
         "admin.analytics.active_sessions": "Active Sessions",
         "admin.analytics.avg_order_value": "Avg. Order Value",
         "admin.analytics.revenue_over_time": "Revenue Over Time",
+        "admin.dashboard.stats.total_revenue": "Total Revenue",
+        "admin.dashboard.stats.total_orders": "Total Orders",
+        "admin.dashboard.stats.total_resellers": "Total Resellers",
+        "admin.dashboard.stats.total_customers": "Guest Customers",
+        "admin.dashboard.stats.partners_label": "Partners",
+        "admin.dashboard.stats.direct_label": "Direct",
+        "admin.dashboard.recent_orders.title": "Recent Orders",
+        "admin.dashboard.recent_orders.view_all": "View All",
+        "admin.dashboard.recent_orders.loading": "Loading...",
+        "admin.dashboard.recent_orders.empty": "No recent orders found.",
+        "admin.dashboard.recent_orders.col_order_id": "Order ID",
+        "admin.dashboard.recent_orders.col_customer": "Customer",
+        "admin.dashboard.recent_orders.col_email": "Email",
+        "admin.dashboard.recent_orders.col_amount": "Amount",
+        "admin.dashboard.recent_orders.col_status": "Status",
+        "admin.dashboard.recent_orders.col_action": "Action",
         "admin.analytics.top_products": "Top Products",
         "admin.analytics.sales_count": "{count} sales",
         "admin.analytics.no_sales_data": "No sales data yet",
@@ -655,6 +696,23 @@ const translations = {
         "admin.resellers.partner": "Partner",
         "admin.resellers.wholesaler": "Wholesaler",
         "admin.resellers.error_loading": "Failed to load resellers",
+        // Admin Dashboard Stats
+        "admin.dashboard.stats.total_revenue": "Revenu Total",
+        "admin.dashboard.stats.total_orders": "Commandes Totales",
+        "admin.dashboard.stats.total_resellers": "Revendeurs",
+        "admin.dashboard.stats.total_customers": "Clients Invités",
+        "admin.dashboard.stats.partners_label": "Partenaires",
+        "admin.dashboard.stats.direct_label": "Direct",
+        "admin.dashboard.recent_orders.title": "Commandes récentes",
+        "admin.dashboard.recent_orders.view_all": "Voir tout",
+        "admin.dashboard.recent_orders.loading": "Chargement...",
+        "admin.dashboard.recent_orders.empty": "Aucune commande récente trouvée.",
+        "admin.dashboard.recent_orders.col_order_id": "ID Commande",
+        "admin.dashboard.recent_orders.col_customer": "Client",
+        "admin.dashboard.recent_orders.col_email": "Email",
+        "admin.dashboard.recent_orders.col_amount": "Montant",
+        "admin.dashboard.recent_orders.col_status": "Statut",
+        "admin.dashboard.recent_orders.col_action": "Action",
     },
     fr: {
         "common.currency": "MAD",
@@ -686,7 +744,7 @@ const translations = {
         "header.premium": "Gaming",
 
         // Hero
-        "hero.title_prefix": "Dedali",
+        "hero.title_prefix": "Didali",
         "hero.title_suffix": "Store",
         "hero.subtitle": "Leader de la distribution informatique au Maroc. Grossiste en PC, serveurs, imprimantes et plus.",
         "hero.shop_collection": "Parcourir les produits",
@@ -705,7 +763,7 @@ const translations = {
         "section.all_categories": "Tout",
         "section.view_all_products": "Voir tous les produits",
         "section.load_more": "Charger plus",
-        "section.why_choose": "Pourquoi choisir Dedali Store ?",
+        "section.why_choose": "Pourquoi choisir Didali Store ?",
         "section.organic": "100% Authentique",
         "section.organic_desc": "Produits authentiques des grandes marques",
         "section.award_winning": "Leader du marché",
@@ -756,7 +814,7 @@ const translations = {
         "footer.refund_policy": "Politique de remboursement",
         "footer.cookies": "Cookies",
         "footer.rights": "Tous droits réservés.",
-        "footer.about_desc": "Dedali Store - Votre partenaire de confiance pour le matériel et les solutions informatiques au Maroc.",
+        "footer.about_desc": "Didali Store - Votre partenaire de confiance pour le matériel et les solutions informatiques au Maroc.",
         "footer.privacy_short": "Confidentialité",
         "footer.terms_short": "Conditions",
         "footer.system_status": "Système Opérationnel",
@@ -794,6 +852,13 @@ const translations = {
         "cart.trust.shipping": "Livraison Gratuite > 750 MAD",
         "cart.trust.secure": "Paiement Sécurisé",
         "cart.trust.returns": "Retours sous 30 jours",
+
+        // Order statuses (for labels/badges)
+        "order.status.pending": "En attente",
+        "order.status.processing": "En traitement",
+        "order.status.shipped": "Expédiée",
+        "order.status.delivered": "Livrée",
+        "order.status.cancelled": "Annulée",
 
         // FAQ
         "faq.title": "Questions Fréquentes",
@@ -1009,9 +1074,18 @@ const translations = {
         "admin.careers.label.role": "Rôle :",
         "admin.careers.label.cv": "Fichier CV :",
 
+        // Admin Order details (extra labels)
+        "admin.orders.update_status": "Mettre à jour le statut",
+        "admin.orders.timeline_title": "Historique des statuts",
+        "admin.orders.timeline_empty": "Aucun journal disponible.",
+        "admin.orders.customer_title": "Client",
+        "admin.orders.customer_company": "Entreprise",
+        "admin.orders.customer_contact": "Contact",
+        "admin.orders.customer_email": "E-mail",
+
         // Admin Settings
         "admin.settings.title": "Configuration de l'Administration",
-        "admin.settings.subtitle": "Paramètres globaux pour Dedali Store",
+        "admin.settings.subtitle": "Paramètres globaux pour Didali Store",
         "admin.settings.reset": "Réinitialiser",
         "admin.settings.update": "Mettre à jour les systèmes",
         "admin.settings.toast.success": "Paramètres mis à jour avec succès",
@@ -1307,8 +1381,8 @@ const translations = {
         "manager.resellers.title": "Clients",
         "manager.resellers.subtitle": "Vos revendeurs, partenaires et grossistes assignés",
         "manager.resellers.search_placeholder": "Rechercher des clients...",
-        "manager.resellers.revenue_goal": "Objectif de Revenu",
-        "manager.resellers.current_revenue": "Revenu Actuel",
+        "manager.resellers.revenue_goal": "Objectif de chiffre d’affaires",
+        "manager.resellers.current_revenue": "Chiffre d’affaires actuel",
         "manager.resellers.target": "Cible",
         "manager.resellers.progress": "Progression",
         "manager.resellers.company": "Entreprise",
@@ -1332,10 +1406,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const [language, setLanguage] = useState<Language>("fr")
 
     useEffect(() => {
-        // Check localStorage or browser preference on mount
-        const savedLang = localStorage.getItem("language") as Language
-        if (savedLang) {
-            setLanguage(savedLang)
+        // Check localStorage on mount and sanitize value
+        const savedRaw = localStorage.getItem("language")
+        if (savedRaw === "en" || savedRaw === "fr") {
+            setLanguage(savedRaw)
         }
     }, [])
 
@@ -1348,7 +1422,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }, [language])
 
     const t = (key: string) => {
-        return translations[language][key as keyof typeof translations["en"]] || key
+        // Fallback defensively if language was ever something else (e.g. "ar")
+        const safeLang: Language = language === "en" || language === "fr" ? language : "fr"
+        const dict = translations[safeLang] as Record<string, string>
+        const value = dict[key]
+
+        if (value) return value
+
+        // Humanized fallback instead of showing raw i18n key
+        const lastSegment = key.split('.').pop() || key
+        const humanized = lastSegment.replace(/_/g, ' ')
+        return humanized.charAt(0).toUpperCase() + humanized.slice(1)
     }
 
     const toggleLanguage = () => {

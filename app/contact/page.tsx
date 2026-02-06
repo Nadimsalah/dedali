@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { createContactMessage } from "@/lib/supabase-api"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 type ContactType = "client" | "partner" | "distributor"
 
@@ -19,6 +20,16 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Contact Us"
+      titleFr="Contactez-nous"
+      subtitleEn="A refined contact experience is coming soon. In the meantime, you can always reach us through the store channels."
+      subtitleFr="Une expérience de contact repensée arrive bientôt. En attendant, vous pouvez toujours nous joindre via les canaux habituels de la boutique."
+    />
+  )
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

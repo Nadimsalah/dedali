@@ -71,7 +71,7 @@ export default function LoginPage() {
                     <Link href="/">
                         <Image
                             src={"/logo.png"}
-                            alt={"Dedali Store"}
+                            alt={"Didali Store"}
                             width={178}
                             height={50}
                             className={"h-12 w-auto"}
@@ -85,11 +85,11 @@ export default function LoginPage() {
                     <p className="text-xl text-muted-foreground leading-relaxed">
                         {isArabic
                             ? "انضم إلى شبكة ديدالي واستمتع بأفضل عروض الأجهزة وحلول الأعمال في المغرب."
-                            : "Join the Dedali network and access the best hardware deals and business solutions in Morocco."}
+                            : "Join the Didali network and access the best hardware deals and business solutions in Morocco."}
                     </p>
                 </div>
                 <div className="relative z-10 text-sm text-muted-foreground">
-                    © 2026 Dedali Store. {isArabic ? "جميع الحقوق محفوظة." : "All rights reserved."}
+                    © 2026 Didali Store. {isArabic ? "جميع الحقوق محفوظة." : "All rights reserved."}
                 </div>
 
                 {/* Glass Card Background for Left Side */}
@@ -107,7 +107,7 @@ export default function LoginPage() {
                         <div className="lg:hidden flex justify-center mb-6">
                             <Image
                                 src={"/logo.png"}
-                                alt={"Dedali Store"}
+                                alt={"Didali Store"}
                                 width={140}
                                 height={40}
                                 className={"h-10 w-auto"}

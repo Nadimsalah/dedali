@@ -20,7 +20,7 @@ import {
   Heart,
   Trash2,
 } from "lucide-react"
-import { getCurrentUserRole, getShippingSettings, ShippingSetting } from "@/lib/supabase-api"
+import { getCurrentUserRole, getCurrentResellerTier, getShippingSettings, ShippingSetting, ResellerTier } from "@/lib/supabase-api"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -42,12 +42,17 @@ export default function CartPage() {
   const { items: cartItems, removeItem, updateQuantity, isInitialized } = useCart()
   const { t, language } = useLanguage()
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [resellerTier, setResellerTier] = useState<ResellerTier>(null)
   const [shippingSettings, setShippingSettings] = useState<ShippingSetting[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
-      const role = await getCurrentUserRole()
+      const [role, tier] = await Promise.all([
+        getCurrentUserRole(),
+        getCurrentResellerTier()
+      ])
       setUserRole(role)
+      setResellerTier(tier)
 
       const shipping = await getShippingSettings()
       setShippingSettings(shipping)
@@ -55,13 +60,15 @@ export default function CartPage() {
     fetchData()
   }, [])
 
+  const isResellerAccount = resellerTier !== null
+
   // Cart calculations
   const subtotal = cartItems.reduce((sum, item) => {
-    const price = (userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price
+    const price = (isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price
     return sum + price * item.quantity
   }, 0)
   // Get current shipping rule
-  const currentShippingRule = shippingSettings.find(s => s.role === (userRole === 'reseller' ? 'reseller' : 'retail'))
+  const currentShippingRule = shippingSettings.find(s => s.role === (isResellerAccount ? 'reseller' : 'retail'))
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
   const discount = promoApplied ? subtotal * 0.2 : 0
@@ -109,7 +116,7 @@ export default function CartPage() {
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
                 src="/logo.png"
-                alt="Dedali Store"
+                alt="Didali Store"
                 width={120}
                 height={34}
                 className="h-8 sm:h-10 w-auto transition-transform duration-300 group-hover:scale-105"
@@ -245,10 +252,10 @@ export default function CartPage() {
                           {/* Price */}
                           <div className="text-right">
                             <p className="text-base sm:text-lg font-bold text-foreground">
-                              {t('common.currency')} {(((userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price) * item.quantity).toFixed(2)}
+                              {t('common.currency')} {(((isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price) * item.quantity).toFixed(2)}
                             </p>
                             <p className="text-xs sm:text-sm text-muted-foreground">
-                              {t('common.currency')} {((userRole === 'reseller' && item.resellerPrice) ? item.resellerPrice : item.price).toFixed(2)} each
+                              {t('common.currency')} {((isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price).toFixed(2)} each
                             </p>
                           </div>
                         </div>
@@ -366,14 +373,14 @@ export default function CartPage() {
               <Link href="/" className="inline-block">
                 <Image
                   src="/logo.png"
-                  alt="Dedali Store"
+                  alt="Didali Store"
                   width={142}
                   height={40}
                   className="h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"
                 />
               </Link>
               <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm text-left">
-                Dedali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+                Didali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
               </p>
             </div>
 
@@ -413,7 +420,7 @@ export default function CartPage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <p>© {new Date().getFullYear()} Dedali Store. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Didali Store. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>

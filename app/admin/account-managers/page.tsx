@@ -23,7 +23,8 @@ import {
     XCircle,
     Phone,
     MapPin,
-    Trash2
+    Trash2,
+    Copy
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
@@ -67,6 +68,7 @@ export default function AccountManagersPage() {
     const [resellers, setResellers] = useState<Reseller[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
+    const [copiedUrl, setCopiedUrl] = useState(false)
 
     // Set French as default for dashboard
     useEffect(() => {
@@ -124,18 +126,13 @@ export default function AccountManagersPage() {
 
             setManagers(managersWithCount)
 
-            // Fetch all resellers
-            const { data: resellerData, error: resellerError } = await supabase
-                .from('resellers')
-                .select(`
-                    id,
-                    user_id,
-                    company_name,
-                    city,
-                    user:profiles (name, email, phone)
-                `)
-
-            if (resellerError) throw resellerError
+            // Fetch all resellers via admin API (bypasses RLS on resellers)
+            const res = await fetch("/api/admin/resellers/list")
+            const json = await res.json()
+            if (!res.ok) {
+                throw new Error(json.error || "Failed to load resellers")
+            }
+            const resellerData = json.resellers as any[]
 
             // Fetch customers to get correct company names (source of truth)
             const { data: customerData } = await supabase
@@ -143,7 +140,7 @@ export default function AccountManagersPage() {
                 .select('id, company_name, phone, city')
 
             // Map assignments to resellers
-            const resellersWithAssignments = resellerData.map(r => {
+            const resellersWithAssignments = resellerData.map((r: any) => {
                 const activeAssignment = assignments.find(a => a.reseller_id === r.id)
                 const customer = customerData?.find(c => c.id === r.user_id)
 
@@ -262,6 +259,23 @@ export default function AccountManagersPage() {
         m.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
+    // URL de connexion pour les Gestionnaires de Compte
+    const managerLoginPath = "/login"
+
+    const handleCopyDashboardUrl = async () => {
+        try {
+            const fullUrl = typeof window !== "undefined"
+                ? `${window.location.origin}${managerLoginPath}`
+                : dashboardPath
+            await navigator.clipboard.writeText(fullUrl)
+            setCopiedUrl(true)
+            setTimeout(() => setCopiedUrl(false), 2000)
+            toast.success("Lien de connexion Gestionnaire copié.")
+        } catch {
+            toast.error("Impossible de copier le lien de connexion.")
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background relative overflow-hidden font-sans">
             <div className="fixed inset-0 pointer-events-none">
@@ -281,6 +295,32 @@ export default function AccountManagersPage() {
                             <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("account_managers.title")}</h1>
                             <p className="text-sm text-muted-foreground font-medium">{t("account_managers.subtitle")}</p>
                         </div>
+                    </div>
+                    <div className="w-full sm:w-auto flex flex-col gap-2 sm:items-end">
+                        <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                            URL de connexion Gestionnaire
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <Input
+                                readOnly
+                                value={managerLoginPath}
+                                className="h-9 rounded-xl bg-background/60 border-border/60 text-xs w-48 sm:w-64"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="h-9 w-9 rounded-xl"
+                                onClick={handleCopyDashboardUrl}
+                            >
+                                <Copy className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        {copiedUrl && (
+                            <span className="text-[11px] text-emerald-500">
+                                Lien copié dans le presse-papiers.
+                            </span>
+                        )}
                     </div>
                     <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
                         <DialogTrigger asChild>

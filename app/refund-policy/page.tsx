@@ -3,10 +3,21 @@
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
+import { ComingSoonPage } from "@/components/coming-soon-page"
 
 export default function RefundPolicyPage() {
   const { language } = useLanguage()
   const isArabic = language === "ar"
+
+  // Temporary: Coming soon layout for footer page
+  return (
+    <ComingSoonPage
+      titleEn="Refund Policy"
+      titleFr="Politique de remboursement"
+      subtitleEn="The detailed refund and return policy for Didali Store will be available here very soon."
+      subtitleFr="La politique détaillée de remboursement et de retour pour Didali Store sera disponible ici très bientôt."
+    />
+  )
 
   return (
     <div className={`min-h-screen bg-background ${isArabic ? "font-[var(--font-almarai)]" : ""}`}>
@@ -27,13 +38,13 @@ export default function RefundPolicyPage() {
 
       <main className="container mx-auto px-4 py-10 sm:py-14 max-w-4xl">
         <h1 className={`text-2xl sm:text-3xl font-bold mb-6 ${isArabic ? "text-right" : ""}`}>
-          {isArabic ? "سياسة الاسترجاع لديدالي – مصر" : "Dedali Egypt – Refund & Returns Policy"}
+          {isArabic ? "سياسة الاسترجاع لديدالي – مصر" : "Didali Egypt – Refund & Returns Policy"}
         </h1>
         <div className={`space-y-5 text-sm sm:text-base text-muted-foreground leading-relaxed ${isArabic ? "text-right" : ""}`}>
           <p>
             {isArabic
               ? "نحرص على رضاك التام عن منتجات ديدالي. توضح هذه السياسة الشروط التي يتم من خلالها استرجاع أو استبدال المنتجات داخل مصر وفقًا لقانون حماية المستهلك المصري."
-              : "We want you to be fully satisfied with your Dedali products. This policy explains the conditions for returns and refunds within Egypt, in line with Egyptian consumer protection law."}
+              : "We want you to be fully satisfied with your Didali products. This policy explains the conditions for returns and refunds within Egypt, in line with Egyptian consumer protection law."}
           </p>
 
           <h2 className="font-semibold text-foreground">

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getProducts, type Product } from "@/lib/supabase-api"
+import { type Product } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { useLanguage } from "@/components/language-provider"
@@ -136,60 +136,26 @@ export default function AdminProductsPage() {
         }
     }
 
-    // Auto-translate when English name changes (debounced or on blur)
-    async function handleAutoTranslate() {
-        if (!newCategoryName.trim() || newCategoryNameAr.trim()) return
-
-        setIsTranslating(true)
-        try {
-            const response = await fetch('/api/admin/translate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: newCategoryName, targetLang: 'ar' })
-            })
-            const data = await response.json()
-            if (data.translatedText) {
-                setNewCategoryNameAr(data.translatedText)
-            }
-        } catch (error) {
-            console.error("Translation failed", error)
-        } finally {
-            setIsTranslating(false)
-        }
-    }
+    // Simplified: single-language categories, no auto-translate
 
     async function handleAddCategory() {
         if (!newCategoryName.trim()) return
 
         const slug = newCategoryName.toLowerCase().replace(/\s+/g, '-')
 
-        // Try inserting with name_ar
-        const { error: errorWithAr } = await supabase
+        const { error } = await supabase
             .from('categories')
             .insert({
                 name: newCategoryName,
-                slug,
-                name_ar: newCategoryNameAr || newCategoryName
+                slug
             })
 
-        if (errorWithAr) {
-            console.warn('Failed to insert with name_ar, trying without...', errorWithAr.message)
-            // Try inserting without name_ar
-            const { error: errorWithoutAr } = await supabase
-                .from('categories')
-                .insert({
-                    name: newCategoryName,
-                    slug
-                })
-
-            if (errorWithoutAr) {
-                alert('Error adding category: ' + errorWithoutAr.message)
-                return
-            }
+        if (error) {
+            alert('Error adding category: ' + error.message)
+            return
         }
 
         setNewCategoryName("")
-        setNewCategoryNameAr("")
         loadCategories()
     }
 
@@ -210,8 +176,17 @@ export default function AdminProductsPage() {
 
     async function loadProducts() {
         setLoading(true)
-        const data = await getProducts({ limit: 100 }) // Get all products
-        setProducts(data)
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error("Error loading products:", error)
+            setProducts([])
+        } else {
+            setProducts((data || []) as Product[])
+        }
         setLoading(false)
     }
 
@@ -512,25 +487,8 @@ export default function AdminProductsPage() {
                                                 placeholder={t("admin.products.category_name_en")}
                                                 value={newCategoryName}
                                                 onChange={(e) => setNewCategoryName(e.target.value)}
-                                                onBlur={handleAutoTranslate}
                                                 className="flex-1"
                                             />
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <div className="relative flex-1">
-                                                <Input
-                                                    placeholder={t("admin.products.category_name_ar")}
-                                                    value={newCategoryNameAr}
-                                                    onChange={(e) => setNewCategoryNameAr(e.target.value)}
-                                                    className="flex-1 text-right"
-                                                    dir="rtl"
-                                                />
-                                                {isTranslating && (
-                                                    <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                                                        <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin block" />
-                                                    </div>
-                                                )}
-                                            </div>
                                             <Button onClick={handleAddCategory}>
                                                 <Plus className="w-4 h-4 mr-1" /> {t("admin.products.add")}
                                             </Button>
@@ -549,13 +507,11 @@ export default function AdminProductsPage() {
                                     </div>
                                     <div className="space-y-2 max-h-[60vh] overflow-y-auto mt-2 px-1">
                                         {categories
-                                            .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()) ||
-                                                (c.name_ar && c.name_ar.includes(categorySearch)))
+                                            .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
                                             .map((category) => (
                                                 <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                                     <div>
                                                         <p className="font-medium text-sm">{category.name}</p>
-                                                        {category.name_ar && <p className="text-xs text-muted-foreground font-arabic">{category.name_ar}</p>}
                                                         <p className="text-[10px] text-muted-foreground/70">{category.slug}</p>
                                                     </div>
                                                     <Button

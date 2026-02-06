@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useCart } from "@/components/cart-provider"
 import { useLanguage } from "@/components/language-provider"
-import { getProducts, getHeroCarouselItems, getCategories, getAdminSettings, getCurrentUserRole, type Product } from "@/lib/supabase-api"
+import { getProducts, getHeroCarouselItems, getCategories, getAdminSettings, getCurrentUserRole, getCurrentResellerTier, type Product, ResellerTier } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 import Link from "next/link"
@@ -109,7 +109,7 @@ function CartCount() {
 }
 
 // Product Card Component
-function ProductCard({ product, userRole }: { product: Product, userRole?: string | null }) {
+function ProductCard({ product, userRole, resellerTier }: { product: Product, userRole?: string | null, resellerTier?: ResellerTier }) {
   const { t, language } = useLanguage()
   const isArabic = language === 'ar'
   const rating = 5 // Default rating since it's not in DB yet
@@ -147,15 +147,39 @@ function ProductCard({ product, userRole }: { product: Product, userRole?: strin
         </div>
         <div className="flex items-center justify-between pt-2">
           <div className="flex flex-col">
-            {userRole === 'reseller' && product.reseller_price ? (
-              <>
-                <span className="text-lg font-bold text-foreground">{t('common.currency')} {product.reseller_price}</span>
-                <span className="text-xs text-muted-foreground line-through decoration-destructive/30">
-                  {t('common.currency')} {product.price}
-                </span>
-              </>
+            {resellerTier ? (
+              (() => {
+                const tier = resellerTier || 'reseller'
+                const tierPrice =
+                  tier === 'wholesaler'
+                    ? product.wholesaler_price
+                    : tier === 'partner'
+                      ? product.partner_price
+                      : product.reseller_price
+
+                if (tierPrice) {
+                  return (
+                    <>
+                      <span className="text-lg font-bold text-foreground">
+                        {t('common.currency')} {tierPrice} <span className="text-[11px] text-muted-foreground">TTC</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground line-through decoration-destructive/30">
+                        {t('common.currency')} {product.price}
+                      </span>
+                    </>
+                  )
+                }
+
+                return (
+                  <span className="text-lg font-bold text-foreground">
+                    {t('common.currency')} {product.price} <span className="text-[11px] text-muted-foreground">TTC</span>
+                  </span>
+                )
+              })()
             ) : (
-              <span className="text-lg font-bold text-foreground">{t('common.currency')} {product.price}</span>
+              <span className="text-lg font-bold text-foreground">
+                {t('common.currency')} {product.price}
+              </span>
             )}
           </div>
           <Button size="sm" className="rounded-full text-xs pointer-events-none">
@@ -298,7 +322,7 @@ function HeroCarousel({ products }: { products: Product[] }) {
         },
         {
           image: '/hero-showcase-6.jpg',
-          title: 'Dedali Store',
+          title: 'Didali Store',
           subtitle: 'Your Trusted IT Partner'
         }
       ];
@@ -326,6 +350,7 @@ export default function HomePage() {
   const { t, language, toggleLanguage, dir } = useLanguage()
   const [user, setUser] = useState<any>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [resellerTier, setResellerTier] = useState<ResellerTier>(null)
 
   // Cart context is now available but we need to create a client component wrapper 
   // or accept that HomePage is a client component (which it already is: "use client" is missing but useState implies it)
@@ -355,12 +380,13 @@ export default function HomePage() {
     async function loadData() {
       setLoading(true)
       try {
-        const [productsData, categoriesData, settingsData, userData, roleData] = await Promise.all([
+        const [productsData, categoriesData, settingsData, userData, roleData, tierData] = await Promise.all([
           getProducts({ status: 'active', limit: 20 }),
           getCategories(),
           getAdminSettings(),
           supabase.auth.getUser(),
-          getCurrentUserRole()
+          getCurrentUserRole(),
+          getCurrentResellerTier()
         ])
 
         setProducts(productsData || [])
@@ -368,6 +394,7 @@ export default function HomePage() {
         setSettings(settingsData || {})
         setUser(userData.data.user)
         setUserRole(roleData)
+        setResellerTier(tierData)
       } catch (e) {
         console.error("Failed to load home page data", e)
         // Ensure UI doesn't break
@@ -482,7 +509,7 @@ export default function HomePage() {
             <Link href="/" className="flex-shrink-0 relative group">
               <Image
                 src={"/logo.png"}
-                alt={"Dedali Store"}
+                alt={"Didali Store"}
                 width={120}
                 height={34}
                 className={"h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"}
@@ -536,7 +563,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between p-6 border-b border-border/50">
                       <Image
                         src={"/logo.png"}
-                        alt={"Dedali Store"}
+                        alt={"Didali Store"}
                         width={100}
                         height={28}
                         className={"h-8 w-auto mb-4"}
@@ -769,7 +796,12 @@ export default function HomePage() {
               ))
             ) : (
               filteredProducts.slice(0, visibleProducts).map((product, i) => (
-                <ProductCard key={`${product.id}-${selectedCategory}`} product={product} userRole={userRole} />
+                <ProductCard
+                  key={`${product.id}-${selectedCategory}`}
+                  product={product}
+                  userRole={userRole}
+                  resellerTier={resellerTier}
+                />
               ))
             )}
           </div>
@@ -829,7 +861,7 @@ export default function HomePage() {
               <Link href="/" className="inline-block">
                 <Image
                   src={"/logo.png"}
-                  alt={"Dedali Store"}
+                  alt={"Didali Store"}
                   width={142}
                   height={40}
                   className={"h-10 w-auto opacity-90 hover:opacity-100 transition-opacity"}
@@ -895,7 +927,7 @@ export default function HomePage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <p>© {new Date().getFullYear()} Dedali Store. {t('footer.rights')}</p>
+          <p>© {new Date().getFullYear()} Didali Store. {t('footer.rights')}</p>
             <div className="flex items-center gap-6">
               <Link href="/privacy-policy" className="hover:text-foreground transition-colors">{t('footer.privacy_short')}</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.terms_short')}</Link>

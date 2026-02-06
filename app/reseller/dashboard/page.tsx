@@ -4,9 +4,9 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLanguage } from "@/components/language-provider"
 import { supabase } from "@/lib/supabase"
-import { Customer, Order, getCustomerOrders } from "@/lib/supabase-api"
+import { Customer, Order, getCustomerById, getCustomerOrders } from "@/lib/supabase-api"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Package, ShoppingBag, CreditCard, User, Building2, FileText, Globe, MapPin, LogOut, Eye, Phone, Mail } from "lucide-react"
+import { Loader2, Package, ShoppingBag, CreditCard, User, Building2, FileText, Globe, MapPin, LogOut, Eye, Phone, Mail, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -29,6 +29,8 @@ export default function ResellerDashboard() {
     const [manager, setManager] = useState<any>(null)
     const [orders, setOrders] = useState<Order[]>([])
 
+    const isArabic = language === "ar"
+
     useEffect(() => {
         const checkUser = async () => {
             try {
@@ -40,25 +42,37 @@ export default function ResellerDashboard() {
                 }
                 setUser(user)
 
-                // 2. Get Profile
-                const { data: profileData, error: profileError } = await supabase
+                // 2. Check role to prevent account managers from accessing reseller dashboard
+                const { data: profileRow } = await supabase
                     .from('profiles')
-                    .select('*')
+                    .select('role')
                     .eq('id', user.id)
-                    .single()
+                    .maybeSingle()
 
-                if (profileError) {
-                    console.error("Error fetching profile:", profileError)
-                } else {
-                    setProfile(profileData)
+                if (profileRow?.role === 'ACCOUNT_MANAGER') {
+                    // Redirect account managers to their own dashboard
+                    router.push('/manager/resellers')
+                    return
                 }
 
-                // 3. Get Account Manager
+                if (profileRow?.role === 'ADMIN') {
+                    // Optional: admins go to admin dashboard instead of reseller area
+                    router.push('/admin/dashboard')
+                    return
+                }
+
+                // 3. Get Customer Profile (reseller details live in `customers` table)
+                const customerProfile = await getCustomerById(user.id)
+                if (customerProfile) {
+                    setProfile(customerProfile)
+                }
+
+                // 4. Get Account Manager
                 const { data: resellerData } = await supabase
                     .from('resellers')
                     .select('id')
                     .eq('user_id', user.id)
-                    .single()
+                    .maybeSingle()
 
                 if (resellerData) {
                     const { data: assignmentData } = await supabase
@@ -66,20 +80,20 @@ export default function ResellerDashboard() {
                         .select('account_manager_id')
                         .eq('reseller_id', resellerData.id)
                         .is('soft_deleted_at', null)
-                        .single()
+                        .maybeSingle()
 
                     if (assignmentData) {
                         const { data: managerData } = await supabase
                             .from('profiles')
                             .select('name, email')
                             .eq('id', assignmentData.account_manager_id)
-                            .single()
+                            .maybeSingle()
 
                         setManager(managerData)
                     }
                 }
 
-                // 4. Get Orders
+                // 5. Get Orders
                 if (user.id) {
                     const ordersData = await getCustomerOrders(user.id)
                     setOrders(ordersData)
@@ -139,7 +153,7 @@ export default function ResellerDashboard() {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
                 {/* Header Section */}
-                <header className="glass-strong p-6 sm:p-8 rounded-[2.5rem] border border-white/20 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 mb-12 animate-in fade-in slide-in-from-top-6 duration-700">
+                <header className="glass-strong p-6 sm:p-8 rounded-[2.5rem] border border-white/20 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 mb-6 animate-in fade-in slide-in-from-top-6 duration-700">
                     <div className="flex items-center gap-6 w-full md:w-auto">
                         <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl shadow-primary/20 ring-4 ring-white/10 shrink-0">
                             <User className="w-8 h-8 text-white" />
@@ -170,6 +184,26 @@ export default function ResellerDashboard() {
                         </Button>
                     </div>
                 </header>
+
+                {profile?.status === 'pending' && (
+                    <div className="glass-strong mb-10 p-5 rounded-3xl border border-yellow-200/60 bg-yellow-50/80 flex items-start gap-4 text-yellow-900 animate-in fade-in slide-in-from-top-6 duration-700">
+                        <div className="mt-1">
+                            <ShieldAlert className="w-6 h-6 text-yellow-500" />
+                        </div>
+                        <div className="space-y-1 text-left">
+                            <p className="font-semibold">
+                                {language === "ar"
+                                    ? "حسابك قيد المراجعة"
+                                    : "Your reseller account is pending activation"}
+                            </p>
+                            <p className="text-sm text-yellow-800/80">
+                                {language === "ar"
+                                    ? "نحن نراجع معلومات شركتك حاليًا. ستتلقى إشعارًا بمجرد تفعيل حسابك ويمكنك حينها البدء في الاستفادة من أسعار الموزعين."
+                                    : "We are currently reviewing your company information. You will be notified once your account is activated and you can start using reseller pricing."}
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Left Column: Metrics & Profile */}

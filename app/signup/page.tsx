@@ -86,7 +86,7 @@ export default function SignupPage() {
                     <Link href="/">
                         <Image
                             src={"/logo.png"}
-                            alt={"Dedali Store"}
+                            alt={"Didali Store"}
                             width={178}
                             height={50}
                             className={"h-12 w-auto"}
@@ -104,7 +104,7 @@ export default function SignupPage() {
                     </p>
                 </div>
                 <div className="relative z-10 text-sm text-muted-foreground">
-                    © 2026 Dedali Store.
+                    © 2026 Didali Store.
                 </div>
                 <div className="absolute inset-4 glass-liquid bg-white/10 rounded-[3rem] -z-0" />
             </div>
@@ -120,7 +120,7 @@ export default function SignupPage() {
                         <div className="lg:hidden flex justify-center mb-6">
                             <Image
                                 src={"/logo.png"}
-                                alt={"Dedali Store"}
+                                alt={"Didali Store"}
                                 width={140}
                                 height={40}
                                 className={"h-10 w-auto"}

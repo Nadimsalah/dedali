@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,18 +32,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export default function MyClientsPage() {
-    const { t, setLanguage } = useLanguage()
+    const { t, setLanguage, language } = useLanguage()
+    const router = useRouter()
     const [resellers, setResellers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
     const [totalRevenue, setTotalRevenue] = useState(0)
     const [targetRevenue, setTargetRevenue] = useState(200000)
 
-    // Set French as default for dashboard
+    // Force French for manager dashboard
     useEffect(() => {
-        const savedLang = localStorage.getItem("language")
-        if (!savedLang) {
-            setLanguage("fr")
+        setLanguage("fr")
+        if (typeof window !== "undefined") {
+            localStorage.setItem("language", "fr")
         }
     }, [setLanguage])
 
@@ -54,7 +56,11 @@ export default function MyClientsPage() {
         setLoading(true)
         try {
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user) throw new Error("Unauthorized")
+            if (!user) {
+                setLoading(false)
+                router.push("/login")
+                return
+            }
 
             // 1. Fetch Resellers and Profile in parallel
             const [resellersData, profileData] = await Promise.all([
@@ -116,6 +122,8 @@ export default function MyClientsPage() {
         r.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         r.user.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
+
+    const isFrench = language === "fr"
 
     return (
         <div className="min-h-screen bg-transparent p-4 sm:p-6 lg:p-8 font-sans space-y-8 max-w-[1600px] mx-auto">
@@ -198,7 +206,10 @@ export default function MyClientsPage() {
                         </div>
                         <div className="mt-3 flex justify-between text-xs font-medium text-white/40">
                             <span>0 MAD</span>
-                            <span>Target: {(targetRevenue / 1000).toFixed(0)}k MAD</span>
+                            <span>
+                                {isFrench ? "Objectif : " : "Target: "}
+                                {(targetRevenue / 1000).toFixed(0)}k MAD
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -228,11 +239,11 @@ export default function MyClientsPage() {
                                         <DropdownMenuContent align="end" className="rounded-xl">
                                             <DropdownMenuItem>
                                                 <Mail className="w-4 h-4 mr-2" />
-                                                Email Client
+                                                {isFrench ? "Envoyer un email" : "Email Client"}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem>
                                                 <Phone className="w-4 h-4 mr-2" />
-                                                Call Client
+                                                {isFrench ? "Appeler le client" : "Call Client"}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -251,11 +262,13 @@ export default function MyClientsPage() {
                                 <div className="space-y-3 mb-6">
                                     <div className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 p-2 rounded-lg truncate">
                                         <Mail className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate" title={r.user?.email}>{r.user?.email || "No email"}</span>
+                                        <span className="truncate" title={r.user?.email}>
+                                            {r.user?.email || (isFrench ? "Aucun email" : "No email")}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 p-2 rounded-lg">
                                         <Phone className="w-4 h-4 flex-shrink-0" />
-                                        <span>{r.phone || r.user?.phone || "N/A"}</span>
+                                        <span>{r.phone || r.user?.phone || (isFrench ? "Non renseigné" : "N/A")}</span>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/5 p-2 rounded-lg">
                                         <MapPin className="w-4 h-4 flex-shrink-0" />

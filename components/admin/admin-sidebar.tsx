@@ -60,7 +60,7 @@ export function AdminSidebar() {
             <div className="p-6 flex items-center justify-center border-b border-white/10">
                 <Image
                     src={"/logo.png"}
-                    alt={"Dedali Store"}
+                    alt={"Didali Store"}
                     width={142}
                     height={40}
                     className={"h-10 w-auto"}

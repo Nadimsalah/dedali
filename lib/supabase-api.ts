@@ -10,6 +10,11 @@ export interface Product {
     category: string
     price: number
     reseller_price?: number | null
+    partner_price?: number | null
+    wholesaler_price?: number | null
+    reseller_min_qty?: number | null
+    partner_min_qty?: number | null
+    wholesaler_min_qty?: number | null
     compare_at_price: number | null
     stock: number
     status: string
@@ -766,6 +771,29 @@ export async function getCurrentUserRole(): Promise<string | null> {
     if (error || !data) return 'customer' // Default to customer if error or not found in profiles
 
     return data.role as string
+}
+
+export type ResellerTier = 'reseller' | 'partner' | 'wholesaler' | null
+
+export async function getCurrentResellerTier(): Promise<ResellerTier> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+        .from('customers')
+        .select('role, reseller_type')
+        .eq('id', user.id)
+        .single()
+
+    if (error || !data) {
+        return null
+    }
+
+    if (data.role !== 'reseller') {
+        return null
+    }
+
+    return (data as any).reseller_type || 'reseller'
 }
 
 // Analytics API

@@ -28,6 +28,13 @@ import { supabase } from "@/lib/supabase"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import Link from "next/link"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from "@/components/ui/select"
 
 export default function ResellerProfilePage() {
     const params = useParams()
@@ -58,6 +65,7 @@ export default function ResellerProfilePage() {
         company_name: "",
         ice: ""
     })
+    const [resellerType, setResellerType] = useState<string>("reseller")
 
     useEffect(() => {
         if (reseller) {
@@ -65,6 +73,7 @@ export default function ResellerProfilePage() {
                 company_name: reseller.company_name || "",
                 ice: reseller.ice || ""
             })
+            setResellerType((reseller as any).reseller_type || "reseller")
         }
     }, [reseller])
 
@@ -77,6 +86,25 @@ export default function ResellerProfilePage() {
         } else {
             toast.error("Failed to update status")
         }
+    }
+
+    const handleUpdateType = async () => {
+        if (!reseller) return
+        setLoading(true)
+        const { data, error } = await supabase
+            .from('customers')
+            .update({ reseller_type: resellerType })
+            .eq('id', reseller.id)
+            .select()
+            .single()
+
+        if (error) {
+            toast.error("Failed to update reseller type")
+        } else {
+            toast.success("Reseller type updated")
+            setReseller(data as Customer)
+        }
+        setLoading(false)
     }
 
     const handleSaveBilling = async () => {
@@ -107,7 +135,7 @@ export default function ResellerProfilePage() {
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">Synchronizing Nexus Data...</p>
+                    <p className="text-muted-foreground font-medium">Synchronisation des données...</p>
                 </div>
             </div>
         )
@@ -117,8 +145,8 @@ export default function ResellerProfilePage() {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center p-8">
                 <main className="lg:pl-72 w-full text-center">
-                    <h2 className="text-2xl font-bold mb-4">Reseller Not Found</h2>
-                    <Button onClick={() => router.back()}>Go Back</Button>
+                    <h2 className="text-2xl font-bold mb-4">Revendeur introuvable</h2>
+                    <Button onClick={() => router.back()}>Retour</Button>
                 </main>
             </div>
         )
@@ -156,23 +184,25 @@ export default function ResellerProfilePage() {
                                     {reseller.status?.replace('_', ' ')}
                                 </Badge>
                             </div>
-                            <p className="text-muted-foreground font-medium mt-1">Partner ID: {reseller.id.split('-')[0].toUpperCase()}</p>
+                            <p className="text-muted-foreground font-medium mt-1">
+                                ID Partenaire : {reseller.id.split('-')[0].toUpperCase()}
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {reseller.status === 'pending_approval' && (
+                        {(reseller.status === 'pending' || reseller.status === 'pending_approval') && (
                             <Button
                                 onClick={() => handleUpdateStatus('active')}
                                 className="rounded-2xl h-12 px-6 bg-green-500 hover:bg-green-600 text-white gap-2 font-bold shadow-lg shadow-green-500/20"
                             >
                                 <UserCheck className="w-5 h-5" />
-                                Approve Account
+                                Approuver le compte
                             </Button>
                         )}
                         <Button variant="outline" className="rounded-2xl h-12 px-6 bg-white/5 border-white/10 hover:bg-red-500/10 hover:text-red-500 transition-all gap-2 font-bold">
                             <Ban className="w-5 h-5" />
-                            Freeze Account
+                            Geler le compte
                         </Button>
                     </div>
                 </div>
@@ -184,7 +214,9 @@ export default function ResellerProfilePage() {
                             <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
                                 <ShoppingBag className="w-6 h-6" />
                             </div>
-                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">Total Orders</p>
+                            <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-1">
+                                Commandes totales
+                            </p>
                             <h3 className="text-3xl font-black text-foreground">{orders.length}</h3>
                         </div>
 
@@ -192,47 +224,83 @@ export default function ResellerProfilePage() {
                             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
                                 <DollarSign className="w-6 h-6" />
                             </div>
-                            <p className="text-xs font-black text-emerald-500/70 uppercase tracking-widest mb-1">Total Volume</p>
+                            <p className="text-xs font-black text-emerald-500/70 uppercase tracking-widest mb-1">
+                                Volume total
+                            </p>
                             <h3 className="text-3xl font-black text-foreground">MAD {totalSpent.toLocaleString()}</h3>
                         </div>
 
                     </div>
 
-                    {/* Quick Info Card */}
-                    <div className="glass-strong p-8 rounded-[2.5rem] border border-white/10 shadow-xl relative overflow-hidden group">
+                    {/* Quick Info & Controls Card */}
+                    <div className="glass-strong p-8 rounded-[2.5rem] border border-white/10 shadow-xl relative overflow-hidden group space-y-6">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <Building2 className="w-24 h-24" />
                         </div>
-                        <h4 className="text-lg font-bold mb-6 flex items-center gap-2">
+                        <h4 className="text-lg font-bold flex items-center gap-2 relative z-10">
                             <Building2 className="w-5 h-5 text-primary" />
-                            Firm Details
+                            Détails de l'entreprise
                         </h4>
-                        <div className="space-y-6">
+                        <div className="space-y-6 relative z-10">
                             <div>
-                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">Company Name</label>
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">
+                                    Nom de l'entreprise
+                                </label>
                                 <p className="font-bold text-foreground">{reseller.company_name || "N/A"}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">ICE Number</label>
+                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">
+                                    Numéro ICE
+                                </label>
                                 <p className="font-mono text-foreground tracking-tighter text-lg">{reseller.ice || "N/A"}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                                 <div>
-                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">City</label>
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">
+                                        Ville
+                                    </label>
                                     <p className="font-bold text-foreground text-sm flex items-center gap-1.5">
                                         <MapPin className="w-3.5 h-3.5 text-primary" />
                                         {reseller.city || "N/A"}
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">Site</label>
+                                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">
+                                        Site
+                                    </label>
                                     {reseller.website ? (
                                         <a href={reseller.website} target="_blank" className="font-bold text-primary text-sm hover:underline flex items-center gap-1.5">
                                             <Globe className="w-3.5 h-3.5" />
-                                            Visit
+                                            Visiter
                                         </a>
                                     ) : <p className="font-bold text-muted-foreground text-sm">N/A</p>}
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Account Type Controls */}
+                        <div className="mt-6 pt-6 border-t border-white/5 relative z-10 space-y-3">
+                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-1.5">
+                                Type de partenaire
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <Select value={resellerType} onValueChange={setResellerType}>
+                                    <SelectTrigger className="w-full rounded-2xl bg-background/50 border-white/10">
+                                        <SelectValue placeholder="Sélectionner le type de partenaire" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="reseller">Revendeur</SelectItem>
+                                        <SelectItem value="partner">Partenaire</SelectItem>
+                                        <SelectItem value="wholesaler">Grossiste</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Button
+                                    onClick={handleUpdateType}
+                                    className="rounded-2xl whitespace-nowrap"
+                                    disabled={loading}
+                                >
+                                    Enregistrer
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -245,17 +313,19 @@ export default function ResellerProfilePage() {
                         <div className="flex items-center justify-between pr-4">
                             <h3 className="text-xl font-black text-foreground flex items-center gap-3">
                                 <Package className="w-6 h-6 text-primary" />
-                                Order History
+                                Historique des commandes
                             </h3>
                             <Badge variant="outline" className="rounded-lg bg-primary/5 text-primary border-none font-bold">
-                                {orders.length} Total
+                                {orders.length} au total
                             </Badge>
                         </div>
 
                         <div className="space-y-4">
                             {orders.length === 0 ? (
                                 <div className="glass-strong p-12 text-center rounded-[2rem] border-white/5">
-                                    <p className="text-muted-foreground font-medium">No transactions recorded for this reseller yet.</p>
+                                    <p className="text-muted-foreground font-medium">
+                                        Aucune transaction enregistrée pour ce revendeur pour le moment.
+                                    </p>
                                 </div>
                             ) : (
                                 orders.map((order) => (
@@ -282,7 +352,7 @@ export default function ResellerProfilePage() {
                                             </div>
                                             <Link href={`/admin/orders/${order.id}`}>
                                                 <Button size="sm" variant="outline" className="rounded-xl h-10 px-4 bg-white/5 border-white/10 font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                                                    View Invoice
+                                                    Voir la facture
                                                     <ChevronRight className="w-4 h-4 ml-1" />
                                                 </Button>
                                             </Link>
@@ -295,14 +365,16 @@ export default function ResellerProfilePage() {
 
                     {/* Contact & Support Section */}
                     <div className="space-y-6">
-                        <h3 className="text-xl font-black text-foreground px-2">Contact Matrix</h3>
+                        <h3 className="text-xl font-black text-foreground px-2">Coordonnées</h3>
                         <div className="glass-strong p-8 rounded-[2.5rem] border border-white/10 h-fit space-y-8 shadow-xl">
                             <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
                                 <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                     <Mail className="w-5 h-5" />
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Direct Email</p>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                                        E-mail direct
+                                    </p>
                                     <p className="font-bold text-foreground text-sm truncate">{reseller.email}</p>
                                 </div>
                             </div>
@@ -312,7 +384,9 @@ export default function ResellerProfilePage() {
                                     <Phone className="w-5 h-5" />
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Mobile Contact</p>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                                        Contact mobile
+                                    </p>
                                     <p className="font-bold text-foreground text-sm truncate">{reseller.phone || "+212 XXX XXX XXX"}</p>
                                 </div>
                             </div>
@@ -321,7 +395,9 @@ export default function ResellerProfilePage() {
                                 {editMode ? (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Company Name</label>
+                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                                Nom de l'entreprise
+                                            </label>
                                             <Input
                                                 value={editData.company_name}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, company_name: e.target.value })}
@@ -329,7 +405,9 @@ export default function ResellerProfilePage() {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">ICE Number</label>
+                                            <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                                                Numéro ICE
+                                            </label>
                                             <Input
                                                 value={editData.ice}
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditData({ ...editData, ice: e.target.value })}
@@ -341,14 +419,14 @@ export default function ResellerProfilePage() {
                                                 onClick={handleSaveBilling}
                                                 className="flex-1 h-12 rounded-2xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
                                             >
-                                                Save Basic Info
+                                                Enregistrer les informations
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => setEditMode(false)}
                                                 className="h-12 rounded-2xl px-4 hover:bg-white/5"
                                             >
-                                                Cancel
+                                                Annuler
                                             </Button>
                                         </div>
                                     </div>
@@ -357,7 +435,7 @@ export default function ResellerProfilePage() {
                                         onClick={() => setEditMode(true)}
                                         className="w-full h-12 rounded-2xl font-bold bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
                                     >
-                                        Update Billing Info
+                                        Mettre à jour les informations de facturation
                                     </Button>
                                 )}
                             </div>

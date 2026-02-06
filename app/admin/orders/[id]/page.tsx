@@ -26,7 +26,7 @@ import Image from "next/image"
 import { supabase } from "@/lib/supabase"
 
 export default function OrderDetailsPage() {
-    const { t, setLanguage } = useLanguage()
+    const { t, setLanguage, language } = useLanguage()
     const params = useParams()
     const router = useRouter()
     const orderId = params.id as string
@@ -118,6 +118,31 @@ export default function OrderDetailsPage() {
         }
     }
 
+    const getStatusLabel = (status: string) => {
+        const s = status.toLowerCase()
+
+        if (language === "fr") {
+            switch (s) {
+                case "pending": return "En attente"
+                case "processing": return "En traitement"
+                case "shipped": return "Expédiée"
+                case "delivered": return "Livrée"
+                case "cancelled": return "Annulée"
+                default: return s.charAt(0).toUpperCase() + s.slice(1)
+            }
+        }
+
+        // English (or default) labels
+        switch (s) {
+            case "pending": return "Pending"
+            case "processing": return "Processing"
+            case "shipped": return "Shipped"
+            case "delivered": return "Delivered"
+            case "cancelled": return "Cancelled"
+            default: return s.charAt(0).toUpperCase() + s.slice(1)
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -163,7 +188,7 @@ export default function OrderDetailsPage() {
                             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
                                 {order.order_number}
                                 <Badge variant="outline" className={`ml-2 border-primary/20 ${getStatusColor(order.status)}`}>
-                                    {order.status}
+                                    {getStatusLabel(order.status)}
                                 </Badge>
                             </h1>
                             <p className="text-xs font-bold text-primary mt-0.5">{order.display_company_name}</p>
@@ -190,7 +215,7 @@ export default function OrderDetailsPage() {
                         {/* Items Card */}
                         <div className="glass-strong rounded-3xl p-6 print:hidden">
                             <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                                <Package className="w-5 h-5 text-primary" /> Order Items
+                                <Package className="w-5 h-5 text-primary" /> {t("admin.orders.table.items")}
                             </h3>
 
                             <div className="space-y-4">
@@ -221,15 +246,15 @@ export default function OrderDetailsPage() {
 
                             <div className="mt-6 pt-6 border-t border-white/10 space-y-2">
                                 <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Subtotal</span>
+                                    <span>{t("cart.subtotal")}</span>
                                     <span>MAD {order.subtotal}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>Shipping</span>
+                                    <span>{t("cart.shipping")}</span>
                                     <span>MAD {order.shipping_cost}</span>
                                 </div>
                                 <div className="flex justify-between text-lg font-bold text-foreground pt-4 border-t border-white/5">
-                                    <span>Total</span>
+                                    <span>{t("cart.total")}</span>
                                     <span className="text-primary">MAD {order.total}</span>
                                 </div>
                             </div>
@@ -256,14 +281,14 @@ export default function OrderDetailsPage() {
                                     <div className="relative w-24 h-7 mb-2">
                                         <Image
                                             src="/logo.png"
-                                            alt="Dedali Store Logo"
+                                            alt="Didali Store Logo"
                                             fill
                                             className="object-contain object-left"
                                             priority
                                         />
                                     </div>
                                     <div className="space-y-0 text-[10px] text-black/70">
-                                        <p className="font-black text-[#1a1a1a] text-xs">Dedali Store SARL</p>
+                                        <p className="font-black text-[#1a1a1a] text-xs">Didali Store SARL</p>
                                         <p className="italic">Premium IT Equipment</p>
                                         <p>Casablanca, Morocco</p>
                                     </div>
@@ -354,7 +379,7 @@ export default function OrderDetailsPage() {
                                 <div>
                                     <h4 className="text-[8px] font-black text-[#1a1a1a] uppercase tracking-widest mb-1">Informations</h4>
                                     <p className="text-[8px] text-black/50 leading-tight">
-                                        Dedali Store SARL — RC: 78910 — ICE: 0011223344556677<br />
+                                        Didali Store SARL — RC: 78910 — ICE: 0011223344556677<br />
                                         Ce document fait office de preuve {printType === 'delivery' ? 'de livraison' : "d'achat"}.
                                     </p>
                                 </div>
@@ -374,20 +399,24 @@ export default function OrderDetailsPage() {
 
                         {/* Status Card */}
                         <div className="glass-strong rounded-3xl p-6 border-l-4 border-primary">
-                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Update Status</h3>
+                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                                {language === "fr" ? "Mettre à jour le statut" : "Update Status"}
+                            </h3>
                             <div className="space-y-3">
-                                {["Pending", "Processing", "Shipped", "Delivered", "Cancelled"].map((s) => (
+                                {["pending", "processing", "shipped", "delivered", "cancelled"].map((s) => (
                                     <button
                                         key={s}
                                         disabled={updating}
                                         onClick={() => handleStatusChange(s)}
-                                        className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center justify-between ${order.status === s.toLowerCase()
+                                        className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center justify-between ${order.status === s
                                             ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                                             : "hover:bg-white/5 text-foreground"
                                             } ${updating ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
-                                        <span className="font-medium">{s}</span>
-                                        {order.status === s.toLowerCase() && <CheckCircle2 className="w-4 h-4" />}
+                                        <span className="font-medium">
+                                            {getStatusLabel(s)}
+                                        </span>
+                                        {order.status === s && <CheckCircle2 className="w-4 h-4" />}
                                     </button>
                                 ))}
                             </div>
@@ -397,14 +426,18 @@ export default function OrderDetailsPage() {
                         <div className="glass-strong rounded-3xl p-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <History className="w-4 h-4 text-primary" />
-                                <h3 className="font-bold text-foreground">Timeline Logs</h3>
+                                <h3 className="font-bold text-foreground">
+                                    {language === "fr" ? "Historique des statuts" : "Timeline Logs"}
+                                </h3>
                             </div>
                             <div className="relative pl-2 border-l border-white/10 space-y-6 max-h-[300px] overflow-y-auto custom-scrollbar">
                                 {order.auditLogs && order.auditLogs.map((log: any, idx: number) => (
                                     <div key={log.id} className="relative pl-6 group">
                                         <div className={`absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-background ${idx === 0 ? 'bg-primary shadow-lg shadow-primary/50' : 'bg-muted-foreground/30'}`} />
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-foreground capitalize mb-0.5">{log.new_status}</span>
+                                            <span className="text-xs font-bold text-foreground capitalize mb-0.5">
+                                                {getStatusLabel(log.new_status)}
+                                            </span>
                                             <span className="text-[10px] text-muted-foreground">
                                                 {new Date(log.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -416,7 +449,9 @@ export default function OrderDetailsPage() {
                                     </div>
                                 ))}
                                 {(!order.auditLogs || order.auditLogs.length === 0) && (
-                                    <p className="text-xs text-muted-foreground pl-6">No logs available.</p>
+                                    <p className="text-xs text-muted-foreground pl-6">
+                                        {language === "fr" ? "Aucun journal disponible." : "No logs available."}
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -424,7 +459,9 @@ export default function OrderDetailsPage() {
                         {/* Costumer Details Card */}
                         <div className="glass-strong rounded-3xl p-6">
                             <div className="flex justify-between items-start mb-6">
-                                <h3 className="text-lg font-bold text-foreground">Customer</h3>
+                                <h3 className="text-lg font-bold text-foreground">
+                                    {language === "fr" ? "Client" : "Customer"}
+                                </h3>
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
                                     {(order.display_company_name || "C").charAt(0)}
                                 </div>
@@ -434,21 +471,27 @@ export default function OrderDetailsPage() {
                                 <div className="flex items-center gap-3 text-sm">
                                     <div className="p-2 bg-white/5 rounded-lg text-primary"><Package className="w-4 h-4" /></div>
                                     <div>
-                                        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Company</p>
+                                        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                                            {language === "fr" ? "Entreprise" : "Company"}
+                                        </p>
                                         <p className="text-foreground font-medium">{order.display_company_name}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-sm">
                                     <div className="p-2 bg-white/5 rounded-lg text-primary"><User className="w-4 h-4" /></div>
                                     <div>
-                                        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Contact</p>
+                                        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                                            {language === "fr" ? "Contact" : "Contact"}
+                                        </p>
                                         <p className="text-foreground font-medium">{order.display_reseller_name}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 text-sm">
                                     <div className="p-2 bg-white/5 rounded-lg text-primary"><Mail className="w-4 h-4" /></div>
                                     <div>
-                                        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Email</p>
+                                        <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                                            {language === "fr" ? "E-mail" : "Email"}
+                                        </p>
                                         <p className="text-foreground font-medium truncate max-w-[180px]">{order.customer_email}</p>
                                     </div>
                                 </div>
