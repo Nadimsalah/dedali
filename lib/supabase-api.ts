@@ -760,16 +760,29 @@ export async function updateCustomerStatus(customerId: string, status: string) {
 
 export async function getCurrentUserRole(): Promise<string | null> {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
+    if (!user) {
+        console.log('getCurrentUserRole: No user session found')
+        return null
+    }
 
+    console.log('getCurrentUserRole: Fetching profile for user', user.id)
     const { data, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-    if (error || !data) return 'customer' // Default to customer if error or not found in profiles
+    if (error) {
+        console.error('getCurrentUserRole: Error fetching profile:', error.message)
+        return 'customer'
+    }
 
+    if (!data) {
+        console.warn('getCurrentUserRole: No profile found for user', user.id)
+        return 'customer'
+    }
+
+    console.log('getCurrentUserRole: Successfully found role:', data.role)
     return data.role as string
 }
 

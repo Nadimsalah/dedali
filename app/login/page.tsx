@@ -38,15 +38,26 @@ export default function LoginPage() {
             }
 
             if (data.user) {
+                console.log('Login successful for user:', data.user.id)
                 toast.success(isArabic ? "تم تسجيل الدخول بنجاح" : "Logged in successfully")
 
-                // key change: fetch role for redirect
+                // Fetch role for redirect
                 const role = await getCurrentUserRole()
-                if (role === 'reseller') {
+                console.log('Fetched user role:', role)
+
+                const normalizedRole = role?.toUpperCase()
+
+                if (normalizedRole === 'RESELLER') {
+                    console.log('Redirecting to reseller dashboard')
                     router.push('/reseller/dashboard')
-                } else if (role === 'ACCOUNT_MANAGER') {
+                } else if (normalizedRole === 'ACCOUNT_MANAGER') {
+                    console.log('Redirecting to manager resellers')
                     router.push('/manager/resellers')
+                } else if (normalizedRole === 'ADMIN') {
+                    console.log('Redirecting to admin dashboard')
+                    router.push('/admin/dashboard')
                 } else {
+                    console.log('Unknown role or customer, redirecting to home')
                     router.push('/')
                 }
                 router.refresh()
