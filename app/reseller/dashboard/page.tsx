@@ -85,7 +85,7 @@ export default function ResellerDashboard() {
                     if (assignmentData) {
                         const { data: managerData } = await supabase
                             .from('profiles')
-                            .select('name, email')
+                            .select('name, email, phone')
                             .eq('id', assignmentData.account_manager_id)
                             .maybeSingle()
 

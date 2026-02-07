@@ -10,6 +10,13 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
 }
 
 // Standard client for client-side operations (respects RLS)
+if (typeof window !== 'undefined') {
+    console.log('Supabase Initializing in Browser:', {
+        url: supabaseUrl,
+        hasKey: !!supabaseAnonKey,
+        keyPrefix: supabaseAnonKey?.substring(0, 10)
+    })
+}
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Admin client for server-side trusted operations (bypasses RLS)
