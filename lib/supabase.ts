@@ -11,11 +11,20 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
 
 // Standard client for client-side operations (respects RLS)
 if (typeof window !== 'undefined') {
-    console.log('Supabase Initializing in Browser:', {
+    const isPlaceholder = supabaseAnonKey === 'placeholder-key'
+    const isNewFormat = supabaseAnonKey?.startsWith('sb_')
+
+    console.log('Supabase Browser Init:', {
         url: supabaseUrl,
-        hasKey: !!supabaseAnonKey,
+        keyLength: supabaseAnonKey?.length,
+        isPlaceholder,
+        isNewFormat,
         keyPrefix: supabaseAnonKey?.substring(0, 10)
     })
+
+    if (isPlaceholder) {
+        console.error('CRITICAL: Supabase Anon Key is missing! Check .env.local and restart dev server.')
+    }
 }
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 

@@ -203,6 +203,14 @@ export default function LoginPage() {
                             {isArabic ? "التسجيل كموزع معتمد" : "Register as a Reseller"} <ArrowRight className={`w-4 h-4 ${isArabic ? "rotate-180" : ""}`} />
                         </Link>
                     </div>
+
+                    {/* Debug Info (Only visible in development) */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <div className="mt-8 pt-4 border-t border-dashed border-slate-200 text-[10px] text-slate-400 font-mono text-center">
+                            <p>Supabase Project: {process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0]}</p>
+                            <p>Anon Key Loaded: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'YES' : 'NO'}</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

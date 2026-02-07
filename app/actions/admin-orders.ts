@@ -53,8 +53,10 @@ export async function updateOrderStatusAdmin(orderId: string, status: string, ac
 }
 
 export async function getOrderDetailsAdmin(orderId: string) {
+    console.log(`[Admin Action] Fetching order details for: ${orderId}`)
     try {
         // Fetch Order with relations
+        console.log('[Admin Action] querying orders table...')
         const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
             .select(`

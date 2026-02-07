@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 
-type Language = "en" | "fr"
+type Language = "en" | "fr" | "ar"
 type Direction = "ltr"
 
 interface LanguageContextType {
@@ -383,15 +383,6 @@ const translations = {
         "admin.careers.label.role": "Role:",
         "admin.careers.label.cv": "CV file:",
 
-        // Admin Order details (extra labels)
-        "admin.orders.update_status": "Update Status",
-        "admin.orders.timeline_title": "Timeline Logs",
-        "admin.orders.timeline_empty": "No logs available.",
-        "admin.orders.customer_title": "Customer",
-        "admin.orders.customer_company": "Company",
-        "admin.orders.customer_contact": "Contact",
-        "admin.orders.customer_email": "Email",
-
         // Admin Settings
         "admin.settings.title": "Admin Configuration",
         "admin.settings.subtitle": "Global settings for Didali Store",
@@ -696,23 +687,6 @@ const translations = {
         "admin.resellers.partner": "Partner",
         "admin.resellers.wholesaler": "Wholesaler",
         "admin.resellers.error_loading": "Failed to load resellers",
-        // Admin Dashboard Stats
-        "admin.dashboard.stats.total_revenue": "Revenu Total",
-        "admin.dashboard.stats.total_orders": "Commandes Totales",
-        "admin.dashboard.stats.total_resellers": "Revendeurs",
-        "admin.dashboard.stats.total_customers": "Clients Invités",
-        "admin.dashboard.stats.partners_label": "Partenaires",
-        "admin.dashboard.stats.direct_label": "Direct",
-        "admin.dashboard.recent_orders.title": "Commandes récentes",
-        "admin.dashboard.recent_orders.view_all": "Voir tout",
-        "admin.dashboard.recent_orders.loading": "Chargement...",
-        "admin.dashboard.recent_orders.empty": "Aucune commande récente trouvée.",
-        "admin.dashboard.recent_orders.col_order_id": "ID Commande",
-        "admin.dashboard.recent_orders.col_customer": "Client",
-        "admin.dashboard.recent_orders.col_email": "Email",
-        "admin.dashboard.recent_orders.col_amount": "Montant",
-        "admin.dashboard.recent_orders.col_status": "Statut",
-        "admin.dashboard.recent_orders.col_action": "Action",
     },
     fr: {
         "common.currency": "MAD",
