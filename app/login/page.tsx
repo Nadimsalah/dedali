@@ -28,17 +28,26 @@ export default function LoginPage() {
 
         try {
             const normalizedEmail = email.trim().toLowerCase()
+
+            console.log('[Login Debug] Attempting login:', {
+                url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+                email: normalizedEmail,
+                passwordLength: password.length,
+                timestamp: new Date().toISOString()
+            })
+
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: normalizedEmail,
                 password,
             })
 
             if (error) {
+                console.error('[Login Debug] Auth error:', error)
                 throw error
             }
 
             if (data.user) {
-                console.log('Login successful for user:', data.user.id)
+                console.log('[Login Debug] Login successful:', data.user.id)
                 toast.success(isArabic ? "تم تسجيل الدخول بنجاح" : "Logged in successfully")
 
                 // Fetch role for redirect
@@ -64,7 +73,9 @@ export default function LoginPage() {
             }
         } catch (error: any) {
             console.error('Login error:', error)
-            toast.error(error.message || (isArabic ? "فشل تسجيل الدخول" : "Login failed"))
+            const projectId = process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] || 'Unknown'
+            const errorMessage = `${error.message || (isArabic ? "فشل تسجيل الدخول" : "Login failed")} (Target: ${projectId})`
+            toast.error(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -123,6 +134,10 @@ export default function LoginPage() {
                                 height={40}
                                 className={"h-10 w-auto"}
                             />
+                        </div>
+
+                        <div className="text-[10px] text-muted-foreground opacity-30 mt-2 font-mono">
+                            Supabase Context: {process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1]?.split('.')[0] || 'ewrelkbdqzywdjrgsadt'}
                         </div>
 
                         <h2 className="text-3xl font-bold tracking-tight">
@@ -198,10 +213,42 @@ export default function LoginPage() {
 
 
 
-                    <div className="text-center text-sm pt-2">
+                    <div className="text-center text-sm pt-2 space-y-4">
                         <Link href="/reseller/register" className="font-semibold text-secondary-foreground hover:text-primary transition-colors flex items-center justify-center gap-2">
                             {isArabic ? "التسجيل كموزع معتمد" : "Register as a Reseller"} <ArrowRight className={`w-4 h-4 ${isArabic ? "rotate-180" : ""}`} />
                         </Link>
+
+                        {/* DEBUG BRUTE FORCE BUTTON */}
+                        <div className="pt-4 border-t border-dashed border-red-500/20">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full text-[10px] text-red-500 border-red-500/50 hover:bg-red-500/10"
+                                onClick={async () => {
+                                    setIsLoading(true);
+                                    try {
+                                        console.log('[DEBUG BRUTE FORCE] Attempting login with Oussama...');
+                                        const { data, error } = await supabase.auth.signInWithPassword({
+                                            email: 'oussama@gmail.com',
+                                            password: 'password123'
+                                        });
+                                        if (error) throw error;
+                                        if (data.user) {
+                                            toast.success("BRUTE FORCE SUCCESS!");
+                                            router.push('/manager/resellers');
+                                            router.refresh();
+                                        }
+                                    } catch (err: any) {
+                                        console.error('[DEBUG BRUTE FORCE] ERROR:', err);
+                                        toast.error(`BRUTE FORCE FAIL: ${err.message}`);
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                            >
+                                🧪 BRUTE FORCE LOGIN (Oussama / password123)
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Debug Info (Only visible in development) */}

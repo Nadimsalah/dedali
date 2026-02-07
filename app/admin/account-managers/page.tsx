@@ -24,7 +24,8 @@ import {
     Phone,
     MapPin,
     Trash2,
-    Copy
+    Copy,
+    Lock
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
@@ -88,6 +89,12 @@ export default function AccountManagersPage() {
     const [editingGoalManager, setEditingGoalManager] = useState<AccountManager | null>(null)
     const [newGoalValue, setNewGoalValue] = useState("")
     const [isUpdatingGoal, setIsUpdatingGoal] = useState(false)
+
+    // Password Reset Modal
+    const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false)
+    const [resettingManager, setResettingManager] = useState<AccountManager | null>(null)
+    const [newPasswordInput, setNewPasswordInput] = useState("")
+    const [isResettingPassword, setIsResettingPassword] = useState(false)
 
     // Assignment Modal
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
@@ -237,6 +244,31 @@ export default function AccountManagersPage() {
         }
     }
 
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!resettingManager || !newPasswordInput) return
+        setIsResettingPassword(true)
+
+        try {
+            const res = await fetch(`/api/admin/account-managers/${resettingManager.id}/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: newPasswordInput })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            toast.success("Mot de passe mis à jour avec succès.")
+            setIsResetPasswordModalOpen(false)
+            setResettingManager(null)
+            setNewPasswordInput("")
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            setIsResettingPassword(false)
+        }
+    }
+
     const handleDeleteManager = async (id: string, name: string) => {
         if (!confirm(t("account_managers.delete_confirm").replace("{name}", name))) return
 
@@ -266,7 +298,7 @@ export default function AccountManagersPage() {
         try {
             const fullUrl = typeof window !== "undefined"
                 ? `${window.location.origin}${managerLoginPath}`
-                : dashboardPath
+                : managerLoginPath
             await navigator.clipboard.writeText(fullUrl)
             setCopiedUrl(true)
             setTimeout(() => setCopiedUrl(false), 2000)
@@ -430,6 +462,16 @@ export default function AccountManagersPage() {
                                                 >
                                                     <Shield className="w-4 h-4 mr-2" />
                                                     {t("account_managers.set_prime_goal")}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setResettingManager(m)
+                                                        setNewPasswordInput("")
+                                                        setIsResetPasswordModalOpen(true)
+                                                    }}
+                                                >
+                                                    <Lock className="w-4 h-4 mr-2" />
+                                                    Modifier le mot de passe
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     className="text-destructive focus:text-destructive"
@@ -632,6 +674,36 @@ export default function AccountManagersPage() {
                             <DialogFooter className="pt-4">
                                 <Button type="submit" disabled={isUpdatingGoal} className="w-full h-12 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white">
                                     {isUpdatingGoal ? <Loader2 className="animate-spin" /> : t("account_managers.update")}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Reset Password Dialog */}
+                <Dialog open={isResetPasswordModalOpen} onOpenChange={setIsResetPasswordModalOpen}>
+                    <DialogContent className="glass-strong border-white/10 rounded-[2rem]">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black">Modifier le mot de passe</DialogTitle>
+                            <DialogDescription>
+                                Définir un nouveau mot de passe pour <strong>{resettingManager?.name}</strong>.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleResetPassword} className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Nouveau mot de passe</label>
+                                <Input
+                                    required
+                                    type="password"
+                                    value={newPasswordInput}
+                                    onChange={e => setNewPasswordInput(e.target.value)}
+                                    className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <DialogFooter className="pt-4">
+                                <Button type="submit" disabled={isResettingPassword} className="w-full h-12 rounded-xl font-bold bg-primary text-white">
+                                    {isResettingPassword ? <Loader2 className="animate-spin mr-2" /> : "Mettre à jour"}
                                 </Button>
                             </DialogFooter>
                         </form>
