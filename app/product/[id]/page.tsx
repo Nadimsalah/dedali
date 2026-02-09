@@ -230,10 +230,10 @@ export default function ProductPage() {
                 </div>
 
                 <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider ${stockStatus === 'in_stock'
-                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
-                    : stockStatus === 'low_stock'
-                      ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                      : "bg-destructive/10 text-destructive border border-destructive/20"
+                  ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                  : stockStatus === 'low_stock'
+                    ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                    : "bg-destructive/10 text-destructive border border-destructive/20"
                   }`}>
                   {stockStatus === 'in_stock' && <Check className="w-3 h-3" />}
                   {stockStatus === 'low_stock' && <AlertTriangle className="w-3 h-3" />}
@@ -288,7 +288,7 @@ export default function ProductPage() {
                         <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">
                           {t('common.currency')} {product.price} <span className="text-sm font-normal text-muted-foreground align-middle">TTC</span>
                         </span>
-                        {product.compare_at_price && (
+                        {(product.compare_at_price ?? 0) > 0 && (
                           <span className="text-xl text-muted-foreground line-through decoration-destructive/30 decoration-2">
                             {t('common.currency')} {product.compare_at_price}
                           </span>
@@ -301,7 +301,7 @@ export default function ProductPage() {
                     <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">
                       {t('common.currency')} {product.price}
                     </span>
-                    {product.compare_at_price && (
+                    {(product.compare_at_price ?? 0) > 0 && (
                       <span className="text-xl text-muted-foreground line-through decoration-destructive/30 decoration-2">
                         {t('common.currency')} {product.compare_at_price}
                       </span>
@@ -491,7 +491,7 @@ export default function ProductPage() {
                       <span className="text-base sm:text-xl font-bold text-primary">
                         {t('common.currency')} {item.price}
                       </span>
-                      {item.compare_at_price && (
+                      {(item.compare_at_price ?? 0) > 0 && (
                         <span className="text-[10px] sm:text-xs text-muted-foreground line-through">
                           {t('common.currency')} {item.compare_at_price}
                         </span>
@@ -581,32 +581,30 @@ export default function ProductPage() {
             {/* Links Columns */}
             <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Company</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.company')}</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/our-story" className="hover:text-primary transition-colors block py-1">Our Story</Link></li>
-                  <li><Link href="/sustainability" className="hover:text-primary transition-colors block py-1">Sustainability</Link></li>
-                  <li><Link href="/press" className="hover:text-primary transition-colors block py-1">Press</Link></li>
-                  <li><Link href="/careers" className="hover:text-primary transition-colors block py-1">Careers</Link></li>
+                  <li><Link href="/our-story" className="hover:text-primary transition-colors block py-1">{t('footer.our_story')}</Link></li>
+                  <li><Link href="/sustainability" className="hover:text-primary transition-colors block py-1">{t('footer.sustainability')}</Link></li>
+                  <li><Link href="/press" className="hover:text-primary transition-colors block py-1">{t('footer.press')}</Link></li>
+                  <li><Link href="/careers" className="hover:text-primary transition-colors block py-1">{t('footer.careers')}</Link></li>
                 </ul>
               </div>
-
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Support</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.support')}</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">Contact Us</Link></li>
-                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">Shipping Info</Link></li>
-                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">Track Order</Link></li>
-                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">FAQ</Link></li>
+                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">{t('footer.contact_us')}</Link></li>
+                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">{t('footer.shipping_info')}</Link></li>
+                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">{t('footer.track_order')}</Link></li>
+                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">{t('nav.faq')}</Link></li>
                 </ul>
               </div>
-
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Legal</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.legal')}</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">Privacy Policy</Link></li>
-                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">Terms of Service</Link></li>
-                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">Refund Policy</Link></li>
-                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">Cookies</Link></li>
+                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">{t('footer.privacy_policy')}</Link></li>
+                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">{t('footer.terms')}</Link></li>
+                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">{t('footer.refund_policy')}</Link></li>
+                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">{t('footer.cookies')}</Link></li>
                 </ul>
               </div>
             </div>
@@ -614,10 +612,10 @@ export default function ProductPage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-            <p>© {new Date().getFullYear()} Didali Store. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Didali Store. {t('footer.rights')}</p>
             <div className="flex items-center gap-6">
-              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">{t('footer.privacy_short')}</Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.terms_short')}</Link>
             </div>
           </div>
         </div>
