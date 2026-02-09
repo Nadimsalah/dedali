@@ -82,7 +82,7 @@ function BestSellersGrid() {
                                 <span className="text-lg sm:text-xl font-black text-primary">
                                     {t("common.currency")} {product.price}
                                 </span>
-                                {product.compare_at_price && (
+                                {(product.compare_at_price ?? 0) > 0 && (
                                     <span className="text-xs text-muted-foreground line-through opacity-70">
                                         {t("common.currency")} {product.compare_at_price}
                                     </span>
@@ -209,7 +209,7 @@ export default function SearchPage() {
                                         fill
                                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
-                                    {product.compare_at_price && (
+                                    {product.compare_at_price && product.compare_at_price > product.price && (
                                         <div className="absolute top-4 left-4 bg-primary/95 text-primary-foreground text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg">
                                             -{Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)}%
                                         </div>
@@ -225,7 +225,7 @@ export default function SearchPage() {
                                             <span className="text-lg sm:text-xl font-black text-primary">
                                                 {t('common.currency')} {product.price}
                                             </span>
-                                            {product.compare_at_price && (
+                                            {(product.compare_at_price ?? 0) > 0 && (
                                                 <span className="text-xs text-muted-foreground line-through opacity-70">
                                                     {t('common.currency')} {product.compare_at_price}
                                                 </span>

@@ -114,38 +114,35 @@ function ProductCard({ product, userRole, resellerTier }: { product: Product, us
   const isArabic = language === 'ar'
   const rating = 5 // Default rating since it's not in DB yet
   return (
-    <Link href={`/product/${product.id}`} className="group glass rounded-3xl p-4 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 block">
-      <div className="aspect-square bg-gradient-to-br from-secondary to-muted rounded-2xl mb-4 flex items-center justify-center overflow-hidden relative">
+    <Link href={`/product/${product.id}`} className="group glass rounded-2xl sm:rounded-3xl p-3 sm:p-4 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 block">
+      <div className="aspect-square bg-gradient-to-br from-secondary to-muted rounded-xl sm:rounded-2xl mb-3 sm:mb-4 flex items-center justify-center overflow-hidden relative">
         {product.images && product.images.length > 0 ? (
           <Image
             src={product.images[0]}
             alt={isArabic && product.title_ar ? product.title_ar : product.title}
             fill
-            className="object-cover"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Sparkles className="w-8 h-8 text-primary" />
+          <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Sparkles className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
           </div>
         )}
       </div>
-      <div className="space-y-2">
-        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+      <div className="space-y-1.5 sm:space-y-2">
+        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm sm:text-base line-clamp-2 min-h-[2.5rem] sm:min-h-0">
           {isArabic && product.title_ar ? product.title_ar : product.title}
         </h3>
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {(isArabic && product.description_ar ? product.description_ar : product.description)?.replace(/<[^>]*>?/gm, '') || ''}
-        </p>
         <div className="flex items-center gap-1">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
               key={i}
-              className={`w-3.5 h-3.5 ${i < rating ? "fill-primary text-primary" : "text-muted"}`}
+              className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${i < rating ? "fill-primary text-primary" : "text-muted"}`}
             />
           ))}
-          <span className="text-xs text-muted-foreground ml-1">({rating}.0)</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">({rating}.0)</span>
         </div>
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-1 sm:pt-2 mt-auto">
           <div className="flex flex-col">
             {resellerTier ? (
               (() => {
@@ -160,10 +157,10 @@ function ProductCard({ product, userRole, resellerTier }: { product: Product, us
                 if (tierPrice) {
                   return (
                     <>
-                      <span className="text-lg font-bold text-foreground">
-                        {t('common.currency')} {tierPrice} <span className="text-[11px] text-muted-foreground">TTC</span>
+                      <span className="text-sm sm:text-lg font-bold text-foreground">
+                        {t('common.currency')} {tierPrice}
                       </span>
-                      <span className="text-xs text-muted-foreground line-through decoration-destructive/30">
+                      <span className="text-[9px] sm:text-xs text-muted-foreground line-through decoration-destructive/30">
                         {t('common.currency')} {product.price}
                       </span>
                     </>
@@ -171,19 +168,20 @@ function ProductCard({ product, userRole, resellerTier }: { product: Product, us
                 }
 
                 return (
-                  <span className="text-lg font-bold text-foreground">
-                    {t('common.currency')} {product.price} <span className="text-[11px] text-muted-foreground">TTC</span>
+                  <span className="text-sm sm:text-lg font-bold text-foreground">
+                    {t('common.currency')} {product.price}
                   </span>
                 )
               })()
             ) : (
-              <span className="text-lg font-bold text-foreground">
+              <span className="text-sm sm:text-lg font-bold text-foreground">
                 {t('common.currency')} {product.price}
               </span>
             )}
           </div>
-          <Button size="sm" className="rounded-full text-xs pointer-events-none">
-            {t('product.add_to_cart')}
+          <Button size="icon" className="w-8 h-8 sm:w-auto sm:h-9 sm:px-4 rounded-full text-[10px] sm:text-xs pointer-events-none">
+            <ShoppingBag className="w-4 h-4 sm:hidden" />
+            <span className="hidden sm:inline">{t('product.add_to_cart')}</span>
           </Button>
         </div>
       </div>
@@ -789,7 +787,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-in fade-in duration-500">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 animate-in fade-in duration-500">
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <ProductCardSkeleton key={i} />
@@ -878,48 +876,48 @@ export default function HomePage() {
             {/* Links Columns */}
             <div className="md:col-span-8 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Company</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.company')}</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
                   <li>
                     <Link href="/our-story" className="hover:text-primary transition-colors block py-1">
-                      Our Story
+                      {t('footer.our_story')}
                     </Link>
                   </li>
                   <li>
                     <Link href="/sustainability" className="hover:text-primary transition-colors block py-1">
-                      Sustainability
+                      {t('footer.sustainability')}
                     </Link>
                   </li>
                   <li>
                     <Link href="/press" className="hover:text-primary transition-colors block py-1">
-                      Press
+                      {t('footer.press')}
                     </Link>
                   </li>
                   <li>
                     <Link href="/careers" className="hover:text-primary transition-colors block py-1">
-                      Careers
+                      {t('footer.careers')}
                     </Link>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Support</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.support')}</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">Contact Us</Link></li>
-                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">Shipping Info</Link></li>
-                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">Track Order</Link></li>
-                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">FAQ</Link></li>
+                  <li><Link href="/contact" className="hover:text-primary transition-colors block py-1">{t('footer.contact_us')}</Link></li>
+                  <li><Link href="/shipping-info" className="hover:text-primary transition-colors block py-1">{t('footer.shipping_info')}</Link></li>
+                  <li><Link href="/track-order" className="hover:text-primary transition-colors block py-1">{t('footer.track_order')}</Link></li>
+                  <li><Link href="/faq" className="hover:text-primary transition-colors block py-1">{t('nav.faq')}</Link></li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">Legal</h4>
+                <h4 className="font-semibold text-foreground text-sm tracking-wide uppercase mb-6">{t('footer.legal')}</h4>
                 <ul className="space-y-4 text-sm text-muted-foreground">
-                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">Privacy Policy</Link></li>
-                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">Terms of Service</Link></li>
-                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">Refund Policy</Link></li>
-                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">Cookies</Link></li>
+                  <li><Link href="/privacy-policy" className="hover:text-primary transition-colors block py-1">{t('footer.privacy_policy')}</Link></li>
+                  <li><Link href="/terms" className="hover:text-primary transition-colors block py-1">{t('footer.terms')}</Link></li>
+                  <li><Link href="/refund-policy" className="hover:text-primary transition-colors block py-1">{t('footer.refund_policy')}</Link></li>
+                  <li><Link href="/cookies" className="hover:text-primary transition-colors block py-1">{t('footer.cookies')}</Link></li>
                 </ul>
               </div>
             </div>
@@ -927,7 +925,7 @@ export default function HomePage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} Didali Store. {t('footer.rights')}</p>
+            <p>© {new Date().getFullYear()} Didali Store. {t('footer.rights')}</p>
             <div className="flex items-center gap-6">
               <Link href="/privacy-policy" className="hover:text-foreground transition-colors">{t('footer.privacy_short')}</Link>
               <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.terms_short')}</Link>

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react"
 
 type Language = "en" | "fr" | "ar"
-type Direction = "ltr"
+type Direction = "ltr" | "rtl"
 
 interface LanguageContextType {
     language: Language
