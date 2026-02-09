@@ -826,16 +826,18 @@ export async function getDashboardStats() {
         .select('*', { count: 'exact', head: true })
         .eq('role', 'reseller')
 
-    // Get total customers (non-resellers - assuming 'customer' role means guest/standard)
-    // We include null roles to catch legacy guest records
-    const { count: customerCount } = await supabase
-        .from('customers')
-        .select('*', { count: 'exact', head: true })
-        .or('role.eq.customer,role.is.null')
-        .neq('role', 'reseller')
-        .neq('role', 'admin')
+    // Get total customers (Guests)
+    // We count unique emails from orders that are NOT linked to a reseller
+    const { data: guestOrdersRaw } = await supabase
+        .from('orders')
+        .select('customer_email')
+        .is('reseller_id', null)
 
-    // Get total products (optional now but keeping for internal use if needed)
+    // Count unique emails
+    const uniqueGuestEmails = new Set(guestOrdersRaw?.map(o => o.customer_email?.toLowerCase().trim()).filter(Boolean))
+    const customerCount = uniqueGuestEmails.size
+
+    // Get total products
     const { count: productCount } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true })
@@ -1115,4 +1117,87 @@ export async function getCategories() {
     }
 
     return data as { id: string, name: string, slug: string, name_ar?: string }[]
+}
+
+export async function getAdvancedAnalytics() {
+    // 1. Top Clients (Guests)
+    // We count unique emails from orders that are NOT linked to a reseller
+    const { data: guestOrders } = await supabase
+        .from('orders')
+        .select('customer_email, customer_name, total')
+        .is('reseller_id', null)
+        .order('created_at', { ascending: false })
+
+    const clientStats = new Map<string, { email: string, name: string, totalSpent: number, ordersCount: number }>();
+    if (guestOrders) {
+        guestOrders.forEach(order => {
+            const email = order.customer_email?.toLowerCase().trim();
+            if (!email) return;
+
+            if (!clientStats.has(email)) {
+                clientStats.set(email, { email, name: order.customer_name, totalSpent: 0, ordersCount: 0 });
+            }
+            const stat = clientStats.get(email)!;
+            stat.totalSpent += order.total;
+            stat.ordersCount += 1;
+        });
+    }
+    const topClients = Array.from(clientStats.values())
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 5);
+
+    // 2. Top Resellers
+    const { data: resellerOrders } = await supabase
+        .from('orders')
+        .select('reseller_id, total, reseller:resellers(company_name, user_id, profile:profiles(name))')
+        .not('reseller_id', 'is', null)
+
+    const resellerStats = new Map<string, { id: string, name: string, totalSpent: number, ordersCount: number }>();
+    if (resellerOrders) {
+        resellerOrders.forEach(order => {
+            const resellerId = order.reseller_id;
+            // @ts-ignore
+            const companyName = order.reseller?.company_name || order.reseller?.profile?.name || 'Unknown Reseller';
+
+            if (!resellerStats.has(resellerId)) {
+                resellerStats.set(resellerId, { id: resellerId, name: companyName, totalSpent: 0, ordersCount: 0 });
+            }
+            const stat = resellerStats.get(resellerId)!;
+            stat.totalSpent += order.total;
+            stat.ordersCount += 1;
+        });
+    }
+    const topResellers = Array.from(resellerStats.values())
+        .sort((a, b) => b.totalSpent - a.totalSpent)
+        .slice(0, 5);
+
+    // 3. Low Stock Products
+    const { data: lowStockProducts } = await supabase
+        .from('products')
+        .select('id, title, stock, price, images')
+        .lt('stock', 10)
+        .order('stock', { ascending: true })
+        .limit(5);
+
+    // 4. Low Sales Products
+    const { data: lowSalesProducts } = await supabase
+        .from('products')
+        .select('id, title, sales_count, price, images')
+        .order('sales_count', { ascending: true })
+        .limit(5);
+
+    // 5. Account Managers
+    // Get count of profiles where role is admin
+    const { count: accountManagerCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'admin');
+
+    return {
+        topClients,
+        topResellers,
+        lowStockProducts: lowStockProducts || [],
+        lowSalesProducts: lowSalesProducts || [],
+        accountManagerCount: accountManagerCount || 0
+    };
 }

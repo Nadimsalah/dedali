@@ -79,9 +79,9 @@ export default function EditProductPage() {
                 setCategory(product.category)
                 setPrice(product.price.toString())
                 setCompareAtPrice(product.compare_at_price?.toString() || "")
-                setResellerPrice(product.reseller_price?.toString() || "")
-                setPartnerPrice(product.partner_price?.toString() || "")
-                setWholesalerPrice(product.wholesaler_price?.toString() || "")
+                setResellerPrice(product.reseller_price ? (product.reseller_price / 1.2).toFixed(2) : "")
+                setPartnerPrice(product.partner_price ? (product.partner_price / 1.2).toFixed(2) : "")
+                setWholesalerPrice(product.wholesaler_price ? (product.wholesaler_price / 1.2).toFixed(2) : "")
                 setResellerMinQty(product.reseller_min_qty?.toString() || "")
                 setPartnerMinQty(product.partner_min_qty?.toString() || "")
                 setWholesalerMinQty(product.wholesaler_min_qty?.toString() || "")
@@ -151,9 +151,9 @@ export default function EditProductPage() {
                 category,
                 price: parseFloat(price),
                 compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
-                reseller_price: resellerPrice ? parseFloat(resellerPrice) : null,
-                partner_price: partnerPrice ? parseFloat(partnerPrice) : null,
-                wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) : null,
+                reseller_price: resellerPrice ? parseFloat(resellerPrice) * 1.2 : null,
+                partner_price: partnerPrice ? parseFloat(partnerPrice) * 1.2 : null,
+                wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) * 1.2 : null,
                 reseller_min_qty: resellerMinQty ? parseInt(resellerMinQty) : null,
                 partner_min_qty: partnerMinQty ? parseInt(partnerMinQty) : null,
                 wholesaler_min_qty: wholesalerMinQty ? parseInt(wholesalerMinQty) : null,
@@ -529,14 +529,19 @@ export default function EditProductPage() {
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700">Reseller Price (MAD)</label>
-                                    <Input
-                                        type="number"
-                                        value={resellerPrice || ""}
-                                        onChange={(e) => setResellerPrice(e.target.value)}
-                                        placeholder="0.00"
-                                        className="h-12 text-base bg-blue-50/50 border-blue-200 text-blue-900 focus:bg-white transition-colors"
-                                    />
+                                    <label className="text-sm font-semibold text-gray-700">Reseller Price HT (MAD)</label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            value={resellerPrice || ""}
+                                            onChange={(e) => setResellerPrice(e.target.value)}
+                                            placeholder="0.00"
+                                            className="h-12 text-base bg-blue-50/50 border-blue-200 text-blue-900 focus:bg-white transition-colors"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-blue-700">
+                                        TTC ≈ {((Number(resellerPrice || 0) * 1.2) || 0).toFixed(2)} MAD (TVA 20%)
+                                    </p>
                                     <Input
                                         type="number"
                                         value={resellerMinQty || ""}
@@ -547,14 +552,19 @@ export default function EditProductPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700">Partner Price (MAD)</label>
-                                    <Input
-                                        type="number"
-                                        value={partnerPrice || ""}
-                                        onChange={(e) => setPartnerPrice(e.target.value)}
-                                        placeholder="0.00"
-                                        className="h-12 text-base bg-purple-50/50 border-purple-200 text-purple-900 focus:bg-white transition-colors"
-                                    />
+                                    <label className="text-sm font-semibold text-gray-700">Partner Price HT (MAD)</label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            value={partnerPrice || ""}
+                                            onChange={(e) => setPartnerPrice(e.target.value)}
+                                            placeholder="0.00"
+                                            className="h-12 text-base bg-purple-50/50 border-purple-200 text-purple-900 focus:bg-white transition-colors"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-purple-700">
+                                        TTC ≈ {((Number(partnerPrice || 0) * 1.2) || 0).toFixed(2)} MAD (TVA 20%)
+                                    </p>
                                     <Input
                                         type="number"
                                         value={partnerMinQty || ""}
@@ -565,14 +575,19 @@ export default function EditProductPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-gray-700">Wholesaler Price (MAD)</label>
-                                    <Input
-                                        type="number"
-                                        value={wholesalerPrice || ""}
-                                        onChange={(e) => setWholesalerPrice(e.target.value)}
-                                        placeholder="0.00"
-                                        className="h-12 text-base bg-emerald-50/50 border-emerald-200 text-emerald-900 focus:bg-white transition-colors"
-                                    />
+                                    <label className="text-sm font-semibold text-gray-700">Wholesaler Price HT (MAD)</label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            value={wholesalerPrice || ""}
+                                            onChange={(e) => setWholesalerPrice(e.target.value)}
+                                            placeholder="0.00"
+                                            className="h-12 text-base bg-emerald-50/50 border-emerald-200 text-emerald-900 focus:bg-white transition-colors"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-emerald-700">
+                                        TTC ≈ {((Number(wholesalerPrice || 0) * 1.2) || 0).toFixed(2)} MAD (TVA 20%)
+                                    </p>
                                     <Input
                                         type="number"
                                         value={wholesalerMinQty || ""}

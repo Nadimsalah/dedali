@@ -268,7 +268,10 @@ export default function ProductPage() {
                               {label}
                             </span>
                             <span className="text-3xl sm:text-4xl font-extrabold text-primary">
-                              {t('common.currency')} {tierPrice} <span className="text-sm font-normal text-muted-foreground align-middle">TTC</span>
+                              {t('common.currency')} {(tierPrice / 1.2).toFixed(2)} <span className="text-sm font-normal text-muted-foreground align-middle">HT</span>
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              (+ 20% TVA)
                             </span>
                           </div>
                           <div className="flex flex-col items-start border-l pl-4 border-primary/20">
@@ -276,7 +279,7 @@ export default function ProductPage() {
                               Regular
                             </span>
                             <span className="text-lg text-muted-foreground line-through decoration-destructive/30 decoration-2">
-                              {t('common.currency')} {product.price}
+                              {t('common.currency')} {product.price} <span className="text-[10px] align-middle">TTC</span>
                             </span>
                           </div>
                         </>
@@ -299,7 +302,7 @@ export default function ProductPage() {
                 ) : (
                   <>
                     <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-primary">
-                      {t('common.currency')} {product.price}
+                      {t('common.currency')} {product.price} <span className="text-sm font-normal text-muted-foreground align-middle">TTC</span>
                     </span>
                     {(product.compare_at_price ?? 0) > 0 && (
                       <span className="text-xl text-muted-foreground line-through decoration-destructive/30 decoration-2">

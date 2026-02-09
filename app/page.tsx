@@ -158,10 +158,10 @@ function ProductCard({ product, userRole, resellerTier }: { product: Product, us
                   return (
                     <>
                       <span className="text-sm sm:text-lg font-bold text-foreground">
-                        {t('common.currency')} {tierPrice}
+                        {t('common.currency')} {(tierPrice / 1.2).toFixed(2)} <span className="text-[10px] font-normal text-muted-foreground">HT</span>
                       </span>
                       <span className="text-[9px] sm:text-xs text-muted-foreground line-through decoration-destructive/30">
-                        {t('common.currency')} {product.price}
+                        {t('common.currency')} {product.price} <span className="text-[8px] font-normal">TTC</span>
                       </span>
                     </>
                   )
@@ -169,13 +169,13 @@ function ProductCard({ product, userRole, resellerTier }: { product: Product, us
 
                 return (
                   <span className="text-sm sm:text-lg font-bold text-foreground">
-                    {t('common.currency')} {product.price}
+                    {t('common.currency')} {product.price} <span className="text-[10px] font-normal text-muted-foreground">TTC</span>
                   </span>
                 )
               })()
             ) : (
               <span className="text-sm sm:text-lg font-bold text-foreground">
-                {t('common.currency')} {product.price}
+                {t('common.currency')} {product.price} <span className="text-[10px] font-normal text-muted-foreground">TTC</span>
               </span>
             )}
           </div>

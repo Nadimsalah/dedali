@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useLanguage } from "@/components/language-provider"
+import { supabase } from "@/lib/supabase"
 import { getProducts, type Product } from "@/lib/supabase-api"
 import Image from "next/image"
 import Link from "next/link"
@@ -14,7 +15,14 @@ function BestSellersGrid() {
     const { t, language } = useLanguage()
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(false)
+    const [resellerTier, setResellerTier] = useState<string | null>(null)
     const isArabic = language === "ar"
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) setResellerTier(session.user.user_metadata.reseller_tier)
+        })
+    }, [])
 
     useEffect(() => {
         let mounted = true
@@ -79,14 +87,40 @@ function BestSellersGrid() {
                         </h3>
                         <div className="flex items-center justify-between gap-2 pt-2">
                             <div className="flex flex-col">
-                                <span className="text-lg sm:text-xl font-black text-primary">
-                                    {t("common.currency")} {product.price}
-                                </span>
-                                {(product.compare_at_price ?? 0) > 0 && (
-                                    <span className="text-xs text-muted-foreground line-through opacity-70">
-                                        {t("common.currency")} {product.compare_at_price}
-                                    </span>
-                                )}
+                                {(() => {
+                                    const tier = resellerTier || 'reseller'
+                                    const tierPrice = resellerTier ? (
+                                        tier === 'wholesaler' ? product.wholesaler_price :
+                                            tier === 'partner' ? product.partner_price :
+                                                product.reseller_price
+                                    ) : null
+
+                                    if (tierPrice) {
+                                        return (
+                                            <>
+                                                <span className="text-lg sm:text-xl font-black text-primary">
+                                                    {t("common.currency")} {(tierPrice / 1.2).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">HT</span>
+                                                </span>
+                                                <span className="text-xs text-muted-foreground line-through opacity-70">
+                                                    {t("common.currency")} {product.price} <span className="text-[10px]">TTC</span>
+                                                </span>
+                                            </>
+                                        )
+                                    }
+
+                                    return (
+                                        <>
+                                            <span className="text-lg sm:text-xl font-black text-primary">
+                                                {t("common.currency")} {product.price} <span className="text-xs font-normal text-muted-foreground">TTC</span>
+                                            </span>
+                                            {(product.compare_at_price ?? 0) > 0 && (
+                                                <span className="text-xs text-muted-foreground line-through opacity-70">
+                                                    {t("common.currency")} {product.compare_at_price}
+                                                </span>
+                                            )}
+                                        </>
+                                    )
+                                })()}
                             </div>
                             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-black/5 group-hover:shadow-primary/40">
                                 <ShoppingBag className="w-5 h-5 sm:w-6 h-6" />
@@ -105,7 +139,14 @@ export default function SearchPage() {
     const [results, setResults] = useState<Product[]>([])
     const [loading, setLoading] = useState(false)
     const [isSearching, setIsSearching] = useState(false)
+    const [resellerTier, setResellerTier] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) setResellerTier(session.user.user_metadata.reseller_tier)
+        })
+    }, [])
 
     useEffect(() => {
         if (inputRef.current) {
@@ -222,14 +263,40 @@ export default function SearchPage() {
                                     </h3>
                                     <div className="flex items-center justify-between gap-2 pt-2">
                                         <div className="flex flex-col">
-                                            <span className="text-lg sm:text-xl font-black text-primary">
-                                                {t('common.currency')} {product.price}
-                                            </span>
-                                            {(product.compare_at_price ?? 0) > 0 && (
-                                                <span className="text-xs text-muted-foreground line-through opacity-70">
-                                                    {t('common.currency')} {product.compare_at_price}
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                const tier = resellerTier || 'reseller'
+                                                const tierPrice = resellerTier ? (
+                                                    tier === 'wholesaler' ? product.wholesaler_price :
+                                                        tier === 'partner' ? product.partner_price :
+                                                            product.reseller_price
+                                                ) : null
+
+                                                if (tierPrice) {
+                                                    return (
+                                                        <>
+                                                            <span className="text-lg sm:text-xl font-black text-primary">
+                                                                {t('common.currency')} {(tierPrice / 1.2).toFixed(2)} <span className="text-xs font-normal text-muted-foreground">HT</span>
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground line-through opacity-70">
+                                                                {t('common.currency')} {product.price} <span className="text-[10px]">TTC</span>
+                                                            </span>
+                                                        </>
+                                                    )
+                                                }
+
+                                                return (
+                                                    <>
+                                                        <span className="text-lg sm:text-xl font-black text-primary">
+                                                            {t('common.currency')} {product.price} <span className="text-xs font-normal text-muted-foreground">TTC</span>
+                                                        </span>
+                                                        {(product.compare_at_price ?? 0) > 0 && (
+                                                            <span className="text-xs text-muted-foreground line-through opacity-70">
+                                                                {t('common.currency')} {product.compare_at_price}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )
+                                            })()}
                                         </div>
                                         <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-black/5 group-hover:shadow-primary/40">
                                             <ShoppingBag className="w-5 h-5 sm:w-6 h-6" />

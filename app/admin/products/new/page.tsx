@@ -219,9 +219,9 @@ export default function NewProductPage() {
                     title,
                     price: parseFloat(price),
                     compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
-                    reseller_price: resellerPrice ? parseFloat(resellerPrice) : null,
-                    partner_price: partnerPrice ? parseFloat(partnerPrice) : null,
-                    wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) : null,
+                    reseller_price: resellerPrice ? parseFloat(resellerPrice) * 1.2 : null,
+                    partner_price: partnerPrice ? parseFloat(partnerPrice) * 1.2 : null,
+                    wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) * 1.2 : null,
                     reseller_min_qty: resellerMinQty ? parseInt(resellerMinQty) : null,
                     partner_min_qty: partnerMinQty ? parseInt(partnerMinQty) : null,
                     wholesaler_min_qty: wholesalerMinQty ? parseInt(wholesalerMinQty) : null,
@@ -335,21 +335,21 @@ export default function NewProductPage() {
             <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10 pb-24">
                 {/* Header */}
                 <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sticky top-4 z-40 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50">
-                            <div className="flex items-center gap-4">
-                                <Link href="/admin/products">
-                                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors">
-                                        <ArrowLeft className="w-5 h-5" />
-                                    </Button>
-                                </Link>
-                                <div>
-                                    <h1 className="text-xl font-bold text-gray-900">
-                                        {isFrench ? "Ajouter un produit" : "Add Product"}
-                                    </h1>
-                                    <p className="text-xs text-gray-500 font-medium">
-                                        {isFrench ? "Dédié à l'excellence IT" : "Dedicated to IT excellence"}
-                                    </p>
-                                </div>
-                            </div>
+                    <div className="flex items-center gap-4">
+                        <Link href="/admin/products">
+                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors">
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+                        </Link>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">
+                                {isFrench ? "Ajouter un produit" : "Add Product"}
+                            </h1>
+                            <p className="text-xs text-gray-500 font-medium">
+                                {isFrench ? "Dédié à l'excellence IT" : "Dedicated to IT excellence"}
+                            </p>
+                        </div>
+                    </div>
 
 
 
@@ -454,7 +454,7 @@ export default function NewProductPage() {
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             className="w-full min-h-[180px] rounded-xl bg-white border border-gray-200 p-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-700 resize-none placeholder:text-gray-400 transition-all shadow-sm"
-                                            placeholder="Description in English"
+                                            placeholder="Description"
                                         />
                                         <div className="absolute right-2 top-2 flex flex-col gap-2">
                                             {description.trim() && (
@@ -529,7 +529,7 @@ export default function NewProductPage() {
                                             <Input
                                                 value={newBenefit || ""}
                                                 onChange={(e) => setNewBenefit(e.target.value)}
-                                                placeholder="Benefit description (English)"
+                                                placeholder="Benefit description"
                                                 className="bg-white border-gray-200 h-11 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
                                                 onKeyDown={(e) => e.key === 'Enter' && addBenefit()}
                                             />
@@ -717,7 +717,7 @@ export default function NewProductPage() {
                                 <div className="grid grid-cols-1 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">
-                                            {isFrench ? "Prix revendeur TTC (MAD)" : "Reseller price TTC (MAD)"}
+                                            {isFrench ? "Prix revendeur HT (MAD)" : "Reseller price HT (MAD)"}
                                         </label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">MAD</span>
@@ -730,7 +730,7 @@ export default function NewProductPage() {
                                             />
                                         </div>
                                         <p className="text-[11px] text-blue-700">
-                                            HT ≈ {((Number(resellerPrice || 0) / 1.2) || 0).toFixed(2)} MAD (TVA 20%)
+                                            TTC ≈ {((Number(resellerPrice || 0) * 1.2) || 0).toFixed(2)} MAD (TVA 20%)
                                         </p>
                                         <Input
                                             type="number"
@@ -742,7 +742,7 @@ export default function NewProductPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">
-                                            {isFrench ? "Prix partenaire TTC (MAD)" : "Partner price TTC (MAD)"}
+                                            {isFrench ? "Prix partenaire HT (MAD)" : "Partner price HT (MAD)"}
                                         </label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">MAD</span>
@@ -755,7 +755,7 @@ export default function NewProductPage() {
                                             />
                                         </div>
                                         <p className="text-[11px] text-purple-700">
-                                            HT ≈ {((Number(partnerPrice || 0) / 1.2) || 0).toFixed(2)} MAD (TVA 20%)
+                                            TTC ≈ {((Number(partnerPrice || 0) * 1.2) || 0).toFixed(2)} MAD (TVA 20%)
                                         </p>
                                         <Input
                                             type="number"
@@ -767,7 +767,7 @@ export default function NewProductPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-semibold text-gray-700">
-                                            {isFrench ? "Prix grossiste TTC (MAD)" : "Wholesaler price TTC (MAD)"}
+                                            {isFrench ? "Prix grossiste HT (MAD)" : "Wholesaler price HT (MAD)"}
                                         </label>
                                         <div className="relative">
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">MAD</span>
@@ -780,7 +780,7 @@ export default function NewProductPage() {
                                             />
                                         </div>
                                         <p className="text-[11px] text-emerald-700">
-                                            HT ≈ {((Number(wholesalerPrice || 0) / 1.2) || 0).toFixed(2)} MAD (TVA 20%)
+                                            TTC ≈ {((Number(wholesalerPrice || 0) * 1.2) || 0).toFixed(2)} MAD (TVA 20%)
                                         </p>
                                         <Input
                                             type="number"
