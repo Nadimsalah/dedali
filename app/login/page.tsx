@@ -218,37 +218,7 @@ export default function LoginPage() {
                             {isArabic ? "التسجيل كموزع معتمد" : "Register as a Reseller"} <ArrowRight className={`w-4 h-4 ${isArabic ? "rotate-180" : ""}`} />
                         </Link>
 
-                        {/* DEBUG BRUTE FORCE BUTTON */}
-                        <div className="pt-4 border-t border-dashed border-red-500/20">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full text-[10px] text-red-500 border-red-500/50 hover:bg-red-500/10"
-                                onClick={async () => {
-                                    setIsLoading(true);
-                                    try {
-                                        console.log('[DEBUG BRUTE FORCE] Attempting login with Oussama...');
-                                        const { data, error } = await supabase.auth.signInWithPassword({
-                                            email: 'oussama@gmail.com',
-                                            password: 'password123'
-                                        });
-                                        if (error) throw error;
-                                        if (data.user) {
-                                            toast.success("BRUTE FORCE SUCCESS!");
-                                            router.push('/manager/resellers');
-                                            router.refresh();
-                                        }
-                                    } catch (err: any) {
-                                        console.error('[DEBUG BRUTE FORCE] ERROR:', err);
-                                        toast.error(`BRUTE FORCE FAIL: ${err.message}`);
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                            >
-                                🧪 BRUTE FORCE LOGIN (Oussama / password123)
-                            </Button>
-                        </div>
+
                     </div>
 
                     {/* Debug Info (Only visible in development) */}

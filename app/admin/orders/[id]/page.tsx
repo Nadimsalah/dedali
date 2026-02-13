@@ -9,17 +9,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
     ArrowLeft,
-    Printer,
-    MapPin,
-    Phone,
-    Mail,
-    CreditCard,
     Package,
     CheckCircle2,
-    Clock,
-    Truck,
     History,
-    User
+    User,
+    Mail,
+    FileText
 } from "lucide-react"
 import { toast } from "sonner"
 import Image from "next/image"
@@ -35,7 +30,7 @@ export default function OrderDetailsPage() {
     const [order, setOrder] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [updating, setUpdating] = useState(false)
-    const [printType, setPrintType] = useState<'delivery' | 'invoice' | null>(null)
+    const [printType, setPrintType] = useState<'bon_commande' | null>(null)
 
     // Set French as default for dashboard
     useEffect(() => {
@@ -60,13 +55,6 @@ export default function OrderDetailsPage() {
         } finally {
             setLoading(false)
         }
-    }
-
-    const handlePrint = (type: 'delivery' | 'invoice') => {
-        setPrintType(type)
-        setTimeout(() => {
-            window.print()
-        }, 100)
     }
 
     const handleStatusChange = async (newStatus: string) => {
@@ -95,15 +83,15 @@ export default function OrderDetailsPage() {
             }))
 
             toast.success(`Order status updated to ${newStatus}`)
-
-            // Automated Printing
-            if (statusLower === 'shipped') {
-                handlePrint('delivery')
-            } else if (statusLower === 'delivered') {
-                handlePrint('invoice')
-            }
         }
         setUpdating(false)
+    }
+
+    const handlePrint = () => {
+        setPrintType('bon_commande')
+        setTimeout(() => {
+            window.print()
+        }, 100)
     }
 
     const getStatusColor = (status: string) => {
@@ -167,7 +155,7 @@ export default function OrderDetailsPage() {
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden print:bg-white print:overflow-visible">
-            {/* Background gradients */}
+            {/* Background gradients - hidden on print */}
             <div className="fixed inset-0 pointer-events-none print:hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px]" />
                 <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[100px]" />
@@ -177,8 +165,8 @@ export default function OrderDetailsPage() {
                 <AdminSidebar />
             </div>
 
-            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10 print:pl-0 print:p-0">
-                {/* Header */}
+            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10 print:p-0 print:pl-0 print:min-h-0">
+                {/* Header - hidden on print */}
                 <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sticky top-4 z-40 glass-strong p-4 rounded-3xl border border-white/5 shadow-lg shadow-black/5 print:hidden">
                     <div className="flex items-center gap-3">
                         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-primary/10">
@@ -195,25 +183,21 @@ export default function OrderDetailsPage() {
                             <p className="text-[10px] text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" className="rounded-full h-9 bg-background/50 border-white/10 hover:bg-white/10" onClick={() => handlePrint('delivery')}>
-                            <Truck className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Bon Livraison</span>
+                    {/* Bon de Commande Button - Only visible when status is 'processing' */}
+                    {order.status.toLowerCase() === 'processing' && (
+                        <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                            <FileText className="w-4 h-4 mr-2" />
+                            Bon de Commande
                         </Button>
-                        <Button variant="outline" className="rounded-full h-9 bg-background/50 border-white/10 hover:bg-white/10" onClick={() => handlePrint('invoice')}>
-                            <Printer className="w-4 h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Facture</span>
-                        </Button>
-                    </div>
+                    )}
                 </header>
 
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 print:block">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 print:hidden">
                     {/* Left Column: Order Details */}
                     <div className="xl:col-span-2 space-y-6">
 
                         {/* Items Card */}
-                        <div className="glass-strong rounded-3xl p-6 print:hidden">
+                        <div className="glass-strong rounded-3xl p-6">
                             <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                                 <Package className="w-5 h-5 text-primary" /> {t("admin.orders.table.items")}
                             </h3>
@@ -260,142 +244,10 @@ export default function OrderDetailsPage() {
                             </div>
                         </div>
 
-                        {/* Print Only Section (Unchanged for compatibility) */}
-                        <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
-                            <style dangerouslySetInnerHTML={{
-                                __html: `
-                                @media print {
-                                    @page { margin: 5mm; size: auto; }
-                                    body { -webkit-print-color-adjust: exact !important; margin: 0; padding: 0; }
-                                    .print-container { padding: 0 !important; }
-                                    * { -webkit-print-color-adjust: exact !important; }
-                                    table { page-break-inside: auto; }
-                                    tr { page-break-inside: avoid; page-break-after: auto; }
-                                    .no-break { page-break-inside: avoid; }
-                                }
-                            `}} />
-
-                            {/* Invoice Header */}
-                            <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-4 no-break">
-                                <div>
-                                    <div className="relative w-24 h-7 mb-2">
-                                        <Image
-                                            src="/logo.png"
-                                            alt="Didali Store Logo"
-                                            fill
-                                            className="object-contain object-left"
-                                            priority
-                                        />
-                                    </div>
-                                    <div className="space-y-0 text-[10px] text-black/70">
-                                        <p className="font-black text-[#1a1a1a] text-xs">Didali Store SARL</p>
-                                        <p className="italic">Premium IT Equipment</p>
-                                        <p>Casablanca, Morocco</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <h1 className="text-2xl font-black text-[#1a1a1a] uppercase mb-0 tracking-tighter">
-                                        {printType === 'delivery' ? 'Bon de Livraison' : 'Facture'}
-                                    </h1>
-                                    <div className="space-y-0">
-                                        <p className="text-xs font-bold text-black/90">N° {order.order_number}</p>
-                                        <p className="text-[10px] text-black/60">Date: {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                                        <p className="text-[10px] text-black/60">Statut: <span className="uppercase font-bold text-green-600">PAYÉ</span></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Billing & Shipping Info */}
-                            <div className="grid grid-cols-2 gap-4 mb-4 no-break">
-                                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <h3 className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1">Client</h3>
-                                    <div className="space-y-0">
-                                        <p className="font-black text-sm text-[#1a1a1a]">{order.display_company_name}</p>
-                                        <p className="text-[9px] text-black/50 italic leading-none">Contact: {order.display_reseller_name}</p>
-                                        <p className="text-[10px] text-black/80">{order.customer_email}</p>
-                                        <p className="text-[10px] text-black/80">{order.customer_phone}</p>
-                                    </div>
-                                </div>
-                                <div className="p-3">
-                                    <h3 className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1 text-right">Adresse de livraison</h3>
-                                    <div className="text-right space-y-0">
-                                        <p className="font-black text-sm text-[#1a1a1a]">{order.customer_name}</p>
-                                        <p className="text-[10px] text-black/80">{order.address_line1}</p>
-                                        {order.address_line2 && <p className="text-[10px] text-black/80">{order.address_line2}</p>}
-                                        <p className="text-[10px] text-black/80 font-bold">{order.city}, {order.governorate}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Items Table */}
-                            <div className="mb-4 no-break">
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="border-b-2 border-black">
-                                            <th className="py-1 px-1 text-left text-[9px] uppercase font-black tracking-wider w-[50%]">Produit</th>
-                                            <th className="py-1 px-1 text-center text-[9px] uppercase font-black tracking-wider w-[15%]">Qté</th>
-                                            {printType === 'invoice' && <th className="py-1 px-1 text-right text-[9px] uppercase font-black tracking-wider w-[15%]">PU</th>}
-                                            {printType === 'invoice' && <th className="py-1 px-1 text-right text-[9px] uppercase font-black tracking-wider w-[20%]">Total</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {order.items.map((item: any, i: number) => (
-                                            <tr key={i}>
-                                                <td className="py-1 px-1 text-left">
-                                                    <p className="font-bold text-[11px] text-[#1a1a1a]">{item.product_title}</p>
-                                                    {item.variant_name && <p className="text-[8px] text-black/60 italic leading-none">{item.variant_name}</p>}
-                                                </td>
-                                                <td className="py-1 px-1 text-center font-bold text-[11px]">{item.quantity}</td>
-                                                {printType === 'invoice' && <td className="py-1 px-1 text-right text-[11px] text-black/70">{(item.final_price || 0).toLocaleString('fr-FR')}</td>}
-                                                {printType === 'invoice' && <td className="py-1 px-1 text-right font-black text-[11px]">{(item.subtotal || 0).toLocaleString('fr-FR')}</td>}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Summary */}
-                            {printType === 'invoice' && (
-                                <div className="flex justify-end mb-4 no-break">
-                                    <div className="w-48 space-y-0.5">
-                                        <div className="flex justify-between items-center py-0.5 border-b border-gray-100 px-1">
-                                            <span className="text-[9px] font-bold text-black/60">Sous-total</span>
-                                            <span className="text-[10px] font-medium">{(order.subtotal || 0).toLocaleString('fr-FR')} MAD</span>
-                                        </div>
-                                        <div className="flex justify-between items-center py-0.5 border-b border-gray-100 px-1">
-                                            <span className="text-[9px] font-bold text-black/60">Livraison</span>
-                                            <span className="text-[10px] font-medium">{(order.shipping_cost || 0).toLocaleString('fr-FR')} MAD</span>
-                                        </div>
-                                        <div className="flex justify-between items-center py-1 bg-[#1a1a1a] text-white rounded-lg px-3 shadow-sm mt-1">
-                                            <span className="text-[9px] font-black uppercase tracking-wider">Total à payer</span>
-                                            <span className="text-base font-black font-mono">{(order.total || 0).toLocaleString('fr-FR')} MAD</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Footer */}
-                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-black/10 text-left no-break">
-                                <div>
-                                    <h4 className="text-[8px] font-black text-[#1a1a1a] uppercase tracking-widest mb-1">Informations</h4>
-                                    <p className="text-[8px] text-black/50 leading-tight">
-                                        Didali Store SARL — RC: 78910 — ICE: 0011223344556677<br />
-                                        Ce document fait office de preuve {printType === 'delivery' ? 'de livraison' : "d'achat"}.
-                                    </p>
-                                </div>
-                                <div className="flex flex-col items-end justify-center">
-                                    <div className="text-center">
-                                        <p className="text-[8px] text-black/40 font-black uppercase tracking-[0.3em] mb-1">Cachet & Signature</p>
-                                        <div className="w-24 h-10 border-2 border-dashed border-gray-200 rounded-lg"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
 
                     {/* Right Column: Status & History */}
-                    <div className="space-y-6 print:hidden">
+                    <div className="space-y-6">
 
                         {/* Status Card */}
                         <div className="glass-strong rounded-3xl p-6 border-l-4 border-primary">
@@ -499,7 +351,115 @@ export default function OrderDetailsPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Printable "Bon de Commande" Section */}
+                <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans">
+                    {/* Header */}
+                    <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4 mb-6">
+                        <div>
+                            <div className="relative w-32 h-9 mb-2">
+                                <Image
+                                    src="/logo.png"
+                                    alt="Logo"
+                                    fill
+                                    className="object-contain object-left"
+                                />
+                            </div>
+                            <div className="text-xs text-gray-600">
+                                <p className="font-bold text-gray-900">Didali Store SARL</p>
+                                <p>Casablanca, Morocco</p>
+                                <p>Email: contact@dedalistore.com</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <h1 className="text-2xl font-black text-gray-900 uppercase">BON DE COMMANDE</h1>
+                            <div className="text-sm mt-2">
+                                <p><span className="font-bold">N° Commande:</span> {order.order_number}</p>
+                                <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Client & Shipping Info */}
+                    <div className="grid grid-cols-2 gap-8 mb-8">
+                        <div>
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Client</h3>
+                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm">
+                                <p className="font-bold text-gray-900">{order.display_company_name}</p>
+                                <p className="text-gray-600">Attn: {order.display_reseller_name}</p>
+                                <p className="text-gray-600">{order.customer_email}</p>
+                                <p className="text-gray-600">{order.customer_phone}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">Adresse de Livraison</h3>
+                            <div className="text-sm text-right">
+                                <p className="font-bold text-gray-900">{order.customer_name}</p>
+                                <p className="text-gray-600">{order.address_line1}</p>
+                                {order.address_line2 && <p className="text-gray-600">{order.address_line2}</p>}
+                                <p className="text-gray-600">{order.city}, {order.governorate}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Items Table */}
+                    <table className="w-full mb-8 border-collapse">
+                        <thead>
+                            <tr className="border-b-2 border-gray-900 text-gray-900">
+                                <th className="py-2 text-left text-xs font-bold uppercase tracking-wider">Produit</th>
+                                <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">Quantité</th>
+                                <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Prix Unitaire</th>
+                                <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {order.items.map((item: any, i: number) => (
+                                <tr key={i}>
+                                    <td className="py-3 text-sm">
+                                        <p className="font-bold text-gray-900">{item.product_title}</p>
+                                        <p className="text-xs text-gray-500">{item.variant_name}</p>
+                                    </td>
+                                    <td className="py-3 text-center text-sm font-medium">{item.quantity}</td>
+                                    <td className="py-3 text-right text-sm text-gray-600">{item.final_price?.toLocaleString('fr-FR')} MAD</td>
+                                    <td className="py-3 text-right text-sm font-bold text-gray-900">{item.subtotal.toLocaleString('fr-FR')} MAD</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* Totals */}
+                    <div className="flex justify-end mb-12">
+                        <div className="w-1/3 space-y-2">
+                            <div className="flex justify-between text-sm text-gray-600">
+                                <span>Sous-total</span>
+                                <span>{order.subtotal.toLocaleString('fr-FR')} MAD</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-600">
+                                <span>Livraison</span>
+                                <span>{order.shipping_cost.toLocaleString('fr-FR')} MAD</span>
+                            </div>
+                            <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                                <span>Total</span>
+                                <span>{order.total.toLocaleString('fr-FR')} MAD</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer / Signatures */}
+                    <div className="flex justify-between items-end pt-8 border-t border-gray-200">
+                        <div className="text-xs text-gray-400">
+                            <p>Ce document est généré automatiquement.</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cachet et Signature</p>
+                            <div className="h-16 w-32 border border-gray-200 rounded-lg bg-gray-50"></div>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
     )
 }
+
+

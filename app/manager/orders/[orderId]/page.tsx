@@ -14,16 +14,17 @@ import {
     History,
     MessageSquare,
     Save,
-    Truck,
-    Printer,
+
     Building2,
     MapPin,
-    Phone
+    Phone,
+    FileText
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
+import Image from "next/image"
 
 export default function OrderDetailsPage() {
     const { orderId } = useParams()
@@ -35,7 +36,7 @@ export default function OrderDetailsPage() {
     const [isUpdating, setIsUpdating] = useState(false)
     const [newNote, setNewNote] = useState("")
     const [amId, setAmId] = useState<string | null>(null)
-    const [printType, setPrintType] = useState<'delivery' | 'invoice' | null>(null)
+    const [printType, setPrintType] = useState<'bon_commande' | null>(null)
 
     useEffect(() => {
         if (orderId) loadData()
@@ -60,12 +61,7 @@ export default function OrderDetailsPage() {
         }
     }
 
-    const handlePrint = (type: 'delivery' | 'invoice') => {
-        setPrintType(type)
-        setTimeout(() => {
-            window.print()
-        }, 100)
-    }
+
 
     const handleUpdateStatus = async (newStatus: string) => {
         if (!order || newStatus === order.status) return
@@ -86,8 +82,7 @@ export default function OrderDetailsPage() {
                 }, ...prev.auditLogs]
             }))
 
-            if (newStatus === 'shipped') handlePrint('delivery')
-            else if (newStatus === 'delivered') handlePrint('invoice')
+
 
         } catch (error: any) {
             toast.error(error.message)
@@ -121,6 +116,13 @@ export default function OrderDetailsPage() {
         }
     }
 
+    const handlePrint = () => {
+        setPrintType('bon_commande')
+        setTimeout(() => {
+            window.print()
+        }, 100)
+    }
+
     if (loading) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
             <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
@@ -132,24 +134,10 @@ export default function OrderDetailsPage() {
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] font-sans print:bg-white pb-20">
-            {/* Custom Styles for Print */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                @media print {
-                    @page { margin: 5mm; size: auto; }
-                    .print-hidden { display: none !important; }
-                    body { background: white !important; margin: 0; padding: 0; }
-                    .print-only { display: block !important; }
-                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    table { page-break-inside: auto; }
-                    tr { page-break-inside: avoid; page-break-after: auto; }
-                    .no-break { page-break-inside: avoid; }
-                }
-                .print-only { display: none; }
-            `}} />
+
 
             {/* Modern Clean Navbar */}
-            <nav className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 flex items-center justify-between sticky top-0 z-30 print-hidden supports-[backdrop-filter]:bg-white/60">
+            <nav className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 flex items-center justify-between sticky top-0 z-30 supports-[backdrop-filter]:bg-white/60 print:hidden">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-slate-400 hover:text-slate-900 rounded-full hover:bg-slate-100">
                         <ChevronLeft className="w-5 h-5" />
@@ -160,22 +148,20 @@ export default function OrderDetailsPage() {
                         {new Date(order.created_at).toLocaleDateString()}
                     </Badge>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handlePrint('delivery')} className="hidden sm:flex rounded-full text-xs font-bold text-slate-600 border-slate-300">
-                        <Truck className="w-3.5 h-3.5 mr-2" />
-                        Delivery Note
-                    </Button>
-                    <Button size="sm" onClick={() => handlePrint('invoice')} className="rounded-full text-xs font-bold shadow-lg shadow-primary/20 bg-slate-900 text-white hover:bg-slate-800">
-                        <Printer className="w-3.5 h-3.5 mr-2" />
-                        Invoice
-                    </Button>
-                </div>
-            </nav>
 
-            <main className="max-w-7xl mx-auto p-6 md:p-8 print:p-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Bon de Commande Button - Only visible when status is 'processing' */}
+                {order.status.toLowerCase() === 'processing' && (
+                    <Button onClick={handlePrint} size="sm" className="bg-slate-900 text-white hover:bg-slate-800 rounded-full text-xs font-bold shadow-lg shadow-primary/20">
+                        <FileText className="w-3.5 h-3.5 mr-2" />
+                        Bon de Commande
+                    </Button>
+                )}
+            </nav >
+
+            <main className="max-w-7xl mx-auto p-6 md:p-8 print:p-0 print:hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                 {/* HERO SECTION */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 print-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Status Card */}
                     <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/10 transition-colors duration-700" />
@@ -264,7 +250,7 @@ export default function OrderDetailsPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20 print-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
                     {/* Items List */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
@@ -363,74 +349,115 @@ export default function OrderDetailsPage() {
                 </div>
 
 
-                {/* PRINTABLE OVERLAYS (Standardized) */}
-                <div className="print-only w-full text-slate-900">
-                    {/* Header */}
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6 no-break">
-                        <div>
-                            <img src="/logo.png" alt="Logo" className="h-8 w-auto mb-2" />
-                            <div className="space-y-0.5 text-[10px] text-slate-500">
-                                <p className="font-black text-slate-900 text-xs text-nowrap">Didali Store SARL</p>
-                                <p>Casablanca, Morocco</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-1">
-                                {printType === 'delivery' ? 'Bon de Livraison' : 'Facture'}
-                            </h1>
-                            <div className="text-[10px] space-y-0.5">
-                                <p className="font-bold text-slate-900 text-xs">N° {order.order_number}</p>
-                                <p className="text-slate-500">Date: {new Date().toLocaleString('fr-FR')}</p>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Addresses */}
-                    <div className="grid grid-cols-2 gap-6 mb-6 no-break">
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Client</h3>
-                            <div className="space-y-0">
-                                <p className="font-black text-sm">{order.display_company_name}</p>
-                                <p className="text-[10px] text-slate-500 italic">Contact: {order.display_reseller_name}</p>
-                                <p className="text-[10px]">{order.customer_email}</p>
-                                <p className="text-[10px]">{order.customer_phone}</p>
-                            </div>
-                        </div>
-                        <div className="p-4">
-                            <h3 className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Adresse de Livraison</h3>
-                            <div className="text-right space-y-0">
-                                <p className="font-bold text-sm">{order.address_line1}</p>
-                                <p className="font-black text-[10px] text-primary">{order.city}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Table */}
-                    <table className="w-full mb-6 border-collapse no-break">
-                        <thead>
-                            <tr className="border-b-2 border-slate-900 text-slate-900">
-                                <th className="py-2 text-left text-[10px] font-black uppercase tracking-widest">Produit</th>
-                                <th className="py-2 text-center text-[10px] font-black uppercase tracking-widest">Quantité</th>
-                                {printType === 'invoice' && <th className="py-2 text-right text-[10px] font-black uppercase tracking-widest">PU (MAD)</th>}
-                                {printType === 'invoice' && <th className="py-2 text-right text-[10px] font-black uppercase tracking-widest">Total (MAD)</th>}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-slate-900">
-                            {order.items.map((item: any) => (
-                                <tr key={item.id}>
-                                    <td className="py-2">
-                                        <p className="font-bold text-sm">{item.product_title}</p>
-                                    </td>
-                                    <td className="py-2 text-center font-bold text-sm">{item.quantity}</td>
-                                    {printType === 'invoice' && <td className="py-2 text-right text-sm">{item.final_price?.toLocaleString('fr-FR')}</td>}
-                                    {printType === 'invoice' && <td className="py-2 text-right font-black text-sm">{item.subtotal.toLocaleString('fr-FR')}</td>}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
 
             </main>
-        </div>
+
+            {/* Printable "Bon de Commande" Section */}
+            <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans">
+                {/* Header */}
+                <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4 mb-6">
+                    <div>
+                        <div className="relative w-32 h-9 mb-2">
+                            <Image
+                                src="/logo.png"
+                                alt="Logo"
+                                fill
+                                className="object-contain object-left"
+                            />
+                        </div>
+                        <div className="text-xs text-gray-600">
+                            <p className="font-bold text-gray-900">Didali Store SARL</p>
+                            <p>Casablanca, Morocco</p>
+                            <p>Email: contact@dedalistore.com</p>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <h1 className="text-2xl font-black text-gray-900 uppercase">BON DE COMMANDE</h1>
+                        <div className="text-sm mt-2">
+                            <p><span className="font-bold">N° Commande:</span> {order.order_number}</p>
+                            <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Client & Shipping Info */}
+                <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Client</h3>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm">
+                            <p className="font-bold text-gray-900">{order.display_company_name}</p>
+                            <p className="text-gray-600">Attn: {order.display_reseller_name}</p>
+                            <p className="text-gray-600">{order.customer_email}</p>
+                            <p className="text-gray-600">{order.customer_phone}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">Adresse de Livraison</h3>
+                        <div className="text-sm text-right">
+                            <p className="font-bold text-gray-900">{order.customer_name}</p>
+                            <p className="text-gray-600">{order.address_line1}</p>
+                            {order.address_line2 && <p className="text-gray-600">{order.address_line2}</p>}
+                            <p className="text-gray-600">{order.city}, {order.governorate}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Items Table */}
+                <table className="w-full mb-8 border-collapse">
+                    <thead>
+                        <tr className="border-b-2 border-gray-900 text-gray-900">
+                            <th className="py-2 text-left text-xs font-bold uppercase tracking-wider">Produit</th>
+                            <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">Quantité</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Prix Unitaire</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {order.items.map((item: any, i: number) => (
+                            <tr key={i}>
+                                <td className="py-3 text-sm">
+                                    <p className="font-bold text-gray-900">{item.product_title}</p>
+                                    <p className="text-xs text-gray-500">{item.variant_name}</p>
+                                </td>
+                                <td className="py-3 text-center text-sm font-medium">{item.quantity}</td>
+                                <td className="py-3 text-right text-sm text-gray-600">{item.final_price?.toLocaleString('fr-FR')} MAD</td>
+                                <td className="py-3 text-right text-sm font-bold text-gray-900">{item.subtotal.toLocaleString('fr-FR')} MAD</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {/* Totals */}
+                <div className="flex justify-end mb-12">
+                    <div className="w-1/3 space-y-2">
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>Sous-total</span>
+                            <span>{order.subtotal.toLocaleString('fr-FR')} MAD</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>Livraison</span>
+                            <span>{order.shipping_cost.toLocaleString('fr-FR')} MAD</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                            <span>Total</span>
+                            <span>{order.total.toLocaleString('fr-FR')} MAD</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer / Signatures */}
+                <div className="flex justify-between items-end pt-8 border-t border-gray-200">
+                    <div className="text-xs text-gray-400">
+                        <p>Ce document est généré automatiquement.</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cachet et Signature</p>
+                        <div className="h-16 w-32 border border-gray-200 rounded-lg bg-gray-50"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div >
     )
 }

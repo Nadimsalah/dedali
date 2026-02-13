@@ -18,7 +18,7 @@ import {
     CheckCircle2,
     XCircle,
     Loader2,
-    Download
+    FileText
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -31,8 +31,9 @@ export default function ResellerOrderDetailsPage() {
     const router = useRouter()
     const orderId = params.id as string
 
-    const [order, setOrder] = useState<(Order & { order_items: OrderItem[] }) | null>(null)
+    const [order, setOrder] = useState<any>(null)
     const [loading, setLoading] = useState(true)
+    const [printType, setPrintType] = useState<'bon_commande' | null>(null)
 
     useEffect(() => {
         async function loadOrder() {
@@ -112,10 +113,10 @@ export default function ResellerOrderDetailsPage() {
     const isDelivered = order.status.toLowerCase() === 'delivered'
 
     return (
-        <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 print:bg-white print:py-0 print:px-0">
-            <div className="max-w-4xl mx-auto print:max-w-full">
+        <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white">
+            <div className="max-w-4xl mx-auto print:hidden">
                 {/* Header */}
-                <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+                <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <Link href="/reseller/dashboard">
                             <Button variant="outline" size="icon" className="rounded-full bg-white border-gray-200">
@@ -139,15 +140,22 @@ export default function ResellerOrderDetailsPage() {
                             </div>
                         </div>
                     </div>
-                    {isDelivered && (
-                        <Button variant="default" className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 rounded-xl px-6" onClick={() => window.print()}>
-                            <Download className={`w-4 h-4 ${isArabic ? "ml-2" : "mr-2"}`} />
-                            {isArabic ? "تحميل الفاتورة" : "Download Invoice"}
+                    {/* Bon de Commande Button */}
+                    {!loading && order && order.status.toLowerCase() === 'processing' && (
+                        <Button
+                            onClick={() => {
+                                setPrintType('bon_commande')
+                                setTimeout(() => window.print(), 100)
+                            }}
+                            className="bg-primary text-white hover:bg-primary/90"
+                        >
+                            <FileText className="w-4 h-4 mr-2" />
+                            {isArabic ? "بون الطلب" : "Bon de Commande"}
                         </Button>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column: Items */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
@@ -159,7 +167,7 @@ export default function ResellerOrderDetailsPage() {
                             </div>
                             <div className="p-6">
                                 <div className="space-y-6">
-                                    {order.order_items.map((item, i) => (
+                                    {order.order_items.map((item: any, i: number) => (
                                         <div key={i} className="flex gap-4">
                                             <div className="h-20 w-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0 relative border border-gray-100">
                                                 {item.product_image ? (
@@ -302,140 +310,114 @@ export default function ResellerOrderDetailsPage() {
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Synchronized Professional Invoice Layout (Print Only) */}
-                {isDelivered && (
-                    <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
-                        <style dangerouslySetInnerHTML={{
-                            __html: `
-                            @media print {
-                                @page { margin: 5mm; size: auto; }
-                                body { -webkit-print-color-adjust: exact !important; margin: 0; padding: 0; }
-                                .print-container { padding: 0 !important; }
-                                * { -webkit-print-color-adjust: exact !important; }
-                                table { page-break-inside: auto; }
-                                tr { page-break-inside: avoid; page-break-after: auto; }
-                            }
-                        `}} />
-
-                        {/* Invoice Header */}
-                        <div className="flex justify-between items-start border-b-2 border-[#1a1a1a] pb-4 mb-4">
-                            <div>
-                                <div className="relative w-32 h-9 mb-2">
-                                    <Image
-                                        src="/logo.png"
-                                        alt="Didali Store Logo"
-                                        fill
-                                        className="object-contain object-left"
-                                        priority
-                                    />
-                                </div>
-                                <div className="space-y-0 text-[10px] text-black/70 text-left">
-                                    <p className="font-black text-[#1a1a1a] text-xs">Didali Store</p>
-                                    <p className="italic">Premium IT Equipment</p>
-                                    <p>Casablanca, Morocco</p>
-                                    <p>Email: contact@dedalistore.com</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <h1 className="text-3xl font-black text-[#1a1a1a] uppercase mb-0 tracking-tighter">FACTURE</h1>
-                                <div className="space-y-0">
-                                    <p className="text-xs font-bold text-black/90">N° Commande: {order.order_number}</p>
-                                    <p className="text-[10px] text-black/60">Date: {new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
-                                    <p className="text-[10px] text-black/60">Statut: <span className="uppercase font-bold text-green-600">DELIVRÉ</span></p>
-                                </div>
-                            </div>
+            {/* Printable "Bon de Commande" Section */}
+            <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans">
+                {/* Header */}
+                <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4 mb-6">
+                    <div>
+                        <div className="relative w-32 h-9 mb-2">
+                            <Image
+                                src="/logo.png"
+                                alt="Logo"
+                                fill
+                                className="object-contain object-left"
+                            />
                         </div>
-
-                        {/* Billing & Shipping Info */}
-                        <div className="grid grid-cols-2 gap-4 mb-4 text-left">
-                            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                <h3 className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1">Facturé à</h3>
-                                <div className="space-y-0">
-                                    <p className="font-black text-sm text-[#1a1a1a]">{order.customer_name}</p>
-                                    <p className="text-[10px] text-black/80">{order.customer_email}</p>
-                                    <p className="text-[10px] text-black/80">{order.customer_phone}</p>
-                                </div>
-                            </div>
-                            <div className="p-3">
-                                <h3 className="text-[8px] font-black text-black/40 uppercase tracking-[0.2em] mb-1 text-right">Adresse de livraison</h3>
-                                <div className="text-right space-y-0">
-                                    <p className="font-black text-sm text-[#1a1a1a]">{order.customer_name}</p>
-                                    <p className="text-[10px] text-black/80">{order.address_line1}</p>
-                                    {order.address_line2 && <p className="text-[10px] text-black/80">{order.address_line2}</p>}
-                                    <p className="text-[10px] text-black/80 font-bold">{order.city}, {order.governorate}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Items Table */}
-                        <div className="mb-4">
-                            <table className="w-full border-collapse">
-                                <thead>
-                                    <tr className="border-b-2 border-black">
-                                        <th className="py-1 px-1 text-left text-[9px] uppercase font-black tracking-wider w-[50%]">Produit</th>
-                                        <th className="py-1 px-1 text-center text-[9px] uppercase font-black tracking-wider w-[15%]">Qté</th>
-                                        <th className="py-1 px-1 text-right text-[9px] uppercase font-black tracking-wider w-[15%]">PU</th>
-                                        <th className="py-1 px-1 text-right text-[9px] uppercase font-black tracking-wider w-[20%]">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {order.order_items.map((item, i) => (
-                                        <tr key={i}>
-                                            <td className="py-1.5 px-1 text-left">
-                                                <p className="font-bold text-[11px] text-[#1a1a1a]">{item.product_title}</p>
-                                                {item.variant_name && <p className="text-[8px] text-black/60 italic leading-none">{item.variant_name}</p>}
-                                            </td>
-                                            <td className="py-1.5 px-1 text-center font-bold text-[11px]">{item.quantity}</td>
-                                            <td className="py-1.5 px-1 text-right text-[11px] text-black/70">{(item.price || 0).toLocaleString('fr-FR')}</td>
-                                            <td className="py-1.5 px-1 text-right font-black text-[11px]">{(item.subtotal || 0).toLocaleString('fr-FR')}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Summary */}
-                        <div className="flex justify-end mb-4">
-                            <div className="w-48 space-y-0.5">
-                                <div className="flex justify-between items-center py-0.5 border-b border-gray-100 px-1">
-                                    <span className="text-[9px] font-bold text-black/60">Sous-total</span>
-                                    <span className="text-[10px] font-medium">{(order.subtotal || 0).toLocaleString('fr-FR')} MAD</span>
-                                </div>
-                                <div className="flex justify-between items-center py-0.5 border-b border-gray-100 px-1">
-                                    <span className="text-[9px] font-bold text-black/60">Livraison</span>
-                                    <span className="text-[10px] font-medium">{(order.shipping_cost || 0).toLocaleString('fr-FR')} MAD</span>
-                                </div>
-                                <div className="flex justify-between items-center py-1 bg-[#1a1a1a] text-white rounded-lg px-3 shadow-sm mt-1">
-                                    <span className="text-[9px] font-black uppercase tracking-wider">Total à payer</span>
-                                    <span className="text-base font-black font-mono">{(order.total || 0).toLocaleString('fr-FR')} MAD</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-black/10 text-left">
-                            <div>
-                                <h4 className="text-[8px] font-black text-[#1a1a1a] uppercase tracking-widest mb-1">Informations</h4>
-                                <p className="text-[8px] text-black/50 leading-tight">
-                                    Merci de votre confiance. Cette facture est une preuve de votre achat en tant que revendeur agréé.
-                                    Pour toute assistance technique: contact@dedalistore.com
-                                </p>
-                            </div>
-                            <div className="flex flex-col items-end justify-center">
-                                <div className="text-center">
-                                    <p className="text-[8px] text-black/40 font-black uppercase tracking-[0.3em] mb-1">Cachet & Signature</p>
-                                    <div className="w-24 h-10 border-2 border-dashed border-gray-200 rounded-lg"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 text-center">
-                            <p className="text-[8px] text-black/30 font-bold uppercase tracking-[0.2em]">Didali Store SARL — RC: 123456 — ICE: 0000000000000000</p>
+                        <div className="text-xs text-gray-600">
+                            <p className="font-bold text-gray-900">Didali Store SARL</p>
+                            <p>Casablanca, Morocco</p>
+                            <p>Email: contact@dedalistore.com</p>
                         </div>
                     </div>
-                )}
+                    <div className="text-right">
+                        <h1 className="text-2xl font-black text-gray-900 uppercase">BON DE COMMANDE</h1>
+                        <div className="text-sm mt-2">
+                            <p><span className="font-bold">N° Commande:</span> {order.order_number}</p>
+                            <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Client & Shipping Info */}
+                <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Client</h3>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm">
+                            {/* Try to show Reseller Info if available, else Customer Info (which might be the reseller) */}
+                            <p className="font-bold text-gray-900">{order.reseller?.company_name || order.customer_name}</p>
+                            <p className="text-gray-600">Attn: {order.reseller?.profile?.name || order.customer_name}</p>
+                            <p className="text-gray-600">{order.customer_email}</p>
+                            <p className="text-gray-600">{order.customer_phone}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">Adresse de Livraison</h3>
+                        <div className="text-sm text-right">
+                            <p className="font-bold text-gray-900">{order.customer_name}</p>
+                            <p className="text-gray-600">{order.address_line1}</p>
+                            {order.address_line2 && <p className="text-gray-600">{order.address_line2}</p>}
+                            <p className="text-gray-600">{order.city}, {order.governorate}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Items Table */}
+                <table className="w-full mb-8 border-collapse">
+                    <thead>
+                        <tr className="border-b-2 border-gray-900 text-gray-900">
+                            <th className="py-2 text-left text-xs font-bold uppercase tracking-wider">Produit</th>
+                            <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">Quantité</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Prix Unitaire</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {order.order_items.map((item: any, i: number) => (
+                            <tr key={i}>
+                                <td className="py-3 text-sm">
+                                    <p className="font-bold text-gray-900">{item.product_title}</p>
+                                    <p className="text-xs text-gray-500">{item.variant_name}</p>
+                                </td>
+                                <td className="py-3 text-center text-sm font-medium">{item.quantity}</td>
+                                <td className="py-3 text-right text-sm text-gray-600">{item.price?.toLocaleString('fr-FR')} MAD</td>
+                                <td className="py-3 text-right text-sm font-bold text-gray-900">{item.subtotal.toLocaleString('fr-FR')} MAD</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                {/* Totals */}
+                <div className="flex justify-end mb-12">
+                    <div className="w-1/3 space-y-2">
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>Sous-total</span>
+                            <span>{order.subtotal.toLocaleString('fr-FR')} MAD</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-600">
+                            <span>Livraison</span>
+                            <span>{order.shipping_cost.toLocaleString('fr-FR')} MAD</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
+                            <span>Total</span>
+                            <span>{order.total.toLocaleString('fr-FR')} MAD</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer / Signatures */}
+                <div className="flex justify-between items-end pt-8 border-t border-gray-200">
+                    <div className="text-xs text-gray-400">
+                        <p>Ce document est généré automatiquement.</p>
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cachet et Signature</p>
+                        <div className="h-16 w-32 border border-gray-200 rounded-lg bg-gray-50"></div>
+                    </div>
+                </div>
             </div>
+
         </div>
     )
 }
