@@ -9,9 +9,10 @@ import { Search, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PushNotificationManager } from "@/components/admin/push-notification-manager"
+import { AdminSearch } from "@/components/admin/admin-search"
 
 export default function AdminDashboard() {
-    const { language, toggleLanguage, t } = useLanguage()
+    const { t } = useLanguage()
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
             <PushNotificationManager />
@@ -36,28 +37,10 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="relative hidden md:block">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input
-                                placeholder={t("dashboard.admin.search_placeholder")}
-                                className="pl-9 w-64 rounded-full bg-background/50 border-white/10 focus:bg-background transition-all h-10"
-                            />
-                        </div>
-                        <Button
-                            onClick={toggleLanguage}
-                            variant="outline"
-                            className="gap-2 rounded-full border-white/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 font-bold h-10 px-3"
-                        >
-                            <span className="text-lg">
-                                {language === 'en' ? '🇺🇸' : '🇫🇷'}
-                            </span>
-                            <span className="text-xs uppercase tracking-wider">
-                                {language === 'en' ? 'EN' : 'FR'}
-                            </span>
-                        </Button>
-                        <Notifications />
 
+
+                    <div className="flex items-center gap-3">
+                        <Notifications />
                     </div>
                 </header>
 

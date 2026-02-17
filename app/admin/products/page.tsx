@@ -100,7 +100,7 @@ const allProducts = [
 
 export default function AdminProductsPage() {
     const { t, setLanguage } = useLanguage()
-    const [activeTab, setActiveTab] = useState("All")
+    const [activeTab, setActiveTab] = useState("Tous")
     const [searchQuery, setSearchQuery] = useState("")
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
@@ -111,13 +111,6 @@ export default function AdminProductsPage() {
     const [showCategoryDialog, setShowCategoryDialog] = useState(false)
     const [categorySearch, setCategorySearch] = useState("")
 
-    // Set French as default for dashboard
-    useEffect(() => {
-        const savedLang = localStorage.getItem("language")
-        if (!savedLang) {
-            setLanguage("fr")
-        }
-    }, [setLanguage])
 
     // Fetch products from Supabase
     useEffect(() => {
@@ -206,31 +199,31 @@ export default function AdminProductsPage() {
         }
     }
 
-    const tabs = ["All", ...categories.map(c => c.slug)]
+    const tabs = ["Tous", ...categories.map(c => c.slug)]
 
     const getCategoryName = (slug: string) => {
-        if (slug === "All") return "All"
+        if (slug === "Tous") return "Tous"
         const category = categories.find(c => c.slug === slug)
         return category?.name || slug
     }
 
     const filteredProducts = products.filter(product => {
-        const matchesTab = activeTab === "All" || product.category === activeTab
+        const matchesTab = activeTab === "Tous" || product.category === activeTab
         const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase())
         return matchesTab && matchesSearch
     })
 
     const getStockStatus = (stock: number) => {
-        if (stock === 0) return "Out of Stock"
-        if (stock < 10) return "Low Stock"
-        return "In Stock"
+        if (stock === 0) return "En rupture"
+        if (stock < 10) return "Stock faible"
+        return "En stock"
     }
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case "In Stock": return "bg-green-500/10 text-green-500 border-green-500/20"
-            case "Low Stock": return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-            case "Out of Stock": return "bg-red-500/10 text-red-500 border-red-500/20"
+            case "En stock": return "bg-green-500/10 text-green-500 border-green-500/20"
+            case "Stock faible": return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+            case "En rupture": return "bg-red-500/10 text-red-500 border-red-500/20"
             default: return "bg-secondary text-secondary-foreground"
         }
     }
@@ -244,7 +237,7 @@ export default function AdminProductsPage() {
         if (!file) return
 
         setUploading(true)
-        setUploadStatus("Parsing CSV...")
+        setUploadStatus("Analyse du CSV...")
 
         Papa.parse(file, {
             header: true,
@@ -288,7 +281,7 @@ export default function AdminProductsPage() {
                 })
 
                 if (newCategoriesToInsert.length > 0) {
-                    setUploadStatus(`Creating ${newCategoriesToInsert.length} new categories...`)
+                    setUploadStatus(`Création de ${newCategoriesToInsert.length} nouvelles catégories...`)
                     const { error: catError } = await supabase
                         .from('categories')
                         .insert(newCategoriesToInsert)
@@ -303,7 +296,7 @@ export default function AdminProductsPage() {
                 }
 
                 // 2. Transform Data
-                setUploadStatus(`Processing ${rows.length} rows...`)
+                setUploadStatus(`Traitement de ${rows.length} lignes...`)
 
                 // Flexible check for required title column
                 const firstRow = rows[0] || {}
@@ -311,7 +304,7 @@ export default function AdminProductsPage() {
 
                 if (!titleKey) {
                     console.error("CSV Missing 'Title' or 'title' column. Available keys:", Object.keys(firstRow))
-                    setUploadStatus("Error: CSV must have a 'Title' or 'title' column.")
+                    setUploadStatus("Erreur : Le CSV doit avoir une colonne 'Title' ou 'title'.")
                     setUploading(false)
                     return
                 }
@@ -368,7 +361,7 @@ export default function AdminProductsPage() {
 
                 if (validProducts.length === 0) {
                     console.warn("No valid products found. First row keys:", rows[0] ? Object.keys(rows[0]) : "No rows")
-                    setUploadStatus("No valid products found. Check CSV headers (Title, Body (HTML), etc).")
+                    setUploadStatus("Aucun produit valide trouvé. Vérifiez les en-têtes du CSV (Title, Body (HTML), etc).")
                     setUploading(false)
                     return
                 }
@@ -380,7 +373,7 @@ export default function AdminProductsPage() {
                 try {
                     for (let i = 0; i < validProducts.length; i += BATCH_SIZE) {
                         const batch = validProducts.slice(i, i + BATCH_SIZE)
-                        setUploadStatus(`Uploading batch ${Math.floor(i / BATCH_SIZE) + 1}...`)
+                        setUploadStatus(`Téléchargement du lot ${Math.floor(i / BATCH_SIZE) + 1}...`)
 
                         const { error } = await supabase
                             .from('products')
@@ -394,7 +387,7 @@ export default function AdminProductsPage() {
                         insertedCount += batch.length
                     }
 
-                    setUploadStatus(`Success! Uploaded ${insertedCount} products.`)
+                    setUploadStatus(`Succès ! ${insertedCount} produits téléchargés.`)
                     loadProducts() // Refresh list
                     // Clear file input
                     event.target.value = ""
@@ -459,7 +452,7 @@ export default function AdminProductsPage() {
                             {uploading ? (
                                 <span className="flex items-center gap-2">
                                     <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    {uploadStatus || "Uploading..."}
+                                    {uploadStatus || "Téléchargement..."}
                                 </span>
                             ) : (
                                 <>

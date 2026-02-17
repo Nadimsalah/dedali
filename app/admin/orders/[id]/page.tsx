@@ -14,8 +14,21 @@ import {
     History,
     User,
     Mail,
-    FileText
+    FileText,
+    Truck,
+    Search,
+    MapPin,
+    Loader2
 } from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import Image from "next/image"
 import { supabase } from "@/lib/supabase"
@@ -31,6 +44,13 @@ export default function OrderDetailsPage() {
     const [loading, setLoading] = useState(true)
     const [updating, setUpdating] = useState(false)
     const [printType, setPrintType] = useState<'bon_commande' | null>(null)
+
+    // Delivery Assignment
+    const [deliveryMen, setDeliveryMen] = useState<any[]>([])
+    const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false)
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState("")
+    const [dmSearchQuery, setDmSearchQuery] = useState("")
+    const [pendingStatus, setPendingStatus] = useState<string | null>(null)
 
     // Set French as default for dashboard
     useEffect(() => {
@@ -59,21 +79,43 @@ export default function OrderDetailsPage() {
 
     const handleStatusChange = async (newStatus: string) => {
         if (!order) return
-        setUpdating(true)
         const statusLower = newStatus.toLowerCase()
 
-        // Use Server Action to bypass RLS and create logs
-        // Pass the Actor ID from client session to properly attribute the log
+        console.log(`[AdminStatus] Target: ${statusLower}, Current: ${order.status}`)
+
+        if (statusLower === 'shipped') {
+            console.log("[AdminStatus] Opening delivery modal")
+            setPendingStatus(statusLower)
+            setIsDeliveryModalOpen(true)
+            // Load delivery men if not already loaded
+            if (deliveryMen.length === 0) {
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('id, name, city, phone')
+                    .eq('role', 'DELIVERY_MAN')
+                    .eq('is_blocked', false)
+                console.log("[AdminStatus] Loaded delivery men:", data?.length || 0)
+                setDeliveryMen(data || [])
+            }
+            return
+        }
+
+        if (statusLower === order.status) return
+        await performStatusUpdate(statusLower)
+    }
+
+    const performStatusUpdate = async (statusLower: string, deliveryManId?: string) => {
+        setUpdating(true)
         const { data: { user } } = await supabase.auth.getUser()
-        const { error, success } = await updateOrderStatusAdmin(order.id, statusLower, user?.id)
+        const { error, success } = await updateOrderStatusAdmin(order.id, statusLower, user?.id, deliveryManId)
 
         if (error) {
             toast.error(`Failed to update status: ${error}`)
         } else if (success) {
-            // Optimistic update
             setOrder((prev: any) => ({
                 ...prev,
                 status: statusLower,
+                delivery_man_id: deliveryManId || prev.delivery_man_id,
                 auditLogs: [{
                     id: `temp-${Date.now()}`,
                     new_status: statusLower,
@@ -81,8 +123,8 @@ export default function OrderDetailsPage() {
                     changed_by_user: { name: 'You (Just Now)' }
                 }, ...(prev.auditLogs || [])]
             }))
-
-            toast.success(`Order status updated to ${newStatus}`)
+            toast.success(`Statut mis à jour : ${statusLower}`)
+            setIsDeliveryModalOpen(false)
         }
         setUpdating(false)
     }
@@ -183,8 +225,8 @@ export default function OrderDetailsPage() {
                             <p className="text-[10px] text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                         </div>
                     </div>
-                    {/* Bon de Commande Button - Only visible when status is 'processing' */}
-                    {order.status.toLowerCase() === 'processing' && (
+                    {/* Bon de Commande Button - Visible on all steps except 'pending' or 'cancelled' */}
+                    {order.status.toLowerCase() !== 'pending' && order.status.toLowerCase() !== 'cancelled' && (
                         <Button onClick={handlePrint} className="bg-primary text-primary-foreground hover:bg-primary/90">
                             <FileText className="w-4 h-4 mr-2" />
                             Bon de Commande
@@ -219,7 +261,10 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-foreground">{item.product_title}</h4>
-                                            <p className="text-sm text-muted-foreground">Qty: {item.quantity} × MAD {item.final_price}</p>
+                                            <div className="flex items-center gap-2 mt-0.5">
+                                                <p className="text-xs text-muted-foreground">Qté: {item.quantity} × MAD {item.final_price}</p>
+                                                <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded-md font-medium">📍 {item.warehouse_name}</span>
+                                            </div>
                                         </div>
                                         <div className="text-right">
                                             <p className="font-bold text-foreground">MAD {item.subtotal}</p>
@@ -290,6 +335,11 @@ export default function OrderDetailsPage() {
                                             <span className="text-xs font-bold text-foreground capitalize mb-0.5">
                                                 {getStatusLabel(log.new_status)}
                                             </span>
+                                            {log.new_status === 'cancelled' && order.delivery_failed_reason && (
+                                                <span className="text-[10px] text-red-500 font-medium block">
+                                                    Raison: {order.delivery_failed_reason}
+                                                </span>
+                                            )}
                                             <span className="text-[10px] text-muted-foreground">
                                                 {new Date(log.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -417,7 +467,8 @@ export default function OrderDetailsPage() {
                                 <tr key={i}>
                                     <td className="py-3 text-sm">
                                         <p className="font-bold text-gray-900">{item.product_title}</p>
-                                        <p className="text-xs text-gray-500">{item.variant_name}</p>
+                                        <p className="text-xs text-gray-600">{item.variant_name}</p>
+                                        <p className="text-[10px] text-blue-600 font-medium mt-1">📍 {item.warehouse_name}</p>
                                     </td>
                                     <td className="py-3 text-center text-sm font-medium">{item.quantity}</td>
                                     <td className="py-3 text-right text-sm text-gray-600">{item.final_price?.toLocaleString('fr-FR')} MAD</td>
@@ -457,6 +508,63 @@ export default function OrderDetailsPage() {
                     </div>
                 </div>
 
+                {/* Delivery Assignment Modal */}
+                <Dialog open={isDeliveryModalOpen} onOpenChange={setIsDeliveryModalOpen}>
+                    <DialogContent className="glass-strong border-white/10 rounded-[2rem] max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black">Assigner un Livreur</DialogTitle>
+                            <DialogDescription>Choisissez le livreur responsable de cette expédition.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Rechercher par nom ou ville..."
+                                    value={dmSearchQuery}
+                                    onChange={(e) => setDmSearchQuery(e.target.value)}
+                                    className="pl-10 h-11 rounded-xl bg-white/5 border-white/10"
+                                />
+                            </div>
+                            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {deliveryMen
+                                    .filter(m =>
+                                        (m.name || "").toLowerCase().includes(dmSearchQuery.toLowerCase()) ||
+                                        (m.city || "").toLowerCase().includes(dmSearchQuery.toLowerCase())
+                                    )
+                                    .map(m => (
+                                        <div
+                                            key={m.id}
+                                            onClick={() => setSelectedDeliveryId(m.id)}
+                                            className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between \${selectedDeliveryId === m.id ? 'bg-primary/10 border-primary shadow-sm' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                                    {(m.name || "?").charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-foreground">{m.name}</p>
+                                                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
+                                                        <MapPin className="w-3 h-3" />
+                                                        {m.city || "Ville non définie"}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {selectedDeliveryId === m.id && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                className="w-full h-12 rounded-xl font-bold bg-primary text-primary-foreground"
+                                disabled={!selectedDeliveryId || updating}
+                                onClick={() => performStatusUpdate(pendingStatus || 'shipped', selectedDeliveryId)}
+                            >
+                                {updating ? <Loader2 className="animate-spin" /> : "Confirmer l'expédition"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </main>
         </div>
     )

@@ -49,6 +49,11 @@ export default function ResellerDashboard() {
                     .eq('id', user.id)
                     .maybeSingle()
 
+                if (profileRow?.role === 'DELIVERY_MAN') {
+                    router.push('/delivery/dashboard')
+                    return
+                }
+
                 if (profileRow?.role === 'ACCOUNT_MANAGER') {
                     // Redirect account managers to their own dashboard
                     router.push('/manager/resellers')

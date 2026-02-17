@@ -23,7 +23,7 @@ export default function ProductPage() {
   const productId = params.id as string
   const router = useRouter()
   const { addItem, cartCount } = useCart()
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [product, setProduct] = useState<Product | null>(null)
@@ -93,21 +93,20 @@ export default function ProductPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Product not found</h2>
+          <h2 className="text-2xl font-bold mb-2">Produit non trouvé</h2>
           <Button asChild variant="outline">
-            <Link href="/">Return to Home</Link>
+            <Link href="/">Retour à l'accueil</Link>
           </Button>
         </div>
       </div>
     )
   }
 
-  const isArabic = language === 'ar'
-  const displayTitle = isArabic && product.title_ar ? product.title_ar : product.title
-  const displayDescription = isArabic && product.description_ar ? product.description_ar : product.description || ""
-  const displayBenefits = isArabic && product.benefits_ar ? product.benefits_ar : product.benefits || []
-  const displayIngredients = isArabic && product.ingredients_ar ? product.ingredients_ar : product.ingredients || ""
-  const displayHowToUse = isArabic && product.how_to_use_ar ? product.how_to_use_ar : product.how_to_use || ""
+  const displayTitle = product.title
+  const displayDescription = product.description || ""
+  const displayBenefits = product.benefits || []
+  const displayIngredients = product.ingredients || ""
+  const displayHowToUse = product.how_to_use || ""
 
   const inStock = product.stock > 0
   const stockLevel = product.stock
@@ -158,9 +157,9 @@ export default function ProductPage() {
       <main className="container mx-auto px-4 py-8">
         {/* Breadcrumb - Hidden on mobile for cleaner look */}
         <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground mb-8">
-          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+          <Link href="/" className="hover:text-primary transition-colors">Accueil</Link>
           <span>/</span>
-          <Link href="/#shop" className="hover:text-primary transition-colors">Shop</Link>
+          <Link href="/#shop" className="hover:text-primary transition-colors">Boutique</Link>
           <span>/</span>
           <span className="text-foreground font-medium truncate">{displayTitle}</span>
         </div>
@@ -256,10 +255,10 @@ export default function ProductPage() {
                     if (tierPrice) {
                       const label =
                         tier === 'wholesaler'
-                          ? 'Wholesaler Price'
+                          ? 'Prix Grossiste'
                           : tier === 'partner'
-                            ? 'Partner Price'
-                            : 'Reseller Price'
+                            ? 'Prix Partenaire'
+                            : 'Prix Revendeur'
 
                       return (
                         <>
@@ -276,7 +275,7 @@ export default function ProductPage() {
                           </div>
                           <div className="flex flex-col items-start border-l pl-4 border-primary/20">
                             <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
-                              Regular
+                              Standard
                             </span>
                             <span className="text-lg text-muted-foreground line-through decoration-destructive/30 decoration-2">
                               {t('common.currency')} {product.price} <span className="text-[10px] align-middle">TTC</span>
@@ -462,11 +461,11 @@ export default function ProductPage() {
                   {t('product.you_may_also_like')}
                 </h2>
                 <p className="text-muted-foreground max-w-xl text-lg">
-                  Elevate your routine with these carefully selected companions from our collection.
+                  Équipez-vous avec le meilleur matériel informatique de notre collection.
                 </p>
               </div>
               <Button variant="ghost" className="hidden sm:flex rounded-full text-primary hover:bg-primary/5" asChild>
-                <Link href="/#shop">View All Products</Link>
+                <Link href="/#shop">Voir tous les produits</Link>
               </Button>
             </div>
 
@@ -480,14 +479,14 @@ export default function ProductPage() {
                   <div className="aspect-square rounded-2xl overflow-hidden mb-4 sm:mb-6 bg-muted relative">
                     <Image
                       src={(item.images && item.images[0]) || "/placeholder.svg"}
-                      alt={isArabic && item.title_ar ? item.title_ar : item.title}
+                      alt={item.title}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                     {/* Discount Badge Removed */}
                   </div>
                   <h3 className="font-bold text-foreground text-sm sm:text-lg mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                    {isArabic && item.title_ar ? item.title_ar : item.title}
+                    {item.title}
                   </h3>
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex flex-col">
@@ -577,7 +576,7 @@ export default function ProductPage() {
                 />
               </Link>
               <p className="text-muted-foreground/80 max-w-sm leading-relaxed text-sm">
-                Didali Store - Your trusted partner for IT hardware and solutions in Morocco. Empowering businesses with technology.
+                Didali Store - Votre partenaire de confiance pour le matériel et les solutions informatiques au Maroc.
               </p>
             </div>
 

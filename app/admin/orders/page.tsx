@@ -12,15 +12,23 @@ import { getOrders, type Order } from "@/lib/supabase-api"
 import { Notifications } from "@/components/admin/notifications"
 import {
     Search,
-    Filter,
-    Download,
-    Calendar,
+    Calendar as CalendarIcon,
     ChevronLeft,
     ChevronRight,
     MoreHorizontal,
     Eye,
-    ShoppingBag
+    ShoppingBag,
+    X
 } from "lucide-react"
+import { DateRange } from "react-day-picker"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 
 export default function AdminOrdersPage() {
     const { t, setLanguage, language } = useLanguage()
@@ -31,6 +39,11 @@ export default function AdminOrdersPage() {
     const [orders, setOrders] = useState<Order[]>([])
     const [totalOrders, setTotalOrders] = useState(0)
     const [loading, setLoading] = useState(true)
+    const [date, setDate] = useState<DateRange | undefined>()
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1)
+    const ITEMS_PER_PAGE = 10
 
     // Set French as default for dashboard
     useEffect(() => {
@@ -41,18 +54,42 @@ export default function AdminOrdersPage() {
     }, [setLanguage])
 
     useEffect(() => {
+        // Reset page active tab changes
+        setCurrentPage(1)
+    }, [activeTab, customerId, date])
+
+    useEffect(() => {
         async function loadOrders() {
             setLoading(true)
+            const offset = (currentPage - 1) * ITEMS_PER_PAGE
             const { data, count } = await getOrders({
                 status: activeTab === "All" ? undefined : activeTab.toLowerCase(),
-                customer_id: customerId || undefined
+                customer_id: customerId || undefined,
+                limit: ITEMS_PER_PAGE,
+                offset: offset,
+                startDate: date?.from,
+                endDate: date?.to
             })
             setOrders(data)
             setTotalOrders(count)
             setLoading(false)
         }
         loadOrders()
-    }, [activeTab, customerId])
+    }, [activeTab, customerId, currentPage, date])
+
+    const totalPages = Math.ceil(totalOrders / ITEMS_PER_PAGE)
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(prev => prev + 1)
+        }
+    }
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(prev => prev - 1)
+        }
+    }
 
     const tabs = ["All", "Processing", "Delivered", "Pending", "Cancelled"] as const
 
@@ -121,7 +158,7 @@ export default function AdminOrdersPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         <Notifications />
                     </div>
                 </header>
@@ -156,9 +193,52 @@ export default function AdminOrdersPage() {
                                     className="pl-9 rounded-xl bg-white/5 border-white/10 focus:bg-white/10 h-10"
                                 />
                             </div>
-                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl bg-white/5 border-white/10">
-                                <Calendar className="w-4 h-4" />
-                            </Button>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        id="date"
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-fit justify-start text-left font-normal rounded-xl bg-white/5 border-white/10 hover:bg-white/10 h-10",
+                                            !date && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {date?.from ? (
+                                            date.to ? (
+                                                <>
+                                                    {format(date.from, "LLL dd, y")} -{" "}
+                                                    {format(date.to, "LLL dd, y")}
+                                                </>
+                                            ) : (
+                                                format(date.from, "LLL dd, y")
+                                            )
+                                        ) : (
+                                            <span>Pick a date</span>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={date?.from}
+                                        selected={date}
+                                        onSelect={setDate}
+                                        numberOfMonths={2}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            {date && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setDate(undefined)}
+                                    className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            )}
                         </div>
                     </div>
 
@@ -194,7 +274,7 @@ export default function AdminOrdersPage() {
                                 ))
                             ) : (
                                 <div className="text-center text-muted-foreground py-8">
-                                    {loading ? t("admin.orders.loading") : t("admin.orders.no_orders")}
+                                    {loading ? t("admin.orders.loading") : t("admin.orders.no_orders_match")}
                                 </div>
                             )}
                         </div>
@@ -265,12 +345,28 @@ export default function AdminOrdersPage() {
 
                         {/* Pagination */}
                         <div className="p-4 border-t border-white/10 flex items-center justify-between">
-                            <p className="text-sm text-muted-foreground">{t("admin.orders.showing").replace("{current}", `1-${orders.length}`).replace("{total}", totalOrders.toString())}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {t("admin.orders.showing")
+                                    .replace("{current}", `${Math.min(filteredOrders.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0, totalOrders)}-${Math.min(currentPage * ITEMS_PER_PAGE, totalOrders)}`)
+                                    .replace("{total}", totalOrders.toString())}
+                            </p>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-transparent border-white/10" disabled>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg bg-transparent border-white/10 hover:bg-white/10 disabled:opacity-30"
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1 || loading}
+                                >
                                     <ChevronLeft className="w-4 h-4" />
                                 </Button>
-                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg bg-transparent border-white/10">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-lg bg-transparent border-white/10 hover:bg-white/10 disabled:opacity-30"
+                                    onClick={handleNextPage}
+                                    disabled={currentPage >= totalPages || loading}
+                                >
                                     <ChevronRight className="w-4 h-4" />
                                 </Button>
                             </div>

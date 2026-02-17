@@ -86,20 +86,7 @@ export default function CheckoutSuccessPage() {
                         </p>
                     </div>
 
-                    {/* Coupon Section */}
-                    <div className="glass-strong rounded-2xl p-6 mb-8 border border-dashed border-primary/30 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
-                        <div className="relative">
-                            <p className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">{t('success.coupon_title')}</p>
-                            <div className="flex items-center justify-center gap-3 mb-2">
-                                <span className="text-2xl sm:text-3xl font-bold font-mono text-foreground">THANKYOU20</span>
-                                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-primary/20" onClick={copyCoupon}>
-                                    <Copy className="w-4 h-4 text-primary" />
-                                </Button>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{t('success.coupon_desc')}</p>
-                        </div>
-                    </div>
+
 
                     <Link href={redirectUrl}>
                         <Button size="lg" className="rounded-full w-full sm:w-auto px-10 h-12 text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all hover:scale-105">

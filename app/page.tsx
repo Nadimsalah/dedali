@@ -535,18 +535,7 @@ export default function HomePage() {
                   </span>
                 </Button>
               </Link>
-              <Button
-                onClick={toggleLanguage}
-                variant="outline"
-                className="hidden sm:flex gap-2 rounded-full ml-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-300 font-bold min-w-[80px]"
-              >
-                <span className="text-lg">
-                  {language === 'en' ? '🇺🇸' : '🇫🇷'}
-                </span>
-                <span className="text-xs uppercase tracking-wider">
-                  {language === 'en' ? 'EN' : language === 'fr' ? 'FR' : 'AR'}
-                </span>
-              </Button>
+
 
               {/* Mobile Menu */}
               <Sheet>

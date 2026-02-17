@@ -12,11 +12,10 @@ import { Search, ArrowRight, X, ChevronLeft, Loader2, ShoppingBag } from "lucide
 
 // Simple best-sellers grid: reuse products API and show top products when no search query
 function BestSellersGrid() {
-    const { t, language } = useLanguage()
+    const { t } = useLanguage()
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(false)
     const [resellerTier, setResellerTier] = useState<string | null>(null)
-    const isArabic = language === "ar"
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -50,7 +49,7 @@ function BestSellersGrid() {
             <div className="flex flex-col items-center justify-center py-10 gap-3">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 <p className="text-muted-foreground text-sm">
-                    {isArabic ? "جاري تحميل المنتجات..." : "Loading products..."}
+                    Chargement des produits...
                 </p>
             </div>
         )
@@ -59,7 +58,7 @@ function BestSellersGrid() {
     if (products.length === 0) {
         return (
             <p className="text-muted-foreground">
-                {isArabic ? "لا توجد منتجات متاحة الآن." : "No products available yet."}
+                Aucun produit disponible pour le moment.
             </p>
         )
     }
@@ -76,14 +75,14 @@ function BestSellersGrid() {
                     <div className="aspect-square rounded-3xl overflow-hidden mb-6 relative">
                         <Image
                             src={product.images?.[0] || "/placeholder.svg"}
-                            alt={isArabic && product.title_ar ? product.title_ar : product.title}
+                            alt={product.title}
                             fill
                             className="object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                     </div>
                     <div className="space-y-3 relative z-10">
                         <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-base sm:text-lg leading-tight line-clamp-2">
-                            {isArabic && product.title_ar ? product.title_ar : product.title}
+                            {product.title}
                         </h3>
                         <div className="flex items-center justify-between gap-2 pt-2">
                             <div className="flex flex-col">
@@ -134,7 +133,7 @@ function BestSellersGrid() {
 }
 
 export default function SearchPage() {
-    const { t, language } = useLanguage()
+    const { t } = useLanguage()
     const [query, setQuery] = useState("")
     const [results, setResults] = useState<Product[]>([])
     const [loading, setLoading] = useState(false)
@@ -176,7 +175,6 @@ export default function SearchPage() {
         return () => clearTimeout(delayDebounceFn)
     }, [query])
 
-    const isArabic = language === 'ar'
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
@@ -191,7 +189,7 @@ export default function SearchPage() {
                 <div className="flex items-center gap-4 mb-12">
                     <Link href="/">
                         <Button variant="ghost" size="icon" className="rounded-full glass hover:bg-white/20 transition-all">
-                            {isArabic ? <ArrowRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+                            <ChevronLeft className="w-5 h-5" />
                         </Button>
                     </Link>
                     <Image src="/logo.webp" alt="Didali Store" width={106} height={30} className="h-8 w-auto" />
@@ -206,9 +204,9 @@ export default function SearchPage() {
                                 ref={inputRef}
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder={isArabic ? "ابحث عن منتجك المفضل..." : "Search for your favorite products..."}
+                                placeholder="Rechercher vos produits préférés..."
                                 className="bg-transparent border-0 focus-visible:ring-0 text-xl sm:text-2xl h-14 sm:h-16 placeholder:text-muted-foreground/50 transition-all font-medium"
-                                dir={isArabic ? "rtl" : "ltr"}
+                                dir="ltr"
                             />
                             {query && (
                                 <Button
@@ -230,7 +228,7 @@ export default function SearchPage() {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                        <p className="text-muted-foreground animate-pulse font-medium">{isArabic ? "جاري البحث..." : "Searching products..."}</p>
+                        <p className="text-muted-foreground animate-pulse font-medium">Recherche en cours...</p>
                     </div>
                 ) : results.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -246,7 +244,7 @@ export default function SearchPage() {
                                 <div className="aspect-square rounded-3xl overflow-hidden mb-6 relative">
                                     <Image
                                         src={product.images[0] || "/placeholder.svg"}
-                                        alt={isArabic && product.title_ar ? product.title_ar : product.title}
+                                        alt={product.title}
                                         fill
                                         className="object-cover group-hover:scale-110 transition-transform duration-700"
                                     />
@@ -259,7 +257,7 @@ export default function SearchPage() {
 
                                 <div className="space-y-3 relative z-10">
                                     <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-base sm:text-lg leading-tight line-clamp-2">
-                                        {isArabic && product.title_ar ? product.title_ar : product.title}
+                                        {product.title}
                                     </h3>
                                     <div className="flex items-center justify-between gap-2 pt-2">
                                         <div className="flex flex-col">
@@ -311,22 +309,16 @@ export default function SearchPage() {
                         <div className="w-20 h-20 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-6">
                             <Search className="w-10 h-10 text-muted-foreground" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2 text-foreground">{isArabic ? "لم يتم العثور على نتائج" : "No results found"}</h2>
-                        <p className="text-muted-foreground max-w-sm mx-auto">
-                            {isArabic
-                                ? `لم نجد أي منتجات تطابق "${query}". حاول استخدام كلمات بحث مختلفة.`
-                                : `We couldn't find any products matching "${query}". Try using different keywords.`}
-                        </p>
+                        <h2 className="text-2xl font-bold mb-2 text-foreground">Aucun résultat trouvé</h2>
+                        Nous n'avons trouvé aucun produit correspondant à "{query}". Essayez d'utiliser des mots-clés différents.
                     </div>
                 ) : (
                     <div className="max-w-4xl mx-auto py-20 text-center animate-in fade-in duration-700">
                         <h3 className="text-muted-foreground font-medium mb-8 uppercase tracking-widest text-sm opacity-50">
-                            {isArabic ? "الأكثر مبيعًا" : "Best Sellers"}
+                            Meilleures Ventes
                         </h3>
                         <p className="text-muted-foreground mb-10 max-w-xl mx-auto">
-                            {isArabic
-                                ? "تصفح أكثر منتجاتنا مبيعًا وابدأ التسوق مباشرة."
-                                : "Browse our best-selling products and start shopping instantly."}
+                            Parcourez nos produits les plus populaires et commencez vos achats instantanément.
                         </p>
                         {/* Reuse home page shop section: show top products by created_at (most recent as proxy for top sellers) */}
                         <BestSellersGrid />

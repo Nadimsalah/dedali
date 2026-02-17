@@ -56,15 +56,15 @@ export function Notifications() {
         <Popover>
             <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full relative hover:bg-primary/10 transition-colors">
-                    <Bell className="w-5 h-5 text-foreground" />
+                    <Bell className="w-5 h-5 text-red-500" />
                     {unreadCount > 0 && (
-                        <span className="absolute top-2.5 right-2.5 w-4 h-4 bg-destructive text-[10px] font-bold text-white rounded-full ring-2 ring-background flex items-center justify-center">
+                        <span className="absolute top-2 right-2 w-4 h-4 bg-destructive text-[10px] font-bold text-white rounded-full ring-2 ring-background flex items-center justify-center animate-pulse">
                             {unreadCount}
                         </span>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 glass-strong border-white/10 rounded-3xl overflow-hidden shadow-2xl" align="end">
+            <PopoverContent className="w-[calc(100vw-2rem)] sm:w-80 mr-4 sm:mr-0 p-0 glass-strong border-white/10 rounded-3xl overflow-hidden shadow-2xl" align="end">
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
                     <h4 className="font-bold text-sm">Notifications</h4>
                     {unreadCount > 0 && (
@@ -101,7 +101,7 @@ export function Notifications() {
                                                 {formatDistanceToNow(new Date(notif.time), { addSuffix: true })}
                                             </span>
                                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full capitalize ${notif.status === 'delivered' ? 'bg-green-500/10 text-green-500' :
-                                                    'bg-primary/10 text-primary'
+                                                'bg-primary/10 text-primary'
                                                 }`}>
                                                 {notif.status}
                                             </span>

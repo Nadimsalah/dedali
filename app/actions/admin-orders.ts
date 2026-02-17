@@ -3,7 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 
-export async function updateOrderStatusAdmin(orderId: string, status: string, actorId?: string) {
+export async function updateOrderStatusAdmin(orderId: string, status: string, actorId?: string, deliveryManId?: string) {
     console.log(`[Admin Action] Updating order ${orderId} to status: ${status} by ${actorId || 'system'}`)
 
     try {
@@ -17,12 +17,19 @@ export async function updateOrderStatusAdmin(orderId: string, status: string, ac
         const oldStatus = oldOrder?.status || 'unknown'
 
         // 2. Update Order Status
+        const updateData: any = {
+            status: status,
+            updated_at: new Date().toISOString()
+        }
+
+        if (deliveryManId) {
+            updateData.delivery_man_id = deliveryManId
+            updateData.delivery_assigned_at = new Date().toISOString()
+        }
+
         const { data, error } = await supabaseAdmin
             .from('orders')
-            .update({
-                status: status,
-                updated_at: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', orderId)
             .select()
             .single()
@@ -76,7 +83,13 @@ export async function getOrderDetailsAdmin(orderId: string) {
         // Fetch Items
         const { data: items, error: itemsError } = await supabaseAdmin
             .from('order_items')
-            .select('*')
+            .select(`
+                *,
+                product:products (
+                    id,
+                    warehouse:warehouses (name)
+                )
+            `)
             .eq('order_id', orderId)
 
         if (itemsError) throw itemsError
@@ -130,9 +143,10 @@ export async function getOrderDetailsAdmin(orderId: string) {
                 if (rData) {
                     companyName = rData.company_name || "Un-named Company"
                     // Fix: Profile handling
-                    const pName = Array.isArray(rData.profile)
-                        ? rData.profile[0]?.name
-                        : rData.profile?.name
+                    const profile: any = rData.profile
+                    const pName = Array.isArray(profile)
+                        ? profile[0]?.name
+                        : profile?.name
                     resellerName = pName || "Unknown Reseller"
                     order.reseller = rData
                 }
@@ -157,9 +171,10 @@ export async function getOrderDetailsAdmin(orderId: string) {
 
                     if (rData) {
                         companyName = rData.company_name || "Un-named Company"
-                        const pName = Array.isArray(rData.profile)
-                            ? rData.profile[0]?.name
-                            : rData.profile?.name
+                        const profile: any = rData.profile
+                        const pName = Array.isArray(profile)
+                            ? profile[0]?.name
+                            : profile?.name
                         resellerName = pName || "Unknown Reseller"
                         order.reseller = rData
                     } else if (order.customer_name) {
@@ -179,7 +194,8 @@ export async function getOrderDetailsAdmin(orderId: string) {
         const formattedItems = items.map((item: any) => ({
             ...item,
             image_url: item.product_image || null,
-            final_price: item.price
+            final_price: item.price,
+            warehouse_name: item.product?.warehouse?.name || "N/A"
         }))
 
         // 3. Return Clean Object

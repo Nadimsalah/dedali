@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { updateOrderStatusAdmin, getOrderDetailsAdmin } from "@/app/actions/admin-orders"
+import { getActiveDeliveryMen } from "@/app/actions/delivery-men"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,17 +15,29 @@ import {
     History,
     MessageSquare,
     Save,
-
     Building2,
     MapPin,
     Phone,
-    FileText
+    FileText,
+    Truck,
+    Search,
+    Loader2,
+    CheckCircle2
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 export default function OrderDetailsPage() {
     const { orderId } = useParams()
@@ -37,6 +50,13 @@ export default function OrderDetailsPage() {
     const [newNote, setNewNote] = useState("")
     const [amId, setAmId] = useState<string | null>(null)
     const [printType, setPrintType] = useState<'bon_commande' | null>(null)
+
+    // Delivery Assignment
+    const [deliveryMen, setDeliveryMen] = useState<any[]>([])
+    const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false)
+    const [selectedDeliveryId, setSelectedDeliveryId] = useState("")
+    const [dmSearchQuery, setDmSearchQuery] = useState("")
+    const [pendingStatus, setPendingStatus] = useState<string | null>(null)
 
     useEffect(() => {
         if (orderId) loadData()
@@ -64,26 +84,51 @@ export default function OrderDetailsPage() {
 
 
     const handleUpdateStatus = async (newStatus: string) => {
-        if (!order || newStatus === order.status) return
+        if (!order) return
+        const statusLower = newStatus.toLowerCase()
 
+        console.log(`[StatusUpdate] Target status: ${statusLower}, Current: ${order.status}`)
+
+        if (statusLower === 'shipped') {
+            console.log("[StatusUpdate] Opening delivery selection modal")
+            setPendingStatus(statusLower)
+            setIsDeliveryModalOpen(true)
+            if (deliveryMen.length === 0) {
+                const { success, data } = await getActiveDeliveryMen()
+                if (success && data) {
+                    console.log("[StatusUpdate] Loaded delivery men via Server Action:", data.length)
+                    setDeliveryMen(data)
+                } else {
+                    toast.error("Erreur lors du chargement des livreurs")
+                }
+            }
+            return
+        }
+
+        if (statusLower === order.status) return
+        await performStatusUpdate(statusLower)
+    }
+
+    const performStatusUpdate = async (statusLower: string, deliveryManId?: string) => {
         setIsUpdating(true)
         try {
-            const { success, error } = await updateOrderStatusAdmin(order.id, newStatus.toLowerCase(), amId!)
+            const { success, error } = await updateOrderStatusAdmin(order.id, statusLower, amId!, deliveryManId)
 
             if (error || !success) throw new Error(error || "Update failed")
 
-            toast.success(`Status updated to ${newStatus}`)
+            toast.success(`Statut mis à jour : ${statusLower}`)
             setOrder((prev: any) => ({
-                ...prev, status: newStatus.toLowerCase(), auditLogs: [{
+                ...prev,
+                status: statusLower,
+                delivery_man_id: deliveryManId || prev.delivery_man_id,
+                auditLogs: [{
                     id: `temp-${Date.now()}`,
-                    new_status: newStatus.toLowerCase(),
+                    new_status: statusLower,
                     created_at: new Date().toISOString(),
                     changed_by_user: { name: 'You (Just Now)' }
                 }, ...prev.auditLogs]
             }))
-
-
-
+            setIsDeliveryModalOpen(false)
         } catch (error: any) {
             toast.error(error.message)
         } finally {
@@ -149,8 +194,8 @@ export default function OrderDetailsPage() {
                     </Badge>
                 </div>
 
-                {/* Bon de Commande Button - Only visible when status is 'processing' */}
-                {order.status.toLowerCase() === 'processing' && (
+                {/* Bon de Commande Button - Visible on all steps except 'pending' or 'cancelled' */}
+                {order.status.toLowerCase() !== 'pending' && order.status.toLowerCase() !== 'cancelled' && (
                     <Button onClick={handlePrint} size="sm" className="bg-slate-900 text-white hover:bg-slate-800 rounded-full text-xs font-bold shadow-lg shadow-primary/20">
                         <FileText className="w-3.5 h-3.5 mr-2" />
                         Bon de Commande
@@ -270,10 +315,13 @@ export default function OrderDetailsPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="font-bold text-slate-900 truncate text-base mb-1">{item.product_title}</h4>
-                                            <p className="text-sm text-slate-500 mb-2">{item.variant_name || "Standard Option"}</p>
-                                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-lg text-xs">
-                                                Qty: {item.quantity}
-                                            </Badge>
+                                            <p className="text-sm text-slate-500 mb-1">{item.variant_name || "Standard Option"}</p>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-lg text-xs">
+                                                    Qty: {item.quantity}
+                                                </Badge>
+                                                <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded-md font-medium">📍 {item.warehouse_name}</span>
+                                            </div>
                                         </div>
                                         <div className="text-right">
                                             <p className="font-black text-lg text-slate-900">MAD {item.subtotal.toLocaleString()}</p>
@@ -335,6 +383,11 @@ export default function OrderDetailsPage() {
                                     <div key={log.id} className="relative pl-6">
                                         <div className={`absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${idx === 0 ? 'bg-primary' : 'bg-slate-200'}`} />
                                         <p className="text-xs font-bold text-slate-900 capitalize mb-0.5">{log.new_status}</p>
+                                        {log.new_status === 'cancelled' && order.delivery_failed_reason && (
+                                            <p className="text-[10px] text-red-500 font-medium mb-0.5">
+                                                Raison: {order.delivery_failed_reason}
+                                            </p>
+                                        )}
                                         <p className="text-[10px] text-slate-400">
                                             {new Date(log.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </p>
@@ -419,6 +472,7 @@ export default function OrderDetailsPage() {
                                 <td className="py-3 text-sm">
                                     <p className="font-bold text-gray-900">{item.product_title}</p>
                                     <p className="text-xs text-gray-500">{item.variant_name}</p>
+                                    <p className="text-[10px] text-blue-600 font-medium mt-1">📍 {item.warehouse_name}</p>
                                 </td>
                                 <td className="py-3 text-center text-sm font-medium">{item.quantity}</td>
                                 <td className="py-3 text-right text-sm text-gray-600">{item.final_price?.toLocaleString('fr-FR')} MAD</td>
@@ -458,6 +512,127 @@ export default function OrderDetailsPage() {
                 </div>
             </div>
 
-        </div >
+            {/* Delivery Assignment Modal */}
+            <Dialog open={isDeliveryModalOpen} onOpenChange={setIsDeliveryModalOpen}>
+                <DialogContent className="rounded-[2.5rem] p-0 overflow-hidden max-w-xl border-none shadow-2xl bg-[#F8FAFC]">
+                    <div className="bg-slate-900 p-8 text-white relative h-32 overflow-hidden">
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
+                                <Truck className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-2xl font-black">Assigner un Livreur</DialogTitle>
+                                <DialogDescription className="text-slate-400 font-medium">L'expédition de la commande #{order?.order_number}</DialogDescription>
+                            </div>
+                        </div>
+                        {/* Abstract background blobs */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+                    </div>
+
+                    <div className="p-8 space-y-6">
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                            <Input
+                                placeholder="Rechercher par nom ou ville..."
+                                value={dmSearchQuery}
+                                onChange={(e) => setDmSearchQuery(e.target.value)}
+                                className="pl-11 h-14 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20 transition-all text-base font-medium"
+                            />
+                        </div>
+
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                            {deliveryMen
+                                .filter(m =>
+                                    (m.name || "").toLowerCase().includes(dmSearchQuery.toLowerCase()) ||
+                                    (m.city || "").toLowerCase().includes(dmSearchQuery.toLowerCase())
+                                )
+                                .map(m => {
+                                    const isMatch = m.city?.toLowerCase() === order?.city?.toLowerCase();
+                                    const isSelected = selectedDeliveryId === m.id;
+
+                                    return (
+                                        <div
+                                            key={m.id}
+                                            onClick={() => setSelectedDeliveryId(m.id)}
+                                            className={`
+                                                group relative p-4 rounded-3xl border-2 cursor-pointer transition-all duration-300
+                                                ${isSelected
+                                                    ? 'bg-white border-primary shadow-xl shadow-primary/10 -translate-y-1'
+                                                    : 'bg-white border-slate-100 hover:border-slate-300 shadow-sm'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`
+                                                        w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl transition-all
+                                                        ${isSelected ? 'bg-primary text-primary-foreground rotate-6' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'}
+                                                    `}>
+                                                        {(m.name || "?").charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <p className="font-black text-slate-900">{m.name}</p>
+                                                            {isMatch && (
+                                                                <Badge className="bg-emerald-500/10 text-emerald-600 border-none text-[10px] h-5 rounded-md px-1.5 font-black uppercase tracking-tighter">
+                                                                    Recommandé
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                                                                <MapPin className="w-3.5 h-3.5 text-primary" />
+                                                                {m.city || "N/A"}
+                                                            </div>
+                                                            {m.phone && (
+                                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                                                    <Phone className="w-3.5 h-3.5" />
+                                                                    {m.phone}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className={`
+                                                    w-8 h-8 rounded-full flex items-center justify-center transition-all
+                                                    ${isSelected ? 'bg-primary text-white scale-110' : 'bg-slate-50 text-slate-200'}
+                                                `}>
+                                                    <CheckCircle2 className={`w-5 h-5 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            {deliveryMen.length === 0 && (
+                                <div className="text-center py-10">
+                                    <div className="animate-spin w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full mx-auto mb-4" />
+                                    <p className="text-slate-500 font-bold">Chargement des livreurs...</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pt-2">
+                            <Button
+                                className="w-full h-16 rounded-3xl bg-slate-900 hover:bg-slate-800 text-white font-black text-lg shadow-2xl shadow-slate-900/20 transition-all hover:scale-[1.02] active:scale-95 group overflow-hidden relative"
+                                disabled={!selectedDeliveryId || isUpdating}
+                                onClick={() => performStatusUpdate(pendingStatus || 'shipped', selectedDeliveryId)}
+                            >
+                                <div className="relative z-10 flex items-center gap-3">
+                                    {isUpdating ? (
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <span>Confirmer l'expédition</span>
+                                            <Truck className="w-5 h-5 group-hover:translate-x-12 transition-transform duration-500" />
+                                        </>
+                                    )}
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 h-1 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
     )
 }

@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useLanguage } from "@/components/language-provider"
+import { AdminSearch } from "@/components/admin/admin-search"
 import {
     LayoutDashboard,
     ShoppingBag,
@@ -31,6 +32,7 @@ const menuItems = [
     { icon: Users, key: "admin.sidebar.customers", href: "/admin/customers" },
     { icon: Briefcase, key: "admin.sidebar.resellers", href: "/admin/resellers" },
     { icon: Shield, key: "admin.sidebar.account_managers", href: "/admin/account-managers" },
+    { icon: Truck, key: "admin.sidebar.delivery_men", href: "/admin/delivery-men" },
     { icon: Truck, key: "admin.sidebar.shipping", href: "/admin/shipping" },
     { icon: BarChart3, key: "admin.sidebar.analytics", href: "/admin/analytics" },
     { icon: ImageIcon, key: "admin.sidebar.hero_carousel", href: "/admin/hero-carousel" },
@@ -67,6 +69,10 @@ export function AdminSidebar() {
                 />
             </div>
 
+            <div className="px-4 mt-6 mb-2">
+                <AdminSearch className="w-full" />
+            </div>
+
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href
@@ -88,18 +94,7 @@ export function AdminSidebar() {
             </nav>
 
             <div className="p-4 space-y-3 border-t border-white/10">
-                <Button
-                    onClick={toggleLanguage}
-                    variant="outline"
-                    className="w-full gap-2 rounded-xl border-white/10 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 font-bold h-12"
-                >
-                    <span className="text-lg">
-                        {language === 'en' ? '🇺🇸' : '🇫🇷'}
-                    </span>
-                    <span className="text-sm uppercase tracking-wider">
-                        {language === 'en' ? 'EN' : 'FR'}
-                    </span>
-                </Button>
+
                 <Link href="/admin/login">
                     <Button variant="outline" className="w-full justify-start gap-3 h-12 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20">
                         <LogOut className="w-5 h-5" />

@@ -26,6 +26,7 @@ export interface Product {
     how_to_use: string | null
     how_to_use_ar: string | null
     sales_count: number
+    warehouse_id: string | null
     created_at: string
     updated_at: string
 }
@@ -431,11 +432,27 @@ export async function getOrders(filters?: {
     guest_only?: boolean
     limit?: number
     offset?: number
+    startDate?: Date | null
+    endDate?: Date | null
 }) {
     let query = supabase
         .from('orders')
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
+
+    if (filters?.startDate) {
+        // Create new date to avoid mutating
+        const start = new Date(filters.startDate);
+        start.setHours(0, 0, 0, 0);
+        query = query.gte('created_at', start.toISOString());
+    }
+
+    if (filters?.endDate) {
+        // Create new date to avoid mutating
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', end.toISOString());
+    }
 
     if (filters?.status) {
         query = query.eq('status', filters.status)
@@ -454,7 +471,7 @@ export async function getOrders(filters?: {
     }
 
     if (filters?.offset) {
-        query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1)
+        query = query.range(filters.offset || 0, (filters.offset || 0) + (filters.limit || 10) - 1)
     }
 
     const { data, error, count } = await query
@@ -735,6 +752,7 @@ export async function getCustomerById(id: string) {
         .single()
 
     if (error) {
+        if (error.code === 'PGRST116') return null // Silent return if not found
         console.error('Error fetching customer:', error)
         return null
     }
@@ -811,12 +829,15 @@ export async function getCurrentResellerTier(): Promise<ResellerTier> {
 
 // Analytics API
 export async function getDashboardStats() {
-    // Get total revenue
+    // Get total revenue (Only DELIVERED orders)
     const { data: orders } = await supabase
         .from('orders')
         .select('total, status')
 
-    const totalRevenue = orders?.reduce((sum, order) => sum + order.total, 0) || 0
+    const totalRevenue = orders
+        ?.filter(o => o.status === 'delivered')
+        .reduce((sum, order) => sum + order.total, 0) || 0
+
     const completedOrders = orders?.filter(o => o.status === 'delivered').length || 0
     const pendingOrders = orders?.filter(o => o.status === 'pending' || o.status === 'processing').length || 0
 

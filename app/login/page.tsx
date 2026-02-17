@@ -59,12 +59,15 @@ export default function LoginPage() {
                 if (normalizedRole === 'RESELLER') {
                     console.log('Redirecting to reseller dashboard')
                     router.push('/reseller/dashboard')
-                } else if (normalizedRole === 'ACCOUNT_MANAGER') {
-                    console.log('Redirecting to manager resellers')
-                    router.push('/manager/resellers')
                 } else if (normalizedRole === 'ADMIN') {
                     console.log('Redirecting to admin dashboard')
                     router.push('/admin/dashboard')
+                } else if (normalizedRole === 'ACCOUNT_MANAGER') {
+                    console.log('Redirecting to manager resellers')
+                    router.push('/manager/resellers')
+                } else if (normalizedRole === 'DELIVERY_MAN') {
+                    console.log('Redirecting to delivery dashboard')
+                    router.push('/delivery/dashboard')
                 } else {
                     console.log('Unknown role or customer, redirecting to home')
                     router.push('/')

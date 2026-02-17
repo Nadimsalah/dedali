@@ -269,17 +269,25 @@ export default function AccountManagersPage() {
         }
     }
 
-    const handleDeleteManager = async (id: string, name: string) => {
-        if (!confirm(t("account_managers.delete_confirm").replace("{name}", name))) return
+    // Delete Confirmation State
+    const [managerToDelete, setManagerToDelete] = useState<AccountManager | null>(null)
+
+    const handleDeleteManager = (manager: AccountManager) => {
+        setManagerToDelete(manager)
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!managerToDelete) return
 
         try {
-            const res = await fetch(`/api/admin/account-managers/${id}`, {
+            const res = await fetch(`/api/admin/account-managers/${managerToDelete.id}`, {
                 method: 'DELETE'
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
 
             toast.success(t("account_managers.deleted_success"))
+            setManagerToDelete(null)
             loadData()
         } catch (error: any) {
             toast.error(error.message)
@@ -310,122 +318,123 @@ export default function AccountManagersPage() {
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden font-sans">
+            {/* Background gradients aligned with Dashboard */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[120px]" />
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-[10000ms]" />
+                <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[120px] mix-blend-screen" />
             </div>
 
             <AdminSidebar />
 
-            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10">
-                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 glass-strong p-5 rounded-[2rem] border border-white/10 shadow-xl">
+            <main className="lg:pl-72 p-4 sm:p-6 lg:p-8 min-h-screen relative z-10 transition-all duration-300">
+                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sticky top-4 z-40 glass-strong p-4 rounded-3xl border border-white/5 shadow-lg shadow-black/5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary rounded-2xl shadow-lg shadow-primary/20">
-                            <Shield className="w-6 h-6 text-white" />
+                        <div className="p-3 bg-primary/10 rounded-2xl">
+                            <Shield className="w-6 h-6 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("account_managers.title")}</h1>
-                            <p className="text-sm text-muted-foreground font-medium">{t("account_managers.subtitle")}</p>
+                            <h1 className="text-xl font-bold text-foreground tracking-tight">{t("account_managers.title")}</h1>
+                            <p className="text-xs text-muted-foreground font-medium">{t("account_managers.subtitle")}</p>
                         </div>
                     </div>
-                    <div className="w-full sm:w-auto flex flex-col gap-2 sm:items-end">
-                        <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                            URL de connexion Gestionnaire
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                readOnly
-                                value={managerLoginPath}
-                                className="h-9 rounded-xl bg-background/60 border-border/60 text-xs w-48 sm:w-64"
-                            />
+
+                    <div className="flex items-center gap-3">
+                        {/* URL Copy Section - Compact */}
+                        <div className="hidden md:flex items-center gap-2 bg-background/50 p-1.5 pl-3 rounded-full border border-white/10">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mr-2">
+                                Login URL
+                            </span>
+                            <div className="h-4 w-px bg-white/10" />
+                            <span className="text-xs text-foreground font-mono truncate max-w-[150px]">
+                                {managerLoginPath}
+                            </span>
                             <Button
                                 type="button"
-                                variant="outline"
+                                variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-xl"
+                                className="h-7 w-7 rounded-full hover:bg-primary/10 hover:text-primary"
                                 onClick={handleCopyDashboardUrl}
                             >
-                                <Copy className="w-4 h-4" />
+                                <Copy className="w-3.5 h-3.5" />
                             </Button>
                         </div>
-                        {copiedUrl && (
-                            <span className="text-[11px] text-emerald-500">
-                                Lien copié dans le presse-papiers.
-                            </span>
-                        )}
+
+                        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                            <DialogTrigger asChild>
+                                <Button className="rounded-full h-10 px-6 gap-2 font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+                                    <UserPlus className="w-4 h-4" />
+                                    {t("account_managers.add_manager")}
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="glass-strong border-white/10 rounded-3xl">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-black">{t("account_managers.create_title")}</DialogTitle>
+                                    <DialogDescription className="text-muted-foreground">{t("account_managers.create_desc")}</DialogDescription>
+                                </DialogHeader>
+                                <form onSubmit={handleCreateManager} className="space-y-5 py-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("account_managers.full_name")}</label>
+                                        <Input
+                                            required
+                                            value={newManager.name}
+                                            onChange={e => setNewManager({ ...newManager, name: e.target.value })}
+                                            className="h-11 rounded-xl bg-background/50 border-white/10 focus:ring-primary focus:bg-background transition-all"
+                                            placeholder={t("account_managers.full_name")}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("account_managers.work_email")}</label>
+                                        <Input
+                                            required
+                                            type="email"
+                                            value={newManager.email}
+                                            onChange={e => setNewManager({ ...newManager, email: e.target.value })}
+                                            className="h-11 rounded-xl bg-background/50 border-white/10 focus:ring-primary focus:bg-background transition-all"
+                                            placeholder="john@company.com"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("account_managers.password")}</label>
+                                            <Input
+                                                required
+                                                type="password"
+                                                value={newManager.password}
+                                                onChange={e => setNewManager({ ...newManager, password: e.target.value })}
+                                                className="h-11 rounded-xl bg-background/50 border-white/10 focus:ring-primary focus:bg-background transition-all"
+                                                placeholder="••••••••"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("account_managers.phone")}</label>
+                                            <Input
+                                                value={newManager.phone}
+                                                onChange={e => setNewManager({ ...newManager, phone: e.target.value })}
+                                                className="h-11 rounded-xl bg-background/50 border-white/10 focus:ring-primary focus:bg-background transition-all"
+                                                placeholder="+212 6XX..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter className="pt-2">
+                                        <Button type="submit" disabled={isCreating} className="w-full h-12 rounded-xl font-bold text-base">
+                                            {isCreating ? <Loader2 className="animate-spin" /> : t("account_managers.create_account")}
+                                        </Button>
+                                    </DialogFooter>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
                     </div>
-                    <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="rounded-2xl h-12 px-6 gap-2 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                                <UserPlus className="w-5 h-5" />
-                                {t("account_managers.add_manager")}
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="glass-strong border-white/10 rounded-[2rem]">
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-black">{t("account_managers.create_title")}</DialogTitle>
-                                <DialogDescription>{t("account_managers.create_desc")}</DialogDescription>
-                            </DialogHeader>
-                            <form onSubmit={handleCreateManager} className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">{t("account_managers.full_name")}</label>
-                                    <Input
-                                        required
-                                        value={newManager.name}
-                                        onChange={e => setNewManager({ ...newManager, name: e.target.value })}
-                                        className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary"
-                                        placeholder={t("account_managers.full_name")}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">{t("account_managers.work_email")}</label>
-                                    <Input
-                                        required
-                                        type="email"
-                                        value={newManager.email}
-                                        onChange={e => setNewManager({ ...newManager, email: e.target.value })}
-                                        className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary"
-                                        placeholder="john@company.com"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">{t("account_managers.password")}</label>
-                                    <Input
-                                        required
-                                        type="password"
-                                        value={newManager.password}
-                                        onChange={e => setNewManager({ ...newManager, password: e.target.value })}
-                                        className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary"
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">{t("account_managers.phone")}</label>
-                                    <Input
-                                        value={newManager.phone}
-                                        onChange={e => setNewManager({ ...newManager, phone: e.target.value })}
-                                        className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary"
-                                        placeholder="+212 6XX XXX XXX"
-                                    />
-                                </div>
-                                <DialogFooter className="pt-4">
-                                    <Button type="submit" disabled={isCreating} className="w-full h-12 rounded-xl font-bold">
-                                        {isCreating ? <Loader2 className="animate-spin" /> : t("account_managers.create_account")}
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
                 </header>
 
-                <div className="flex flex-col xl:flex-row gap-4 items-center justify-between mb-8">
-                    <div className="relative flex-1 xl:w-[400px]">
+                {/* Sub-header / Search */}
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
+                    <div className="relative w-full md:w-96">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                             placeholder={t("account_managers.search_managers")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-primary transition-all"
+                            className="pl-11 h-11 rounded-full bg-background/40 border-white/10 focus:bg-background focus:border-primary/50 transition-all shadow-sm"
                         />
                     </div>
                 </div>
@@ -433,87 +442,98 @@ export default function AccountManagersPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loading ? (
                         Array(3).fill(0).map((_, i) => (
-                            <div key={i} className="h-64 glass-strong rounded-[2.5rem] animate-pulse" />
+                            <div key={i} className="h-[400px] glass-strong rounded-3xl animate-pulse bg-white/5" />
                         ))
                     ) : filteredManagers.length > 0 ? (
                         filteredManagers.map((m: any) => (
-                            <div key={m.id} className="glass-strong rounded-[2.5rem] border border-white/10 p-8 hover:border-white/20 transition-all group">
+                            <div key={m.id} className="glass-strong rounded-3xl border border-white/5 p-6 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 group flex flex-col">
+
+                                {/* Card Header */}
                                 <div className="flex items-start justify-between mb-6">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center text-primary font-black text-2xl border border-white/10 shadow-inner">
-                                        {m.name.charAt(0)}
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-primary font-black text-xl border border-white/10 group-hover:scale-110 transition-transform duration-300">
+                                            {m.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-foreground leading-tight">{m.name}</h3>
+                                            <Badge variant="outline" className="mt-1 bg-primary/5 text-primary border-primary/20 text-[10px] px-2 py-0.5 h-5">
+                                                {t("account_managers.manager")}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge className="bg-primary/10 text-primary border-primary/20 rounded-lg px-3 py-1 font-bold">
-                                            {t("account_managers.manager")}
-                                        </Badge>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                                    <MoreHorizontal className="w-4 h-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="glass-strong rounded-xl border-white/10">
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setEditingGoalManager(m)
-                                                        setNewGoalValue(m.prime_target_revenue || "200000")
-                                                        setIsGoalModalOpen(true)
-                                                    }}
-                                                >
-                                                    <Shield className="w-4 h-4 mr-2" />
-                                                    {t("account_managers.set_prime_goal")}
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setResettingManager(m)
-                                                        setNewPasswordInput("")
-                                                        setIsResetPasswordModalOpen(true)
-                                                    }}
-                                                >
-                                                    <Lock className="w-4 h-4 mr-2" />
-                                                    Modifier le mot de passe
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="text-destructive focus:text-destructive"
-                                                    onClick={() => handleDeleteManager(m.id, m.name)}
-                                                >
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    {t("account_managers.delete_account")}
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/10">
+                                                <MoreHorizontal className="w-4 h-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="glass-strong rounded-xl border-white/10">
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setEditingGoalManager(m)
+                                                    setNewGoalValue(m.prime_target_revenue || "200000")
+                                                    setIsGoalModalOpen(true)
+                                                }}
+                                            >
+                                                <Shield className="w-4 h-4 mr-2" />
+                                                {t("account_managers.set_prime_goal")}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    setResettingManager(m)
+                                                    setNewPasswordInput("")
+                                                    setIsResetPasswordModalOpen(true)
+                                                }}
+                                            >
+                                                <Lock className="w-4 h-4 mr-2" />
+                                                Modifier le mot de passe
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                className="text-destructive focus:text-destructive"
+                                                onClick={() => handleDeleteManager(m)}
+                                            >
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                {t("account_managers.delete_account")}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
 
-                                <h3 className="text-xl font-black text-foreground mb-1 tracking-tight">{m.name}</h3>
-                                <div className="space-y-2 mb-6">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <Mail className="w-4 h-4" />
-                                        {m.email}
+                                {/* Contact Info */}
+                                <div className="space-y-3 mb-6 bg-background/30 p-4 rounded-2xl border border-white/5">
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <div className="p-1.5 bg-white/5 rounded-md text-muted-foreground/70">
+                                            <Mail className="w-3.5 h-3.5" />
+                                        </div>
+                                        <span className="text-muted-foreground truncate">{m.email}</span>
                                     </div>
                                     {m.phone && (
-                                        <div className="flex items-center gap-2 text-sm text-primary font-bold">
-                                            <Phone className="w-4 h-4" />
-                                            {m.phone}
+                                        <div className="flex items-center gap-3 text-sm">
+                                            <div className="p-1.5 bg-white/5 rounded-md text-muted-foreground/70">
+                                                <Phone className="w-3.5 h-3.5" />
+                                            </div>
+                                            <span className="text-foreground font-medium">{m.phone}</span>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 mb-6">
-                                    <div>
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-0.5">{t("account_managers.assigned_partners")}</p>
-                                        <p className="text-lg font-black text-foreground">{m.reseller_count || 0}</p>
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 gap-3 mb-6 flex-1">
+                                    <div className="p-4 bg-background/40 rounded-2xl border border-white/5 flex flex-col justify-center">
+                                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Partners</p>
+                                        <div className="flex items-center gap-2">
+                                            <Users className="w-4 h-4 text-primary/60" />
+                                            <span className="text-xl font-black text-foreground">{m.reseller_count || 0}</span>
+                                        </div>
                                     </div>
-                                    <Users className="w-8 h-8 text-primary/40" />
-                                </div>
-
-                                {/* Prime Goal Display */}
-                                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 rounded-2xl border border-violet-500/20 mb-6">
-                                    <div>
-                                        <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-0.5">{t("account_managers.prime_goal")}</p>
-                                        <p className="text-lg font-black text-foreground">{(m.prime_target_revenue || 200000).toLocaleString()} {t("common.currency")}</p>
+                                    <div className="p-4 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 rounded-2xl border border-violet-500/10 flex flex-col justify-center relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-12 h-12 bg-violet-500/10 rounded-full blur-xl -translate-y-1/2 translate-x-1/2" />
+                                        <p className="text-[10px] font-bold text-violet-500/80 uppercase tracking-wider mb-1">Target</p>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-sm font-black text-foreground">{(m.prime_target_revenue || 200000).toLocaleString()}</span>
+                                            <span className="text-[10px] font-medium text-muted-foreground">DH</span>
+                                        </div>
                                     </div>
-                                    <Shield className="w-8 h-8 text-violet-500/40" />
                                 </div>
 
                                 <Dialog open={isAssignModalOpen && selectedManager?.id === m.id} onOpenChange={(open) => {
@@ -521,12 +541,12 @@ export default function AccountManagersPage() {
                                     if (open) setSelectedManager(m)
                                 }}>
                                     <DialogTrigger asChild>
-                                        <Button variant="outline" className="w-full h-12 rounded-xl font-bold bg-white/5 border-white/10 hover:bg-white/10 hover:border-primary/40 transition-all flex gap-2">
-                                            <LinkIcon className="w-4 h-4" />
+                                        <Button className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all text-sm">
+                                            <LinkIcon className="w-4 h-4 mr-2" />
                                             {t("account_managers.manage_assignments")}
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="glass-strong border-white/10 rounded-[2.5rem] max-w-2xl max-h-[80vh] overflow-y-auto">
+                                    <DialogContent className="glass-strong border-white/10 rounded-3xl max-w-2xl max-h-[80vh] overflow-y-auto">
                                         <DialogHeader>
                                             <DialogTitle className="text-2xl font-black">{t("account_managers.assign_resellers")} - {m.name}</DialogTitle>
                                             <DialogDescription>{t("account_managers.select_resellers")}</DialogDescription>
@@ -542,95 +562,56 @@ export default function AccountManagersPage() {
                                             />
                                         </div>
 
-                                        <div className="py-6 space-y-4">
-                                            <div className="space-y-3">
-                                                {resellers
-                                                    .filter(r =>
-                                                        r.company_name.toLowerCase().includes(resellerSearchQuery.toLowerCase()) ||
-                                                        r.name.toLowerCase().includes(resellerSearchQuery.toLowerCase())
-                                                    )
-                                                    .map((r) => (
-                                                        <div key={r.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center \${r.assigned_to_id === m.id ? 'bg-primary/20 text-primary' : 'bg-white/10 text-muted-foreground'}`}>
-                                                                    <Briefcase className="w-6 h-6" />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest mb-0.5">{t("account_managers.company")}</span>
-                                                                        <p className="font-black text-foreground leading-tight text-lg mb-2">{r.company_name}</p>
-
-                                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                                                            <div>
-                                                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">{t("account_managers.contact")}</span>
-                                                                                <p className="text-sm font-bold text-foreground/80 leading-none">{r.name}</p>
-                                                                            </div>
-                                                                            <div className="h-6 w-px bg-white/10 hidden sm:block" />
-                                                                            <div>
-                                                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">{t("account_managers.email")}</span>
-                                                                                <p className="text-sm font-medium text-muted-foreground leading-none">{r.email}</p>
-                                                                            </div>
-                                                                            {r.phone && (
-                                                                                <>
-                                                                                    <div className="h-6 w-px bg-white/10 hidden sm:block" />
-                                                                                    <div>
-                                                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">{t("account_managers.phone_label")}</span>
-                                                                                        <div className="flex items-center gap-1.5 text-sm font-bold text-primary leading-none">
-                                                                                            <Phone className="w-3 h-3" />
-                                                                                            {r.phone}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </>
-                                                                            )}
-                                                                            {r.city && (
-                                                                                <>
-                                                                                    <div className="h-6 w-px bg-white/10 hidden sm:block" />
-                                                                                    <div>
-                                                                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">{t("account_managers.city")}</span>
-                                                                                        <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground leading-none">
-                                                                                            <MapPin className="w-3 h-3" />
-                                                                                            {r.city}
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                        <div className="py-6 space-y-3">
+                                            {resellers
+                                                .filter(r =>
+                                                    r.company_name.toLowerCase().includes(resellerSearchQuery.toLowerCase()) ||
+                                                    r.name.toLowerCase().includes(resellerSearchQuery.toLowerCase())
+                                                )
+                                                .map((r) => (
+                                                    <div key={r.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all group/item">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors \${r.assigned_to_id === m.id ? 'bg-primary/20 text-primary' : 'bg-white/10 text-muted-foreground'}`}>
+                                                                <Briefcase className="w-5 h-5" />
                                                             </div>
-                                                            {r.assigned_to_id === m.id ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 rounded-lg">{t("account_managers.active")}</Badge>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="ghost"
-                                                                        disabled={isAssigning}
-                                                                        className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                                        onClick={() => handleAssignReseller(r.id)}
-                                                                        title={t("account_managers.unassign")}
-                                                                    >
-                                                                        {assigningId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
-                                                                    </Button>
-                                                                </div>
-                                                            ) : (
-                                                                <Button
-                                                                    size="sm"
-                                                                    disabled={isAssigning}
-                                                                    className="rounded-lg font-bold gap-2"
-                                                                    onClick={() => handleAssignReseller(r.id, m.id)}
-                                                                >
-                                                                    {assigningId === r.id ? (
-                                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                                    ) : (
-                                                                        <PlusCircle className="w-4 h-4" />
-                                                                    )}
-                                                                    {r.assigned_to_id ? t("account_managers.reassign") : t("account_managers.assign")}
-                                                                </Button>
-                                                            )
-                                                            }
+                                                            <div>
+                                                                <p className="font-bold text-foreground text-sm">{r.company_name}</p>
+                                                                <p className="text-xs text-muted-foreground">{r.name}</p>
+                                                            </div>
                                                         </div>
-                                                    ))}
-                                            </div>
+                                                        {r.assigned_to_id === m.id ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">{t("account_managers.active")}</Badge>
+                                                                <Button
+                                                                    size="icon"
+                                                                    variant="ghost"
+                                                                    disabled={isAssigning}
+                                                                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                                                    onClick={() => handleAssignReseller(r.id)}
+                                                                    title={t("account_managers.unassign")}
+                                                                >
+                                                                    {assigningId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                disabled={isAssigning}
+                                                                className="rounded-lg h-8 px-3 text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
+                                                                onClick={() => handleAssignReseller(r.id, m.id)}
+                                                            >
+                                                                {assigningId === r.id ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <PlusCircle className="w-3 h-3 mr-1.5" />
+                                                                )}
+                                                                {r.assigned_to_id ? t("account_managers.reassign") : t("account_managers.assign")}
+                                                            </Button>
+                                                        )
+                                                        }
+                                                    </div>
+                                                ))}
                                         </div>
                                     </DialogContent>
                                 </Dialog>
@@ -639,11 +620,11 @@ export default function AccountManagersPage() {
                     ) : (
                         <div className="col-span-full py-20 text-center">
                             <div className="flex flex-col items-center gap-4">
-                                <div className="p-6 bg-white/5 rounded-full text-muted-foreground/20">
+                                <div className="p-6 bg-white/5 rounded-full text-muted-foreground/20 animate-pulse">
                                     <Shield className="w-16 h-16" />
                                 </div>
                                 <h3 className="text-xl font-bold text-foreground">{t("account_managers.no_managers")}</h3>
-                                <p className="text-muted-foreground max-w-xs mx-auto">{t("account_managers.no_managers_desc")}</p>
+                                <p className="text-muted-foreground max-w-xs mx-auto text-sm">{t("account_managers.no_managers_desc")}</p>
                             </div>
                         </div>
                     )}
@@ -651,28 +632,31 @@ export default function AccountManagersPage() {
 
                 {/* Edit Goal Dialog */}
                 <Dialog open={isGoalModalOpen} onOpenChange={setIsGoalModalOpen}>
-                    <DialogContent className="glass-strong border-white/10 rounded-[2rem]">
+                    <DialogContent className="glass-strong border-white/10 rounded-3xl">
                         <DialogHeader>
                             <DialogTitle className="text-2xl font-black">{t("account_managers.set_prime_goal")}</DialogTitle>
                             <DialogDescription>
                                 {t("account_managers.set_goal_desc")} <strong>{editingGoalManager?.name}</strong>.
                             </DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleUpdateGoal} className="space-y-4 py-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">{t("account_managers.target_revenue")}</label>
-                                <Input
-                                    required
-                                    type="number"
-                                    value={newGoalValue}
-                                    onChange={e => setNewGoalValue(e.target.value)}
-                                    className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary text-lg font-bold"
-                                    placeholder="200000"
-                                />
-                                <p className="text-xs text-muted-foreground">{t("account_managers.default_revenue")}</p>
+                        <form onSubmit={handleUpdateGoal} className="space-y-6 py-4">
+                            <div className="bg-primary/5 p-6 rounded-2xl flex flex-col items-center justify-center border border-primary/10">
+                                <span className="text-xs font-bold uppercase tracking-widest text-primary/60 mb-2">{t("account_managers.target_revenue")}</span>
+                                <div className="relative">
+                                    <Input
+                                        required
+                                        type="number"
+                                        value={newGoalValue}
+                                        onChange={e => setNewGoalValue(e.target.value)}
+                                        className="h-16 w-full text-center text-3xl font-black bg-transparent border-none focus:ring-0 p-0"
+                                        placeholder="0"
+                                    />
+                                    <div className="text-xs text-center text-muted-foreground mt-2">MAD (Currency)</div>
+                                </div>
                             </div>
-                            <DialogFooter className="pt-4">
-                                <Button type="submit" disabled={isUpdatingGoal} className="w-full h-12 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white">
+
+                            <DialogFooter>
+                                <Button type="submit" disabled={isUpdatingGoal} className="w-full h-12 rounded-xl font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20">
                                     {isUpdatingGoal ? <Loader2 className="animate-spin" /> : t("account_managers.update")}
                                 </Button>
                             </DialogFooter>
@@ -682,35 +666,87 @@ export default function AccountManagersPage() {
 
                 {/* Reset Password Dialog */}
                 <Dialog open={isResetPasswordModalOpen} onOpenChange={setIsResetPasswordModalOpen}>
-                    <DialogContent className="glass-strong border-white/10 rounded-[2rem]">
+                    <DialogContent className="glass-strong border-white/10 rounded-3xl">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-black">Modifier le mot de passe</DialogTitle>
+                            <DialogTitle className="text-xl font-bold">Modifier le mot de passe</DialogTitle>
                             <DialogDescription>
                                 Définir un nouveau mot de passe pour <strong>{resettingManager?.name}</strong>.
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleResetPassword} className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Nouveau mot de passe</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Nouveau mot de passe</label>
                                 <Input
                                     required
                                     type="password"
                                     value={newPasswordInput}
                                     onChange={e => setNewPasswordInput(e.target.value)}
-                                    className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-primary"
+                                    className="h-11 rounded-xl bg-background/50 border-white/10 focus:ring-primary focus:bg-background"
                                     placeholder="••••••••"
                                 />
                             </div>
-                            <DialogFooter className="pt-4">
-                                <Button type="submit" disabled={isResettingPassword} className="w-full h-12 rounded-xl font-bold bg-primary text-white">
+                            <DialogFooter>
+                                <Button type="submit" disabled={isResettingPassword} className="w-full h-11 rounded-xl font-bold">
                                     {isResettingPassword ? <Loader2 className="animate-spin mr-2" /> : "Mettre à jour"}
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
-            </main >
-        </div >
+
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={!!managerToDelete} onOpenChange={(open) => !open && setManagerToDelete(null)}>
+                    <DialogContent className="glass-strong border-white/10 rounded-3xl">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-destructive flex items-center gap-2">
+                                <Trash2 className="w-5 h-5" />
+                                {t("account_managers.delete_account")}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {managerToDelete?.reseller_count && managerToDelete.reseller_count > 0 ? (
+                                    <div className="space-y-3 pt-2">
+                                        <p className="font-medium text-foreground">
+                                            {t("account_managers.delete_warning_start")} <strong>{managerToDelete.name}</strong> {t("account_managers.delete_warning_end")}
+                                        </p>
+                                        <div className="bg-destructive/10 p-4 rounded-xl border border-destructive/20">
+                                            <p className="text-destructive text-sm font-bold flex items-center gap-2">
+                                                <Users className="w-4 h-4" />
+                                                Attention:
+                                            </p>
+                                            <p className="text-destructive/80 text-sm mt-1">
+                                                Cet utilisateur gère actuellement <strong>{managerToDelete.reseller_count} revendeur(s)</strong>.
+                                                La suppression de ce compte désassignera automatiquement ces revendeurs.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p>
+                                        {t("account_managers.delete_confirm").replace("{name}", managerToDelete?.name || "")}
+                                    </p>
+                                )}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setManagerToDelete(null)}
+                                className="rounded-xl font-bold"
+                            >
+                                {t("common.cancel")}
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleConfirmDelete}
+                                className="rounded-xl font-bold gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                {t("account_managers.confirm_delete_unlink")}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </main>
+        </div>
     )
 }
 
