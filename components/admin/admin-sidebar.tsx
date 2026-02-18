@@ -32,7 +32,7 @@ const menuItems = [
     { icon: Users, key: "admin.sidebar.customers", href: "/admin/customers" },
     { icon: Briefcase, key: "admin.sidebar.resellers", href: "/admin/resellers" },
     { icon: Shield, key: "admin.sidebar.account_managers", href: "/admin/account-managers" },
-    { icon: Truck, key: "admin.sidebar.delivery_men", href: "/admin/delivery-men" },
+    { icon: Truck, key: "admin.sidebar.delivery_men", href: "/admin/logisticiens" },
     { icon: Truck, key: "admin.sidebar.shipping", href: "/admin/shipping" },
     { icon: BarChart3, key: "admin.sidebar.analytics", href: "/admin/analytics" },
     { icon: ImageIcon, key: "admin.sidebar.hero_carousel", href: "/admin/hero-carousel" },

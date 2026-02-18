@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
             return NextResponse.json({
                 success: true,
-                message: 'Delivery Man created successfully (via virtual email)',
+                message: 'Logisticien created successfully (via virtual email)',
                 user: userDataAlt.user
             })
         }
@@ -76,11 +76,11 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             success: true,
-            message: 'Delivery Man created successfully',
+            message: 'Logisticien created successfully',
             user: userData.user
         })
     } catch (error: any) {
-        console.error('Create Delivery Man Error:', error)
+        console.error('Create Logisticien Error:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }

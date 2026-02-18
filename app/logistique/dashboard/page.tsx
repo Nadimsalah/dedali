@@ -56,6 +56,8 @@ export default function DeliveryDashboard() {
     const [failReason, setFailReason] = useState("")
     const [failDetails, setFailDetails] = useState("")
     const [isUpdating, setIsUpdating] = useState(false)
+    const [proofFile, setProofFile] = useState<File | null>(null)
+    const [uploading, setUploading] = useState(false)
 
     useEffect(() => {
         checkUser()
@@ -64,7 +66,7 @@ export default function DeliveryDashboard() {
     async function checkUser() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-            router.push('/delivery/login')
+            router.push('/logistique/login')
             return
         }
 
@@ -78,7 +80,7 @@ export default function DeliveryDashboard() {
         if (profile?.is_blocked) {
             await supabase.auth.signOut()
             toast.error("Votre compte est bloqué. Contactez l'administrateur.")
-            router.push('/delivery/login')
+            router.push('/logistique/login')
             return
         }
 
@@ -87,6 +89,7 @@ export default function DeliveryDashboard() {
     }
 
     async function loadOrders(userId: string) {
+        console.log("[Dashboard] Loading orders for user:", userId)
         setLoading(true)
         try {
             const { data, error } = await supabase
@@ -108,6 +111,8 @@ export default function DeliveryDashboard() {
                 throw error
             }
 
+            console.log(`[Dashboard] Fetched ${data?.length} orders for user ${userId}`)
+
             // Map the data to match our UI needs with full details
             const mappedOrders = data.map(order => ({
                 ...order,
@@ -128,20 +133,54 @@ export default function DeliveryDashboard() {
 
     const initiateDelivery = (order: any) => {
         setSelectedOrder(order)
+        setProofFile(null)
         setIsConfirmModalOpen(true)
+    }
+
+    const uploadProof = async (orderId: string, file: File) => {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${orderId}-${Math.random()}.${fileExt}`
+        const filePath = `${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+            .from('delivery-proofs')
+            .upload(filePath, file)
+
+        if (uploadError) {
+            throw uploadError
+        }
+
+        const { data } = supabase.storage
+            .from('delivery-proofs')
+            .getPublicUrl(filePath)
+
+        return data.publicUrl
     }
 
     const handleMarkDelivered = async () => {
         if (!selectedOrder) return
 
         setIsUpdating(true)
+        setUploading(true)
         try {
+            let proofUrl = null
+            if (proofFile) {
+                try {
+                    proofUrl = await uploadProof(selectedOrder.id, proofFile)
+                } catch (uploadErr) {
+                    console.error("Upload failed:", uploadErr)
+                    toast.error("Échec de l'upload de la preuve. Continuer sans preuve ?")
+                    // Optional: return here if proof is mandatory
+                }
+            }
+
             const { error } = await supabase
                 .from('orders')
                 .update({
                     status: 'delivered',
                     delivered_at: new Date().toISOString(),
-                    delivery_failed_reason: null
+                    delivery_failed_reason: null,
+                    delivery_proof: proofUrl
                 })
                 .eq('id', selectedOrder.id)
 
@@ -205,7 +244,7 @@ export default function DeliveryDashboard() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
-        router.push('/delivery/login')
+        router.push('/logistique/login')
     }
 
     const filteredOrders = orders.filter(o =>
@@ -228,7 +267,7 @@ export default function DeliveryDashboard() {
                         <Truck className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-black text-slate-800 leading-tight">Mes Livraisons</h2>
+                        <h2 className="text-lg font-black text-slate-800 leading-tight">Ma Logistique</h2>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tableau de bord</p>
                     </div>
                 </div>
@@ -246,7 +285,7 @@ export default function DeliveryDashboard() {
                     </div>
                     <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center">
                         <span className="text-2xl font-black text-emerald-500">{stats.delivered}</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Livrés</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Expédiés</span>
                     </div>
                     <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center">
                         <span className="text-2xl font-black text-blue-500">{stats.pending}</span>
@@ -335,7 +374,7 @@ export default function DeliveryDashboard() {
                                                 <MapPin className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
                                                 <div>
                                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                                                        {order.shipping_city || "Ville N/A"}
+                                                        {order.shipping_city || "Entrepôt N/A"}
                                                     </p>
                                                     <p className="text-xs font-medium text-slate-500 leading-relaxed mt-0.5">
                                                         {order.shipping_address || "Adresse non spécifiée"}
@@ -389,7 +428,7 @@ export default function DeliveryDashboard() {
                                         ) : (
                                             <div className="mt-5 flex items-center justify-center gap-2 bg-emerald-50 text-emerald-600 py-3 rounded-xl border border-emerald-100 font-black text-sm">
                                                 <CheckCircle2 className="w-4 h-4" />
-                                                Livré avec succès
+                                                Expédié avec succès
                                             </div>
                                         )}
                                     </div>
@@ -412,8 +451,8 @@ export default function DeliveryDashboard() {
             <Dialog open={isFailModalOpen} onOpenChange={setIsFailModalOpen}>
                 <DialogContent className="rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md border-none shadow-2xl">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-black text-slate-900">Signaler un échec</DialogTitle>
-                        <DialogDescription className="font-medium">Pourquoi la livraison n'a pas pu être effectuée ?</DialogDescription>
+                        <DialogTitle className="text-2xl font-black text-slate-900">Signaler un échec logistique</DialogTitle>
+                        <DialogDescription className="font-medium">Pourquoi l'expédition n'a pas pu être effectuée ?</DialogDescription>
                     </DialogHeader>
 
                     <div className="py-6 space-y-4">
@@ -471,7 +510,7 @@ export default function DeliveryDashboard() {
             {/* Bottom Nav Bar (Quick Stats/Logo) */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 py-3 px-8 flex justify-center z-40 lg:hidden">
                 <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">LIVRÉ AUJOURD'HUI</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">EXPÉDIÉ AUJOURD'HUI</span>
                     <span className="text-xl font-black text-slate-900">{orders.filter(o => o.status === 'delivered').length}</span>
                 </div>
             </div>
@@ -481,7 +520,7 @@ export default function DeliveryDashboard() {
                 <DialogContent className="rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md border-none shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black text-slate-900">Confirmation</DialogTitle>
-                        <DialogDescription className="font-medium text-slate-500">Voulez-vous confirmer la livraison de ce colis ?</DialogDescription>
+                        <DialogDescription className="font-medium text-slate-500">Voulez-vous confirmer l'expédition de ce colis ?</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <div className="bg-emerald-50 p-4 rounded-2xl flex items-center gap-4">
@@ -490,9 +529,24 @@ export default function DeliveryDashboard() {
                             </div>
                             <div>
                                 <p className="font-black text-slate-900">#{selectedOrder?.order_number}</p>
-                                <p className="text-sm font-bold text-emerald-600">Marquer comme livré</p>
+                                <p className="text-sm font-bold text-emerald-600">Marquer comme expédié</p>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="mt-6">
+                        <Label className="text-sm font-bold text-slate-700 mb-2 block">
+                            Preuve de livraison (Photo / Bon de livraison)
+                        </Label>
+                        <Input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                            className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        <p className="text-xs text-slate-400 mt-2">
+                            Prenez une photo du bon signé ou chargez un PDF.
+                        </p>
                     </div>
                     <DialogFooter className="gap-2 sm:gap-0">
                         <Button
@@ -512,6 +566,6 @@ export default function DeliveryDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     )
 }

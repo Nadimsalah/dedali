@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Loader2, MapPin } from "lucide-react"
 import { updateOrderStatusAdmin } from "@/app/actions/admin-orders"
-import { getActiveDeliveryMen } from "@/app/actions/delivery-men"
+import { getActiveDeliveryMen } from "@/app/actions/logisticiens"
 
 export default function MyOrdersPage() {
     const { t, setLanguage } = useLanguage()
@@ -95,11 +95,13 @@ export default function MyOrdersPage() {
             setSelectedOrder(order)
             setIsDeliveryModalOpen(true)
             if (deliveryMen.length === 0) {
-                const { success, data } = await getActiveDeliveryMen()
+                const { success, data, error } = await getActiveDeliveryMen()
+                console.log("Fetching delivery men result:", { success, count: data?.length, error })
                 if (success && data) {
                     setDeliveryMen(data)
                 } else {
-                    toast.error("Impossible de charger les livreurs")
+                    console.error("Failed to load delivery men:", error)
+                    toast.error("Impossible de charger les logisticiens")
                 }
             }
             return
@@ -138,6 +140,7 @@ export default function MyOrdersPage() {
         switch (status) {
             case 'delivered': return <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             case 'shipped': return <Truck className="w-4 h-4 text-blue-500" />
+            case 'processing': return <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
             case 'pending': return <Clock className="w-4 h-4 text-amber-500" />
             default: return <AlertCircle className="w-4 h-4 text-slate-400" />
         }
@@ -164,6 +167,7 @@ export default function MyOrdersPage() {
                             { key: 'all', label: t("manager.orders.filter_all") },
                             { key: 'pending', label: t("manager.orders.filter_pending") },
                             { key: 'processing', label: t("manager.orders.filter_processing") },
+                            { key: 'shipped', label: t("manager.orders.filter_shipped") },
                             { key: 'delivered', label: t("manager.orders.filter_delivered") }
                         ].map(({ key, label }) => (
                             <button
@@ -213,7 +217,7 @@ export default function MyOrdersPage() {
                                         <td className="py-5 px-6">
                                             <div className="flex items-center gap-2">
                                                 {getStatusIcon(o.status)}
-                                                <span className="text-sm font-bold capitalize">{o.status}</span>
+                                                <span className="text-sm font-bold capitalize">{t(`status.${o.status}`)}</span>
                                             </div>
                                         </td>
                                         <td className="py-5 px-6 font-black text-slate-900">
@@ -237,7 +241,7 @@ export default function MyOrdersPage() {
                                                                 onClick={() => handleUpdateStatus(o, s)}
                                                                 className="capitalize text-xs font-bold"
                                                             >
-                                                                {s}
+                                                                {t(`status.${s}`)}
                                                             </DropdownMenuItem>
                                                         ))}
                                                     </DropdownMenuContent>
@@ -279,7 +283,7 @@ export default function MyOrdersPage() {
                             <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4 border border-white/30">
                                 <Truck className="w-8 h-8 text-white" />
                             </div>
-                            <DialogTitle className="text-3xl font-black tracking-tight mb-2">Assigner un Livreur</DialogTitle>
+                            <DialogTitle className="text-3xl font-black tracking-tight mb-2">Assigner un Logisticien</DialogTitle>
                             <DialogDescription className="text-indigo-100 font-medium">
                                 Sélectionnez le chauffeur qui prendra en charge la commande <span className="text-white font-black">#{selectedOrder?.order_number}</span>
                             </DialogDescription>
@@ -356,7 +360,7 @@ export default function MyOrdersPage() {
                                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 grayscale opacity-50">
                                         <Truck className="w-8 h-8 text-slate-400" />
                                     </div>
-                                    <p className="text-slate-400 font-bold">Aucun livreur disponible</p>
+                                    <p className="text-slate-400 font-bold">Aucun logisticien disponible</p>
                                 </div>
                             )}
                         </div>

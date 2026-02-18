@@ -66,8 +66,8 @@ export default function LoginPage() {
                     console.log('Redirecting to manager resellers')
                     router.push('/manager/resellers')
                 } else if (normalizedRole === 'DELIVERY_MAN') {
-                    console.log('Redirecting to delivery dashboard')
-                    router.push('/delivery/dashboard')
+                    console.log('Redirecting to logistique dashboard')
+                    router.push('/logistique/dashboard')
                 } else {
                     console.log('Unknown role or customer, redirecting to home')
                     router.push('/')

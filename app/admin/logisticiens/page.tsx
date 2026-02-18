@@ -72,7 +72,7 @@ export default function DeliveryMenPage() {
     async function loadData() {
         setLoading(true)
         try {
-            const res = await fetch("/api/admin/delivery-men")
+            const res = await fetch("/api/admin/logisticiens")
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
 
@@ -88,7 +88,7 @@ export default function DeliveryMenPage() {
                     role: p.role,
                     is_blocked: p.is_blocked || false
                 }))
-            console.log("[Admin] Loaded delivery men:", mapped.length)
+            console.log("[Admin] Loaded logisticiens:", mapped.length)
             setDeliveryMen(mapped)
         } catch (error: any) {
             toast.error(error.message)
@@ -102,8 +102,8 @@ export default function DeliveryMenPage() {
         setIsSaving(true)
         try {
             const url = editingMan
-                ? `/api/admin/delivery-men/${editingMan.id}`
-                : '/api/admin/delivery-men'
+                ? `/api/admin/logisticiens/${editingMan.id}`
+                : '/api/admin/logisticiens'
 
             const method = editingMan ? 'PATCH' : 'POST'
 
@@ -115,7 +115,7 @@ export default function DeliveryMenPage() {
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
 
-            toast.success(editingMan ? "Livreur mis à jour" : "Livreur créé avec succès")
+            toast.success(editingMan ? "Logisticien mis à jour" : "Logisticien créé avec succès")
             setIsModalOpen(false)
             setEditingMan(null)
             setFormData({ name: '', phone: '', password: '', city: '' })
@@ -136,7 +136,7 @@ export default function DeliveryMenPage() {
 
             if (error) throw error
 
-            toast.success(currentlyBlocked ? "Livreur débloqué" : "Livreur bloqué")
+            toast.success(currentlyBlocked ? "Logisticien débloqué" : "Logisticien bloqué")
             loadData()
         } catch (error: any) {
             toast.error(error.message)
@@ -147,13 +147,13 @@ export default function DeliveryMenPage() {
         if (!confirm(`Êtes-vous sûr de vouloir supprimer ${name} ?`)) return
 
         try {
-            const res = await fetch(`/api/admin/delivery-men/${id}`, {
+            const res = await fetch(`/api/admin/logisticiens/${id}`, {
                 method: 'DELETE'
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
 
-            toast.success("Livreur supprimé")
+            toast.success("Logisticien supprimé")
             loadData()
         } catch (error: any) {
             toast.error(error.message)
@@ -161,7 +161,7 @@ export default function DeliveryMenPage() {
     }
 
     const handleCopyUrl = () => {
-        const url = `${window.location.origin}/delivery/login`
+        const url = `${window.location.origin}/logistique/login`
         navigator.clipboard.writeText(url)
         toast.success("URL de connexion copiée !")
     }
@@ -188,8 +188,8 @@ export default function DeliveryMenPage() {
                             <Truck className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Gestion des Livreurs</h1>
-                            <p className="text-sm text-muted-foreground font-medium">Gérez votre équipe de livraison et leurs secteurs</p>
+                            <h1 className="text-2xl font-bold text-foreground tracking-tight">Gestion des Logisticiens</h1>
+                            <p className="text-sm text-muted-foreground font-medium">Gérez votre équipe logistique et leurs secteurs</p>
                         </div>
                     </div>
 
@@ -203,13 +203,13 @@ export default function DeliveryMenPage() {
                         <DialogTrigger asChild>
                             <Button className="rounded-2xl h-12 px-6 gap-2 font-bold shadow-lg shadow-pink-500/20 bg-pink-500 hover:bg-pink-600 transition-all hover:scale-[1.02] active:scale-[0.98] border-none">
                                 <UserPlus className="w-5 h-5 text-white" />
-                                <span className="text-white">Ajouter un Livreur</span>
+                                <span className="text-white">Ajouter un Logisticien</span>
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="glass-strong border-white/10 rounded-[2rem]">
                             <DialogHeader>
-                                <DialogTitle className="text-2xl font-black">{editingMan ? "Modifier le Livreur" : "Nouveau Livreur"}</DialogTitle>
-                                <DialogDescription>Saisissez les informations de connexion pour le livreur.</DialogDescription>
+                                <DialogTitle className="text-2xl font-black">{editingMan ? "Modifier le Logisticien" : "Nouveau Logisticien"}</DialogTitle>
+                                <DialogDescription>Saisissez les informations de connexion pour le logisticien.</DialogDescription>
                             </DialogHeader>
                             <form onSubmit={handleSave} className="space-y-4 py-4 text-foreground">
                                 <div className="space-y-2">
@@ -223,13 +223,13 @@ export default function DeliveryMenPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Ville</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Entrepôt</label>
                                     <Input
                                         required
                                         value={formData.city}
                                         onChange={e => setFormData({ ...formData, city: e.target.value })}
                                         className="h-12 rounded-xl bg-white/5 border-white/10 focus:ring-pink-500"
-                                        placeholder="Ex: Casablanca"
+                                        placeholder="Ex: Entrepôt Principal - Casablanca"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -269,7 +269,7 @@ export default function DeliveryMenPage() {
                     <div className="relative flex-1 xl:w-[400px]">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                            placeholder="Rechercher par nom, ville ou téléphone..."
+                            placeholder="Rechercher par nom, entrepôt ou téléphone..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-pink-500 transition-all"
@@ -291,7 +291,7 @@ export default function DeliveryMenPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Badge className="bg-pink-500/10 text-pink-500 border-pink-500/20 rounded-lg px-3 py-1 font-bold">
-                                            Livreur
+                                            Logisticien
                                         </Badge>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -352,7 +352,7 @@ export default function DeliveryMenPage() {
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <MapPin className="w-4 h-4" />
-                                        {m.city || "Ville non définie"}
+                                        {m.city || "Entrepôt non défini"}
                                     </div>
                                 </div>
 
@@ -373,8 +373,8 @@ export default function DeliveryMenPage() {
                                 <div className="p-6 bg-white/5 rounded-full text-muted-foreground/20">
                                     <Truck className="w-16 h-16" />
                                 </div>
-                                <h3 className="text-xl font-bold text-foreground">Aucun livreur trouvé</h3>
-                                <p className="text-muted-foreground max-w-xs mx-auto">Commencez par ajouter votre premier livreur pour gérer vos expéditions.</p>
+                                <h3 className="text-xl font-bold text-foreground">Aucun logisticien trouvé</h3>
+                                <p className="text-muted-foreground max-w-xs mx-auto">Commencez par ajouter votre premier logisticien pour gérer vos expéditions.</p>
                             </div>
                         </div>
                     )}

@@ -3,18 +3,29 @@
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 
-export async function updateOrderStatusAdmin(orderId: string, status: string, actorId?: string, deliveryManId?: string) {
+export async function updateOrderStatusAdmin(orderId: string, status: string, actorId?: string | null, deliveryManId?: string) {
     console.log(`[Admin Action] Updating order ${orderId} to status: ${status} by ${actorId || 'system'}`)
+
+    if (!orderId) return { error: "Order ID is required" }
 
     try {
         // 1. Get Old Status for Log
-        const { data: oldOrder } = await supabaseAdmin
-            .from('orders')
-            .select('status')
-            .eq('id', orderId)
-            .single()
+        let oldStatus = 'unknown'
+        try {
+            const { data: oldOrder, error: fetchError } = await supabaseAdmin
+                .from('orders')
+                .select('status')
+                .eq('id', orderId)
+                .single()
 
-        const oldStatus = oldOrder?.status || 'unknown'
+            if (fetchError) {
+                console.error('[Admin Action] Error fetching old status:', fetchError)
+            } else {
+                oldStatus = oldOrder?.status || 'unknown'
+            }
+        } catch (err) {
+            console.error('[Admin Action] Exception fetching old status:', err)
+        }
 
         // 2. Update Order Status
         const updateData: any = {
@@ -27,6 +38,7 @@ export async function updateOrderStatusAdmin(orderId: string, status: string, ac
             updateData.delivery_assigned_at = new Date().toISOString()
         }
 
+        console.log('[Admin Action] Performing update:', updateData)
         const { data, error } = await supabaseAdmin
             .from('orders')
             .update(updateData)
@@ -39,22 +51,33 @@ export async function updateOrderStatusAdmin(orderId: string, status: string, ac
             return { error: error.message }
         }
 
+        console.log('[Admin Action] Update successful. New data:', data)
+
         // 3. Manually Insert Log (Trusting the provided actorId)
         if (actorId) {
-            await supabaseAdmin.from('order_status_logs').insert({
-                order_id: orderId,
-                changed_by: actorId,
-                old_status: oldStatus,
-                new_status: status
-            })
+            try {
+                const { error: logError } = await supabaseAdmin.from('order_status_logs').insert({
+                    order_id: orderId,
+                    changed_by: actorId,
+                    old_status: oldStatus,
+                    new_status: status
+                })
+                if (logError) console.error('[Admin Action] Error inserting log:', logError)
+            } catch (logEx) {
+                console.error('[Admin Action] Exception inserting log:', logEx)
+            }
         }
 
-        revalidatePath('/admin/orders/[id]')
-        revalidatePath('/manager/orders/[orderId]')
+        try {
+            revalidatePath('/admin/orders/[id]')
+            revalidatePath('/manager/orders/[orderId]')
+        } catch (revalError) {
+            console.error('[Admin Action] Revalidation failed (non-critical):', revalError)
+        }
 
         return { success: true, data }
     } catch (e: any) {
-        console.error('[Admin Action] Unexpected error:', e)
+        console.error('[Admin Action] CRITICAL Unexpected error:', e)
         return { error: e.message || 'An unexpected error occurred' }
     }
 }

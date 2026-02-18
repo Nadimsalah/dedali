@@ -358,6 +358,43 @@ export default function OrderDetailsPage() {
                             </div>
                         </div>
 
+                        {/* Proof of Delivery Section */}
+                        {order.delivery_proof && (
+                            <div className="glass-strong rounded-3xl p-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                    <h3 className="font-bold text-foreground">
+                                        {language === "fr" ? "Preuve de Livraison" : "Proof of Delivery"}
+                                    </h3>
+                                </div>
+                                <div className="relative w-full h-48 bg-white/5 rounded-xl overflow-hidden border border-white/10 mb-3">
+                                    {order.delivery_proof.toLowerCase().endsWith('.pdf') ? (
+                                        <div className="flex items-center justify-center h-full">
+                                            <FileText className="w-12 h-12 text-muted-foreground" />
+                                            <span className="ml-2 text-sm text-foreground font-bold">Document PDF</span>
+                                        </div>
+                                    ) : (
+                                        <div className="relative w-full h-full">
+                                            <Image
+                                                src={order.delivery_proof}
+                                                alt="Preuve de livraison"
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <a
+                                    href={order.delivery_proof}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full py-3 bg-primary/10 text-primary text-center rounded-xl text-sm font-bold hover:bg-primary/20 transition-colors"
+                                >
+                                    {language === "fr" ? "Voir le document" : "View Document"}
+                                </a>
+                            </div>
+                        )}
+
                         {/* Costumer Details Card */}
                         <div className="glass-strong rounded-3xl p-6">
                             <div className="flex justify-between items-start mb-6">
@@ -512,8 +549,8 @@ export default function OrderDetailsPage() {
                 <Dialog open={isDeliveryModalOpen} onOpenChange={setIsDeliveryModalOpen}>
                     <DialogContent className="glass-strong border-white/10 rounded-[2rem] max-w-lg">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-black">Assigner un Livreur</DialogTitle>
-                            <DialogDescription>Choisissez le livreur responsable de cette expédition.</DialogDescription>
+                            <DialogTitle className="text-2xl font-black">Assigner un Logisticien</DialogTitle>
+                            <DialogDescription>Choisissez le logisticien responsable de cette expédition.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="relative">

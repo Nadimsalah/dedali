@@ -3,11 +3,12 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const params = await props.params
         const id = params.id
-        console.log("[API Delivery] Attempting DELETE for ID:", id)
+        console.log("[API Logistique] Attempting DELETE for ID:", id)
 
         if (!id || id === 'undefined' || id === 'null') {
             return NextResponse.json({ error: 'ID manquant ou invalide' }, { status: 400 })
@@ -33,11 +34,12 @@ export async function DELETE(
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    props: { params: Promise<{ id: string }> }
 ) {
     try {
+        const params = await props.params
         const id = params.id
-        console.log("[API Delivery] Attempting PATCH for ID:", id)
+        console.log("[API Logistique] Attempting PATCH for ID:", id)
 
         if (!id || id === 'undefined' || id === 'null') {
             return NextResponse.json({ error: 'ID manquant ou invalide' }, { status: 400 })

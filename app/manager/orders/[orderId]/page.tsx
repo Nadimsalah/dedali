@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { updateOrderStatusAdmin, getOrderDetailsAdmin } from "@/app/actions/admin-orders"
-import { getActiveDeliveryMen } from "@/app/actions/delivery-men"
+import { getActiveDeliveryMen } from "@/app/actions/logisticiens"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -42,6 +43,7 @@ import { Input } from "@/components/ui/input"
 export default function OrderDetailsPage() {
     const { orderId } = useParams()
     const router = useRouter()
+    const { t } = useLanguage()
 
     // Flattened State
     const [order, setOrder] = useState<any>(null)
@@ -94,12 +96,13 @@ export default function OrderDetailsPage() {
             setPendingStatus(statusLower)
             setIsDeliveryModalOpen(true)
             if (deliveryMen.length === 0) {
-                const { success, data } = await getActiveDeliveryMen()
+                const { success, data, error } = await getActiveDeliveryMen()
                 if (success && data) {
                     console.log("[StatusUpdate] Loaded delivery men via Server Action:", data.length)
                     setDeliveryMen(data)
                 } else {
-                    toast.error("Erreur lors du chargement des livreurs")
+                    console.error("Failed to load delivery men:", error)
+                    toast.error("Impossible de charger les logisticiens")
                 }
             }
             return
@@ -112,11 +115,14 @@ export default function OrderDetailsPage() {
     const performStatusUpdate = async (statusLower: string, deliveryManId?: string) => {
         setIsUpdating(true)
         try {
-            const { success, error } = await updateOrderStatusAdmin(order.id, statusLower, amId!, deliveryManId)
+            console.log(`[Client] Calling updateOrderStatusAdmin with: orderId=${order.id}, status=${statusLower}, amId=${amId}, deliveryManId=${deliveryManId}`)
+            const { success, error } = await updateOrderStatusAdmin(order.id, statusLower, amId || undefined, deliveryManId)
 
             if (error || !success) throw new Error(error || "Update failed")
 
-            toast.success(`Statut mis à jour : ${statusLower}`)
+            // Format status for toast
+            const statusKey = `status.${statusLower}`
+            toast.success(t("manager.order_details.status_updated").replace("{status}", t(statusKey)))
             setOrder((prev: any) => ({
                 ...prev,
                 status: statusLower,
@@ -125,7 +131,7 @@ export default function OrderDetailsPage() {
                     id: `temp-${Date.now()}`,
                     new_status: statusLower,
                     created_at: new Date().toISOString(),
-                    changed_by_user: { name: 'You (Just Now)' }
+                    changed_by_user: { name: t("manager.order_details.you_just_now") }
                 }, ...prev.auditLogs]
             }))
             setIsDeliveryModalOpen(false)
@@ -151,7 +157,7 @@ export default function OrderDetailsPage() {
                 const data = await res.json()
                 throw new Error(data.error)
             }
-            toast.success("Internal note added")
+            toast.success(t("manager.order_details.note_added"))
             setNewNote("")
             loadData()
         } catch (error: any) {
@@ -171,11 +177,11 @@ export default function OrderDetailsPage() {
     if (loading) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
             <div className="w-16 h-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-slate-400 font-medium animate-pulse">Loading Order Details...</p>
+            <p className="text-slate-400 font-medium animate-pulse">{t("manager.order_details.loading")}</p>
         </div>
     )
 
-    if (!order) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold text-xl">Order not found.</div>
+    if (!order) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold text-xl">{t("manager.order_details.not_found")}</div>
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] font-sans print:bg-white pb-20">
@@ -188,7 +194,7 @@ export default function OrderDetailsPage() {
                         <ChevronLeft className="w-5 h-5" />
                     </Button>
                     <div className="h-6 w-[1px] bg-slate-200" />
-                    <span className="font-bold text-slate-900">Order #{order.order_number}</span>
+                    <span className="font-bold text-slate-900">{t("manager.order_details.order_number").replace("{number}", order.order_number)}</span>
                     <Badge variant="secondary" className="bg-slate-100 text-slate-500 font-mono text-xs hidden sm:flex">
                         {new Date(order.created_at).toLocaleDateString()}
                     </Badge>
@@ -198,7 +204,7 @@ export default function OrderDetailsPage() {
                 {order.status.toLowerCase() !== 'pending' && order.status.toLowerCase() !== 'cancelled' && (
                     <Button onClick={handlePrint} size="sm" className="bg-slate-900 text-white hover:bg-slate-800 rounded-full text-xs font-bold shadow-lg shadow-primary/20">
                         <FileText className="w-3.5 h-3.5 mr-2" />
-                        Bon de Commande
+                        {t("manager.order_details.bon_de_commande")}
                     </Button>
                 )}
             </nav >
@@ -216,7 +222,7 @@ export default function OrderDetailsPage() {
                                 <div className="p-2 bg-primary/10 rounded-xl text-primary">
                                     <Building2 className="w-5 h-5" />
                                 </div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Company / Customer</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{t("manager.order_details.company_customer")}</span>
                             </div>
 
                             {/* COMPANY NAME DISPLAY */}
@@ -225,7 +231,7 @@ export default function OrderDetailsPage() {
                             </h1>
                             <p className="text-slate-500 font-medium flex items-center gap-2 mb-1">
                                 <User className="w-4 h-4 text-slate-400" />
-                                Contact: <span className="text-slate-900 font-bold">{order.display_reseller_name}</span>
+                                {t("manager.order_details.contact")} <span className="text-slate-900 font-bold">{order.display_reseller_name}</span>
                             </p>
                             {/* Phone Number Display */}
                             {(order.reseller?.profile?.phone || order.reseller?.phone || order.customer_phone) && (
@@ -239,7 +245,7 @@ export default function OrderDetailsPage() {
 
                             {/* DEBUG info to diagnose NULL reseller_id */}
                             <div className="mt-4 p-2 bg-slate-100/50 rounded text-[10px] text-slate-400 font-mono">
-                                REF: {order.id.slice(0, 8)} | RID: {order.reseller_id || "NULL (Direct Order)"}
+                                {t("manager.order_details.ref")} {order.id.slice(0, 8)} | {t("manager.order_details.rid")} {order.reseller_id || `NULL (${t("manager.order_details.direct_order")})`}
                             </div>
 
                             <div className="h-px w-full bg-slate-100 my-6" />
@@ -258,7 +264,7 @@ export default function OrderDetailsPage() {
                                             }
                                         `}
                                     >
-                                        {s}
+                                        {t(`status.${s}`)}
                                     </button>
                                 ))}
                             </div>
@@ -268,12 +274,12 @@ export default function OrderDetailsPage() {
                     {/* Quick Stats */}
                     <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6 flex flex-col justify-center gap-6">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-500">Current Status</span>
+                            <span className="text-sm font-medium text-slate-500">{t("manager.order_details.current_status")}</span>
                             <Badge className={`capitalize px-3 py-1 rounded-lg text-sm ${order.status === 'delivered' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
                                 order.status === 'pending' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
                                     'bg-blue-100 text-blue-700 hover:bg-blue-200'
                                 }`}>
-                                {order.status}
+                                {t(`status.${order.status}`)}
                             </Badge>
                         </div>
                         <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -281,12 +287,12 @@ export default function OrderDetailsPage() {
                                 <div className="p-2 bg-white rounded-lg shadow-sm text-slate-400">
                                     <ShoppingBag className="w-4 h-4" />
                                 </div>
-                                <span className="text-sm font-bold text-slate-600">Total</span>
+                                <span className="text-sm font-bold text-slate-600">{t("manager.order_details.total")}</span>
                             </div>
                             <span className="text-xl font-black text-slate-900">MAD {order.total.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Location</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t("manager.order_details.location")}</span>
                             <div className="flex items-center gap-1.5 text-slate-900 font-bold text-sm">
                                 <MapPin className="w-3.5 h-3.5 text-primary" />
                                 {order.city}
@@ -300,8 +306,8 @@ export default function OrderDetailsPage() {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="font-bold text-lg text-slate-900">Items Ordered</h3>
-                                <Badge variant="outline" className="rounded-full">{order.items.length} Items</Badge>
+                                <h3 className="font-bold text-lg text-slate-900">{t("manager.order_details.items_ordered")}</h3>
+                                <Badge variant="outline" className="rounded-full">{t("manager.order_details.items_count").replace("{count}", order.items.length.toString())}</Badge>
                             </div>
                             <div className="divide-y divide-slate-50">
                                 {order.items.map((item: any) => (
@@ -310,22 +316,22 @@ export default function OrderDetailsPage() {
                                             {item.image_url ? (
                                                 <img src={item.image_url} alt={item.product_title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold bg-slate-50">IMG</div>
+                                                <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold bg-slate-50">{t("manager.order_details.img")}</div>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="font-bold text-slate-900 truncate text-base mb-1">{item.product_title}</h4>
-                                            <p className="text-sm text-slate-500 mb-1">{item.variant_name || "Standard Option"}</p>
+                                            <p className="text-sm text-slate-500 mb-1">{item.variant_name || t("manager.order_details.standard_option")}</p>
                                             <div className="flex items-center gap-2">
                                                 <Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-lg text-xs">
-                                                    Qty: {item.quantity}
+                                                    {t("manager.order_details.qty")} {item.quantity}
                                                 </Badge>
                                                 <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded-md font-medium">📍 {item.warehouse_name}</span>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <p className="font-black text-lg text-slate-900">MAD {item.subtotal.toLocaleString()}</p>
-                                            <p className="text-xs text-slate-400 font-medium">MAD {item.final_price?.toLocaleString()} each</p>
+                                            <p className="text-xs text-slate-400 font-medium">MAD {item.final_price?.toLocaleString()} {t("manager.order_details.each")}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -335,24 +341,56 @@ export default function OrderDetailsPage() {
 
                     {/* Sidebar Stats & Notes */}
                     <div className="space-y-6">
+                        {/* Proof of Delivery Section */}
+                        {order.delivery_proof && (
+                            <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                    <h3 className="font-bold text-slate-900">Preuve de Livraison</h3>
+                                </div>
+                                <div className="relative w-full h-48 bg-slate-50 rounded-xl overflow-hidden border border-slate-100 mb-3">
+                                    {order.delivery_proof.toLowerCase().endsWith('.pdf') ? (
+                                        <div className="flex items-center justify-center h-full">
+                                            <FileText className="w-12 h-12 text-slate-400" />
+                                            <span className="ml-2 text-sm text-slate-500 font-bold">Document PDF</span>
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src={order.delivery_proof}
+                                            alt="Preuve de livraison"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    )}
+                                </div>
+                                <a
+                                    href={order.delivery_proof}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full py-3 bg-slate-50 text-slate-600 text-center rounded-xl text-sm font-bold hover:bg-slate-100 transition-colors"
+                                >
+                                    Voir le document
+                                </a>
+                            </div>
+                        )}
+
                         {/* Internal Notes */}
                         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <MessageSquare className="w-4 h-4 text-primary" />
-                                <h3 className="font-bold text-slate-900">Internal Notes</h3>
+                                <h3 className="font-bold text-slate-900">{t("manager.order_details.internal_notes")}</h3>
                             </div>
 
                             <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4 mb-4 custom-scrollbar">
                                 {(!order.notes || order.notes.length === 0) && (
                                     <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                        <p className="text-xs">No internal notes yet.</p>
+                                        <p className="text-xs">{t("manager.order_details.no_notes")}</p>
                                     </div>
                                 )}
                                 {order.notes && order.notes.map((note: any) => (
                                     <div key={note.id} className="bg-slate-50 p-3 rounded-2xl rounded-tl-sm border border-slate-100">
                                         <p className="text-sm text-slate-600 mb-2">{note.note}</p>
                                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium border-t border-slate-200/50 pt-2">
-                                            <span>{note.author?.name || "System"}</span>
+                                            <span>{note.author?.name || t("manager.order_details.system")}</span>
                                             <span>{new Date(note.created_at).toLocaleDateString()}</span>
                                         </div>
                                     </div>
@@ -361,7 +399,7 @@ export default function OrderDetailsPage() {
 
                             <form onSubmit={handleAddNote} className="relative">
                                 <Textarea
-                                    placeholder="Write a note..."
+                                    placeholder={t("manager.order_details.write_note")}
                                     value={newNote}
                                     onChange={(e) => setNewNote(e.target.value)}
                                     className="min-h-[80px] pr-10 bg-white border-slate-200 rounded-xl text-sm focus:ring-primary/20 resize-none"
@@ -376,23 +414,23 @@ export default function OrderDetailsPage() {
                         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6">
                             <div className="flex items-center gap-2 mb-4">
                                 <History className="w-4 h-4 text-slate-400" />
-                                <h3 className="font-bold text-slate-900">Timeline</h3>
+                                <h3 className="font-bold text-slate-900">{t("manager.order_details.timeline")}</h3>
                             </div>
                             <div className="relative pl-2 border-l border-slate-100 space-y-6">
                                 {order.auditLogs && order.auditLogs.map((log: any, idx: number) => (
                                     <div key={log.id} className="relative pl-6">
                                         <div className={`absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${idx === 0 ? 'bg-primary' : 'bg-slate-200'}`} />
-                                        <p className="text-xs font-bold text-slate-900 capitalize mb-0.5">{log.new_status}</p>
+                                        <p className="text-xs font-bold text-slate-900 capitalize mb-0.5">{t(`status.${log.new_status}`)}</p>
                                         {log.new_status === 'cancelled' && order.delivery_failed_reason && (
                                             <p className="text-[10px] text-red-500 font-medium mb-0.5">
-                                                Raison: {order.delivery_failed_reason}
+                                                {t("manager.order_details.reason")} {order.delivery_failed_reason}
                                             </p>
                                         )}
                                         <p className="text-[10px] text-slate-400">
                                             {new Date(log.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                         <p className="text-[10px] text-slate-400">
-                                            by {log.changed_by_user?.name || "System"}
+                                            {t("manager.order_details.by")} {log.changed_by_user?.name || t("manager.order_details.system")}
                                         </p>
                                     </div>
                                 ))}
@@ -426,10 +464,10 @@ export default function OrderDetailsPage() {
                         </div>
                     </div>
                     <div className="text-right">
-                        <h1 className="text-2xl font-black text-gray-900 uppercase">BON DE COMMANDE</h1>
+                        <h1 className="text-2xl font-black text-gray-900 uppercase">{t("print.bon_de_commande")}</h1>
                         <div className="text-sm mt-2">
-                            <p><span className="font-bold">N° Commande:</span> {order.order_number}</p>
-                            <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}</p>
+                            <p><span className="font-bold">{t("print.order_number")}</span> {order.order_number}</p>
+                            <p><span className="font-bold">{t("print.date")}</span> {new Date().toLocaleDateString('fr-FR')}</p>
                         </div>
                     </div>
                 </div>
@@ -437,16 +475,16 @@ export default function OrderDetailsPage() {
                 {/* Client & Shipping Info */}
                 <div className="grid grid-cols-2 gap-8 mb-8">
                     <div>
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Client</h3>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">{t("print.client")}</h3>
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm">
                             <p className="font-bold text-gray-900">{order.display_company_name}</p>
-                            <p className="text-gray-600">Attn: {order.display_reseller_name}</p>
+                            <p className="text-gray-600">{t("print.attn")} {order.display_reseller_name}</p>
                             <p className="text-gray-600">{order.customer_email}</p>
                             <p className="text-gray-600">{order.customer_phone}</p>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">Adresse de Livraison</h3>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">{t("print.shipping_address")}</h3>
                         <div className="text-sm text-right">
                             <p className="font-bold text-gray-900">{order.customer_name}</p>
                             <p className="text-gray-600">{order.address_line1}</p>
@@ -460,10 +498,10 @@ export default function OrderDetailsPage() {
                 <table className="w-full mb-8 border-collapse">
                     <thead>
                         <tr className="border-b-2 border-gray-900 text-gray-900">
-                            <th className="py-2 text-left text-xs font-bold uppercase tracking-wider">Produit</th>
-                            <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">Quantité</th>
-                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Prix Unitaire</th>
-                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Total</th>
+                            <th className="py-2 text-left text-xs font-bold uppercase tracking-wider">{t("print.product")}</th>
+                            <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">{t("print.quantity")}</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">{t("print.unit_price")}</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">{t("print.total")}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -486,15 +524,15 @@ export default function OrderDetailsPage() {
                 <div className="flex justify-end mb-12">
                     <div className="w-1/3 space-y-2">
                         <div className="flex justify-between text-sm text-gray-600">
-                            <span>Sous-total</span>
+                            <span>{t("print.subtotal")}</span>
                             <span>{order.subtotal.toLocaleString('fr-FR')} MAD</span>
                         </div>
                         <div className="flex justify-between text-sm text-gray-600">
-                            <span>Livraison</span>
+                            <span>{t("print.shipping")}</span>
                             <span>{order.shipping_cost.toLocaleString('fr-FR')} MAD</span>
                         </div>
                         <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                            <span>Total</span>
+                            <span>{t("print.total")}</span>
                             <span>{order.total.toLocaleString('fr-FR')} MAD</span>
                         </div>
                     </div>
@@ -503,10 +541,10 @@ export default function OrderDetailsPage() {
                 {/* Footer / Signatures */}
                 <div className="flex justify-between items-end pt-8 border-t border-gray-200">
                     <div className="text-xs text-gray-400">
-                        <p>Ce document est généré automatiquement.</p>
+                        <p>{t("print.footer_generated")}</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cachet et Signature</p>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t("print.signature")}</p>
                         <div className="h-16 w-32 border border-gray-200 rounded-lg bg-gray-50"></div>
                     </div>
                 </div>
@@ -521,8 +559,8 @@ export default function OrderDetailsPage() {
                                 <Truck className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                                <DialogTitle className="text-2xl font-black">Assigner un Livreur</DialogTitle>
-                                <DialogDescription className="text-slate-400 font-medium">L'expédition de la commande #{order?.order_number}</DialogDescription>
+                                <DialogTitle className="text-2xl font-black">{t("manager.assignment.title")}</DialogTitle>
+                                <DialogDescription className="text-slate-400 font-medium">{t("manager.assignment.subtitle").replace("{number}", order?.order_number)}</DialogDescription>
                             </div>
                         </div>
                         {/* Abstract background blobs */}
@@ -533,7 +571,7 @@ export default function OrderDetailsPage() {
                         <div className="relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                             <Input
-                                placeholder="Rechercher par nom ou ville..."
+                                placeholder={t("manager.assignment.search_placeholder")}
                                 value={dmSearchQuery}
                                 onChange={(e) => setDmSearchQuery(e.target.value)}
                                 className="pl-11 h-14 rounded-2xl bg-white border-slate-200 shadow-sm focus:ring-primary/20 transition-all text-base font-medium"
@@ -575,7 +613,7 @@ export default function OrderDetailsPage() {
                                                             <p className="font-black text-slate-900">{m.name}</p>
                                                             {isMatch && (
                                                                 <Badge className="bg-emerald-500/10 text-emerald-600 border-none text-[10px] h-5 rounded-md px-1.5 font-black uppercase tracking-tighter">
-                                                                    Recommandé
+                                                                    {t("manager.assignment.recommended")}
                                                                 </Badge>
                                                             )}
                                                         </div>
@@ -606,7 +644,7 @@ export default function OrderDetailsPage() {
                             {deliveryMen.length === 0 && (
                                 <div className="text-center py-10">
                                     <div className="animate-spin w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full mx-auto mb-4" />
-                                    <p className="text-slate-500 font-bold">Chargement des livreurs...</p>
+                                    <p className="text-slate-500 font-bold">Chargement des logisticiens...</p>
                                 </div>
                             )}
                         </div>

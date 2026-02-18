@@ -47,7 +47,7 @@ export default function DeliveryLoginPage() {
 
             if (result.data?.user) {
                 toast.success("Connexion réussie")
-                router.push('/delivery/dashboard')
+                router.push('/logistique/dashboard')
                 router.refresh()
             }
         } catch (error: any) {
@@ -68,8 +68,8 @@ export default function DeliveryLoginPage() {
                     <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center shadow-xl shadow-blue-500/20 mb-6 rotate-3 transform hover:rotate-0 transition-transform duration-300">
                         <Truck className="w-10 h-10 text-white" />
                     </div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Espace Livreur</h1>
-                    <p className="text-slate-500 font-medium text-center">Gérez vos livraisons quotidiennes simplement.</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Espace Logisticien</h1>
+                    <p className="text-slate-500 font-medium text-center">Gérez vos expéditions et logistique simplement.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -115,7 +115,7 @@ export default function DeliveryLoginPage() {
                 </form>
 
                 <div className="mt-12 text-center">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">DIDAL SERVICE LIVRAISON</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">DIDAL SERVICE LOGISTIQUE</p>
                 </div>
             </div>
         </div>

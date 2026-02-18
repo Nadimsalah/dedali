@@ -104,13 +104,15 @@ export default function NewProductPage() {
 
             if (catData) setCategories(catData)
 
-            // Warehouses
-            const { data: whData } = await supabase
-                .from('warehouses')
-                .select('*')
-                .order('name')
+            // Logisticiens (Warehouses)
+            const { data: logData } = await supabase
+                .from('profiles')
+                .select('id, name, city')
+                .eq('role', 'DELIVERY_MAN')
+                .eq('is_blocked', false)
+                .order('city')
 
-            if (whData) setWarehouses(whData)
+            if (logData) setWarehouses(logData)
         }
         fetchData()
     }, [])
@@ -915,47 +917,13 @@ export default function NewProductPage() {
                                         </label>
                                         <Dialog open={showWarehouseDialog} onOpenChange={setShowWarehouseDialog}>
                                             <DialogTrigger asChild>
-                                                <button className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                                                    <Plus className="w-3 h-3" />
-                                                    Gérer les entrepôts
-                                                </button>
+                                                <Link href="/admin/logisticiens" target="_blank">
+                                                    <button className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                                                        <Plus className="w-3 h-3" />
+                                                        Gérer les logisticiens
+                                                    </button>
+                                                </Link>
                                             </DialogTrigger>
-                                            <DialogContent className="sm:max-w-md text-gray-900">
-                                                <DialogHeader>
-                                                    <DialogTitle>Gérer les entrepôts</DialogTitle>
-                                                </DialogHeader>
-                                                <div className="space-y-4 pt-4">
-                                                    <div className="flex gap-2">
-                                                        <Input
-                                                            placeholder="Nom de l'entrepôt"
-                                                            value={newWarehouseName}
-                                                            onChange={(e) => setNewWarehouseName(e.target.value)}
-                                                            className="text-gray-900"
-                                                        />
-                                                        <Button onClick={handleAddWarehouse}>
-                                                            <Plus className="w-4 h-4 mr-1" /> Ajouter
-                                                        </Button>
-                                                    </div>
-                                                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                                                        {warehouses.map((wh) => (
-                                                            <div key={wh.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                                                <span className="text-sm font-medium text-gray-700">{wh.name}</span>
-                                                                <Button
-                                                                    size="icon"
-                                                                    variant="ghost"
-                                                                    onClick={() => handleDeleteWarehouse(wh.id)}
-                                                                    className="h-8 w-8 text-red-500 hover:bg-red-50"
-                                                                >
-                                                                    <Trash className="w-4 h-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ))}
-                                                        {warehouses.length === 0 && (
-                                                            <p className="text-center text-xs text-gray-500 py-4">Aucun entrepôt configuré.</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </DialogContent>
                                         </Dialog>
                                     </div>
                                     <div className="relative">
@@ -967,7 +935,7 @@ export default function NewProductPage() {
                                         >
                                             <option value="">Sélectionner un emplacement</option>
                                             {warehouses.map((wh) => (
-                                                <option key={wh.id} value={wh.id}>{wh.name}</option>
+                                                <option key={wh.id} value={wh.id}>{wh.city ? `${wh.city} (${wh.name})` : wh.name}</option>
                                             ))}
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
