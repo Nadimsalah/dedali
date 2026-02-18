@@ -516,26 +516,6 @@ export default function HomePage() {
               />
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 absolute left-1/2 -translate-x-1/2">
-              <Link
-                href="/#shop"
-                onClick={() => setSelectedCategory("All")}
-                className={`text-sm font-medium transition-colors hover:text-primary ${selectedCategory === "All" ? "text-primary" : "text-muted-foreground"}`}
-              >
-                {t('section.all_categories')}
-              </Link>
-              {headerCategories.slice(0, 6).map((cat) => (
-                <Link
-                  key={cat.id}
-                  href="/#shop"
-                  onClick={() => setSelectedCategory('slug' in cat ? cat.slug : cat.id)}
-                  className={`text-sm font-medium transition-colors hover:text-primary ${selectedCategory === ('slug' in cat ? cat.slug : cat.id) ? "text-primary" : "text-muted-foreground"}`}
-                >
-                  {getCategoryLabel('slug' in cat ? cat.slug : cat.id)}
-                </Link>
-              ))}
-            </nav>
             {/* Right Actions */}
             <div className="flex items-center gap-1 sm:gap-2 ml-auto">
               <Link href="/search">
