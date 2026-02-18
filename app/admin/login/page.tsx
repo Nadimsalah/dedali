@@ -60,8 +60,14 @@ export default function AdminLoginPage() {
                 <div className="glass-strong rounded-[2.5rem] p-8 sm:p-10 shadow-2xl border border-white/10">
                     {/* Header */}
                     <div className="text-center mb-8 space-y-4">
-                        <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3">
-                            <Lock className="w-8 h-8 text-primary" />
+                        <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl border border-white/10">
+                            <Image
+                                src="/logo.png"
+                                alt="Didali Store Logo"
+                                width={64}
+                                height={64}
+                                className="w-16 h-16 object-contain"
+                            />
                         </div>
                         <h1 className="text-2xl font-bold text-foreground">Admin Access</h1>
                         <p className="text-sm text-muted-foreground">Enter your secure PIN</p>
