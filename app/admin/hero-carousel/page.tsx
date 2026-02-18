@@ -1,8 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Upload, Save, RotateCcw, Loader2, Image as ImageIcon, GripVertical, Link as LinkIcon, Type } from "lucide-react"
+import {
+    Upload, Save, RotateCcw, Loader2, Image as ImageIcon,
+    MoreHorizontal, Search, Trash2, CheckCircle2, XCircle,
+    Plus, ExternalLink, GripVertical, AlertCircle, ArrowUp, ArrowDown
+} from "lucide-react"
 import { toast } from "sonner"
 import {
     getHeroCarouselItems,
@@ -13,16 +17,53 @@ import {
     type HeroCarouselItem
 } from "@/lib/supabase-api"
 import { supabase } from "@/lib/supabase"
-import { Plus, Trash2, CheckCircle2, XCircle } from "lucide-react"
 import { useLanguage } from "@/components/language-provider"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 
 export default function HeroCarouselPage() {
     const { t } = useLanguage()
     const [items, setItems] = useState<HeroCarouselItem[]>([])
     const [loading, setLoading] = useState(true)
-    const [saving, setSaving] = useState(false)
-    const [editingId, setEditingId] = useState<string | null>(null)
-    const [products, setProducts] = useState<{ id: string, title: string }[]>([])
+    const [products, setProducts] = useState<{ id: string, title: string, images: string[] }[]>([])
+
+    // New Slide State
+    const [newSlideImage, setNewSlideImage] = useState<File | null>(null)
+    const [newSlidePreview, setNewSlidePreview] = useState<string | null>(null)
+    const [newSlideTitle, setNewSlideTitle] = useState("")
+    const [newSlideSubtitle, setNewSlideSubtitle] = useState("")
+    const [newSlideLink, setNewSlideLink] = useState<string>("")
+    const [isProductSearchOpen, setIsProductSearchOpen] = useState(false)
+    const [productSearchQuery, setProductSearchQuery] = useState("")
+    const [isUploading, setIsUploading] = useState(false)
+
+    // Edit State
+    const [editingItem, setEditingItem] = useState<HeroCarouselItem | null>(null)
+    const [editLink, setEditLink] = useState("")
 
     useEffect(() => {
         loadCarouselItems()
@@ -30,7 +71,7 @@ export default function HeroCarouselPage() {
     }, [])
 
     async function loadProducts() {
-        const { data } = await supabase.from('products').select('id, title').eq('status', 'active')
+        const { data } = await supabase.from('products').select('id, title, images').eq('status', 'active')
         if (data) {
             setProducts(data)
         }
@@ -38,12 +79,15 @@ export default function HeroCarouselPage() {
 
     async function loadCarouselItems() {
         setLoading(true)
-        const data = await getHeroCarouselItems(true) // Pass true to get all items (active and inactive)
+        const data = await getHeroCarouselItems(true)
         setItems(data)
         setLoading(false)
     }
 
-    async function handleImageUpload(itemId: string, position: number, file: File) {
+    function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+
         if (!file.type.startsWith('image/')) {
             toast.error(t("admin.hero.toast.upload_image"))
             return
@@ -54,44 +98,64 @@ export default function HeroCarouselPage() {
             return
         }
 
-        const uploadToast = toast.loading(t("admin.hero.toast.uploading"))
-
-        const result = await uploadHeroCarouselImage(file, position)
-
-        if (result.success && result.url) {
-            const updateResult = await updateHeroCarouselItem(itemId, { image_url: result.url })
-
-            if (updateResult.success) {
-                toast.success(t("admin.hero.toast.upload_success"), { id: uploadToast })
-                loadCarouselItems()
-            } else {
-                toast.error(t("admin.hero.toast.upload_fail"), { id: uploadToast })
-            }
-        } else {
-            toast.error(result.error || t("admin.hero.toast.upload_fail"), { id: uploadToast })
-        }
+        setNewSlideImage(file)
+        const objectUrl = URL.createObjectURL(file)
+        setNewSlidePreview(objectUrl)
     }
 
     async function handleAddSlide() {
-        const nextPosition = items.length > 0 ? Math.max(...items.map(i => i.position)) + 1 : 1
-        const addToast = toast.loading(t("admin.hero.toast.adding"))
-
-        const newItem = {
-            title: t("admin.hero.placeholder_title"),
-            subtitle: t("admin.hero.placeholder_subtitle"),
-            image_url: '', // Empty initially, user will upload
-            position: nextPosition,
-            is_active: false // Inactive by default until image is uploaded
+        if (!newSlideImage) {
+            toast.error("Please select an image first")
+            return
         }
 
-        const result = await addHeroCarouselItem(newItem)
+        setIsUploading(true)
+        const nextPosition = items.length > 0 ? Math.max(...items.map(i => i.position)) + 1 : 1
 
-        if (result.success && result.data) {
-            toast.success(t("admin.hero.toast.add_success"), { id: addToast })
-            setItems(prev => [...prev, result.data!])
-            setEditingId(result.data.id)
-        } else {
-            toast.error(result.error || t("admin.hero.toast.add_fail"), { id: addToast })
+        try {
+            // 1. Upload Image
+            const uploadResult = await uploadHeroCarouselImage(newSlideImage, nextPosition)
+            if (!uploadResult.success || !uploadResult.url) {
+                toast.error(uploadResult.error || "Failed to upload image")
+                setIsUploading(false)
+                return
+            }
+
+            // 2. Add Item to DB
+            const newItem = {
+                title: newSlideTitle || t("admin.hero.placeholder_title"),
+                subtitle: newSlideSubtitle || t("admin.hero.placeholder_subtitle"),
+                image_url: uploadResult.url,
+                position: nextPosition,
+                link: newSlideLink || undefined,
+                is_active: true
+            }
+
+            // Fix type mismatch by ensuring undefined instead of null
+            const payload = {
+                ...newItem,
+                link: newItem.link || undefined
+            }
+
+            const result = await addHeroCarouselItem(payload)
+
+            if (result.success && result.data) {
+                toast.success("Slide added successfully")
+                setItems(prev => [...prev, result.data!])
+                // Reset Form
+                setNewSlideImage(null)
+                setNewSlidePreview(null)
+                setNewSlideTitle("")
+                setNewSlideSubtitle("")
+                setNewSlideLink("")
+            } else {
+                toast.error(result.error || "Failed to save slide")
+            }
+        } catch (error) {
+            console.error("Error adding slide:", error)
+            toast.error("An unexpected error occurred")
+        } finally {
+            setIsUploading(false)
         }
     }
 
@@ -111,43 +175,108 @@ export default function HeroCarouselPage() {
 
     async function handleToggleActive(item: HeroCarouselItem) {
         const newStatus = !item.is_active
-        if (newStatus && !item.image_url) {
-            toast.error(t("admin.hero.toast.no_image_fail"))
-            return
-        }
-
         const updateToast = toast.loading(newStatus ? t("admin.hero.toast.activating") : t("admin.hero.toast.deactivating"))
-        const result = await updateHeroCarouselItem(item.id, { is_active: newStatus })
 
-        if (result.success) {
-            toast.success(newStatus ? t("admin.hero.toast.status_success_on") : t("admin.hero.toast.status_success_off"), { id: updateToast })
-            setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: newStatus } : i))
-        } else {
-            toast.error(result.error || t("admin.hero.toast.status_fail"), { id: updateToast })
+        try {
+            const result = await updateHeroCarouselItem(item.id, { is_active: newStatus })
+
+            if (result.success) {
+                toast.success(newStatus ? t("admin.hero.toast.status_success_on") : t("admin.hero.toast.status_success_off"), { id: updateToast })
+                setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: newStatus } : i))
+            } else {
+                toast.error(result.error || t("admin.hero.toast.status_fail"), { id: updateToast })
+            }
+        } catch (e) {
+            toast.error("Failed to update status", { id: updateToast })
         }
     }
 
-    async function handleSaveItem(item: HeroCarouselItem) {
-        setSaving(true)
-        const result = await updateHeroCarouselItem(item.id, {
-            title: item.title,
-            subtitle: item.subtitle,
-            link: item.link
+    async function handleSaveEdit() {
+        if (!editingItem) return
+
+        const result = await updateHeroCarouselItem(editingItem.id, {
+            title: editingItem.title,
+            subtitle: editingItem.subtitle,
+            link: editLink || null
         })
 
         if (result.success) {
             toast.success(t("admin.hero.toast.save_success"))
-            setEditingId(null)
-        } else {
-            toast.error(result.error || t("admin.hero.toast.save_fail"))
+            setItems(prev => prev.map(i => i.id === editingItem.id ? { ...i, ...editingItem, link: editLink } : i))
+            setEditingItem(null)
         }
-        setSaving(false)
     }
 
-    function handleInputChange(id: string, field: 'title' | 'subtitle' | 'link', value: string) {
-        setItems(prev => prev.map(item =>
-            item.id === id ? { ...item, [field]: value } : item
-        ))
+    // Drag and Drop State and Logic
+    const [draggedItem, setDraggedItem] = useState<HeroCarouselItem | null>(null)
+
+    function handleDragStart(e: React.DragEvent<HTMLTableRowElement>, item: HeroCarouselItem) {
+        setDraggedItem(item)
+        // Make the drag image transparent or set a custom one if needed
+        e.dataTransfer.effectAllowed = "move"
+        // Setup a ghost image if desired, otherwise brower default
+        // const ghost = document.createElement('div')
+        // ghost.classList.add('hidden')
+        // document.body.appendChild(ghost)
+        // e.dataTransfer.setDragImage(ghost, 0, 0)
+    }
+
+    function handleDragOver(e: React.DragEvent<HTMLTableRowElement>, item: HeroCarouselItem) {
+        e.preventDefault()
+        if (!draggedItem || draggedItem.id === item.id) return
+
+        const newItems = [...items]
+        const draggedIndex = newItems.findIndex(i => i.id === draggedItem.id)
+        const targetIndex = newItems.findIndex(i => i.id === item.id)
+
+        // Safety check: ensure both items exist in the list
+        if (draggedIndex === -1 || targetIndex === -1) return
+
+        // Swap locally for visual feedback
+        const [removed] = newItems.splice(draggedIndex, 1)
+        if (!removed) return // Extra safety
+
+        newItems.splice(targetIndex, 0, removed)
+
+        // Update positions based on new index
+        const updatedItems = newItems.map((item, index) => ({
+            ...item,
+            position: index + 1
+        }))
+
+        setItems(updatedItems)
+    }
+
+    async function handleDragEnd() {
+        setDraggedItem(null)
+
+        // Save new order to DB
+        // We only need to update items whose position changed, but updating all is safer/easier logic-wise for small lists
+        const updates = items.map((item, index) => ({
+            id: item.id,
+            position: index + 1
+        }))
+
+        try {
+            await Promise.all(updates.map(update =>
+                updateHeroCarouselItem(update.id, { position: update.position })
+            ))
+            toast.success("Order updated")
+        } catch (error) {
+            console.error("Failed to save order", error)
+            toast.error("Failed to save new order")
+            loadCarouselItems() // Revert
+        }
+    }
+
+    const filteredProducts = products.filter(p =>
+        (p.title || "").toLowerCase().includes(productSearchQuery.toLowerCase())
+    )
+
+    const getLinkedProductTitle = (link: string | null) => {
+        if (!link) return null
+        const id = link.replace('/product/', '')
+        return products.find(p => p.id === id)?.title
     }
 
     if (loading) {
@@ -159,9 +288,9 @@ export default function HeroCarouselPage() {
     }
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="space-y-8 max-w-6xl mx-auto p-4 md:p-8">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                         {t("admin.hero.title")}
@@ -170,194 +299,315 @@ export default function HeroCarouselPage() {
                         {t("admin.hero.subtitle")}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleAddSlide}
-                        className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all flex items-center justify-center gap-2 text-sm font-semibold shadow-lg shadow-primary/20"
-                    >
-                        <Plus className="w-4 h-4" />
-                        {t("admin.hero.add_slide")}
-                    </button>
-                    <button
-                        onClick={loadCarouselItems}
-                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap"
-                    >
-                        <RotateCcw className="w-4 h-4" />
-                        {t("admin.hero.refresh")}
-                    </button>
-                </div>
+                <Button variant="outline" onClick={loadCarouselItems} className="gap-2">
+                    <RotateCcw className="w-4 h-4" />
+                    {t("admin.hero.refresh")}
+                </Button>
             </div>
 
-            {/* List View */}
-            <div className="space-y-4">
-                {items.map((item) => (
-                    <div
-                        key={item.id}
-                        className="group relative bg-white/5 border border-white/5 rounded-3xl p-4 sm:p-6 transition-all duration-300 hover:bg-white/[0.07] hover:border-white/10"
-                    >
-                        <div className="flex flex-col md:flex-row gap-6 items-start">
+            {/* Add New Slide Section */}
+            <div className="bg-muted/30 border border-border/50 rounded-2xl p-6 space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <Plus className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-lg font-semibold">{t("admin.hero.add_slide")}</h2>
+                </div>
 
-                            {/* Left: Image & Position */}
-                            <div className="relative shrink-0 w-full md:w-64 aspect-[4/3] rounded-2xl overflow-hidden bg-muted/20 border border-white/5">
-                                {/* Position Badge */}
-                                <div className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-black/50 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                                    {item.position}
-                                </div>
-
-                                {item.image_url ? (
+                <div className="grid md:grid-cols-[300px_1fr] gap-8">
+                    {/* Image Upload Area */}
+                    <div className="space-y-3">
+                        <div className="relative aspect-video rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors bg-background/50 overflow-hidden group">
+                            {newSlidePreview ? (
+                                <>
                                     <Image
-                                        src={item.image_url}
-                                        alt={item.title}
+                                        src={newSlidePreview}
+                                        alt="Preview"
                                         fill
                                         className="object-cover"
                                     />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
-                                    </div>
-                                )}
-
-                                {/* Image Upload Overlay */}
-                                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex flex-col items-center justify-center gap-2">
-                                    <Upload className="w-6 h-6 text-white" />
-                                    <span className="text-xs font-medium text-white px-3 py-1 rounded-full bg-white/10 border border-white/20">
-                                        {t("admin.hero.change_image")}
-                                    </span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0]
-                                            if (file) handleImageUpload(item.id, item.position, file)
-                                        }}
-                                    />
-                                </label>
-                            </div>
-
-                            {/* Middle: Content Inputs */}
-                            <div className="flex-1 space-y-4 w-full">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {/* Title */}
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1">
-                                            <Type className="w-3.5 h-3.5" />
-                                            {t("admin.hero.title_label")}
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={item.title}
-                                            onChange={(e) => handleInputChange(item.id, 'title', e.target.value)}
-                                            onFocus={() => setEditingId(item.id)}
-                                            className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm font-medium placeholder:text-muted-foreground/30"
-                                            placeholder={t("admin.hero.placeholder_title")}
-                                        />
-                                    </div>
-
-                                    {/* Subtitle */}
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1">
-                                            <Type className="w-3.5 h-3.5" />
-                                            {t("admin.hero.subtitle_label")}
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={item.subtitle || ''}
-                                            onChange={(e) => handleInputChange(item.id, 'subtitle', e.target.value)}
-                                            onFocus={() => setEditingId(item.id)}
-                                            className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm placeholder:text-muted-foreground/30"
-                                            placeholder={t("admin.hero.placeholder_subtitle")}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Link Selection */}
-                                <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground ml-1">
-                                        <LinkIcon className="w-3.5 h-3.5" />
-                                        {t("admin.hero.linked_product")}
-                                    </div>
-                                    <div className="relative">
-                                        <select
-                                            value={item.link || ''}
-                                            onChange={(e) => handleInputChange(item.id, 'link', e.target.value)}
-                                            onFocus={() => setEditingId(item.id)}
-                                            className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 focus:border-primary/50 focus:bg-white/[0.06] focus:outline-none transition-all text-sm appearance-none cursor-pointer hover:bg-white/[0.08]"
-                                        >
-                                            <option value="" className="bg-background text-foreground">{t("admin.hero.no_link")}</option>
-                                            <optgroup label={t("admin.hero.select_product")} className="bg-background text-foreground">
-                                                {products.map(p => (
-                                                    <option key={p.id} value={`/product/${p.id}`} className="bg-background">
-                                                        {p.title}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        </select>
-                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
-                                            <GripVertical className="w-4 h-4 rotate-90" />
-                                        </div>
-                                    </div>
-                                    {item.link && (
-                                        <div className="text-[10px] text-green-500/80 px-2 flex items-center gap-1.5">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                            Linked to: {products.find(p => `/product/${p.id}` === item.link)?.title || item.link}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Right: Actions */}
-                            <div className="flex md:flex-col items-center justify-end gap-2 w-full md:w-auto mt-2 md:mt-0">
-                                <button
-                                    onClick={() => handleToggleActive(item)}
-                                    className={`h-10 px-4 md:w-32 rounded-xl border transition-all flex items-center justify-center gap-2 text-sm font-medium ${item.is_active
-                                        ? 'bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20'
-                                        : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
-                                        }`}
-                                >
-                                    {item.is_active ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                    {item.is_active ? t("admin.hero.active") : t("admin.hero.inactive")}
-                                </button>
-
-                                {editingId === item.id ? (
                                     <button
-                                        onClick={() => handleSaveItem(item)}
-                                        disabled={saving}
-                                        className="h-10 px-6 md:w-32 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                                        onClick={() => {
+                                            setNewSlideImage(null)
+                                            setNewSlidePreview(null)
+                                        }}
+                                        className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
-                                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                        {t("admin.hero.save")}
+                                        <XCircle className="w-4 h-4" />
                                     </button>
-                                ) : (
-                                    <div className="h-10 flex items-center text-sm text-muted-foreground px-4 md:w-32 justify-center italic bg-white/[0.02] rounded-xl border border-white/5">
-                                        {t("admin.hero.saved")}
-                                    </div>
-                                )}
-
-                                <button
-                                    onClick={() => handleDeleteSlide(item.id)}
-                                    className="h-10 px-4 md:w-32 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 transition-all flex items-center justify-center gap-2 text-sm font-medium"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    {t("admin.hero.delete")}
-                                </button>
-                            </div>
+                                </>
+                            ) : (
+                                <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                                    <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                                    <span className="text-xs text-muted-foreground font-medium">Click to upload image</span>
+                                    <span className="text-[10px] text-muted-foreground/60 mt-1">1920x1080 recommended</span>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageSelect} />
+                                </label>
+                            )}
                         </div>
                     </div>
-                ))}
+
+                    {/* Details Form */}
+                    <div className="space-y-4">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground uppercase">{t("admin.hero.title_label")}</label>
+                                <Input
+                                    placeholder={t("admin.hero.placeholder_title")}
+                                    value={newSlideTitle}
+                                    onChange={(e) => setNewSlideTitle(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground uppercase">{t("admin.hero.subtitle_label")}</label>
+                                <Input
+                                    placeholder={t("admin.hero.placeholder_subtitle")}
+                                    value={newSlideSubtitle}
+                                    onChange={(e) => setNewSlideSubtitle(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground uppercase">{t("admin.hero.linked_product")}</label>
+                            <Dialog open={isProductSearchOpen} onOpenChange={setIsProductSearchOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-left font-normal text-muted-foreground relative">
+                                        <Search className="w-4 h-4 mr-2" />
+                                        {newSlideLink ? (
+                                            <span className="text-foreground font-medium flex items-center gap-2">
+                                                <Badge variant="secondary" className="px-1.5 py-0">Product</Badge>
+                                                {getLinkedProductTitle(newSlideLink) || "Selected Product"}
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setNewSlideLink("")
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.stopPropagation()
+                                                            setNewSlideLink("")
+                                                        }
+                                                    }}
+                                                    className="ml-auto hover:text-destructive cursor-pointer flex items-center justify-center p-1 rounded-full hover:bg-muted"
+                                                >
+                                                    <XCircle className="w-4 h-4" />
+                                                </div>
+                                            </span>
+                                        ) : (
+                                            t("admin.hero.select_product")
+                                        )}
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Select Product</DialogTitle>
+                                        <DialogDescription>
+                                            Search for a product to link to this slide.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 pt-4">
+                                        <div className="relative">
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                placeholder="Search products..."
+                                                className="pl-9"
+                                                value={productSearchQuery}
+                                                onChange={(e) => setProductSearchQuery(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="h-[300px] overflow-y-auto border rounded-xl p-2 space-y-1">
+                                            {filteredProducts.map(product => (
+                                                <button
+                                                    key={product.id}
+                                                    onClick={() => {
+                                                        setNewSlideLink(`/product/${product.id}`)
+                                                        setIsProductSearchOpen(false)
+                                                    }}
+                                                    className="w-full flex items-center gap-3 p-2 hover:bg-muted rounded-lg transition-colors text-left group"
+                                                >
+                                                    <div className="w-10 h-10 rounded-md bg-muted relative overflow-hidden shrink-0 border">
+                                                        {product.images?.[0] ? (
+                                                            <Image src={product.images[0]} alt="" fill className="object-cover" />
+                                                        ) : (
+                                                            <ImageIcon className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
+                                                        {product.title}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                            {filteredProducts.length === 0 && (
+                                                <div className="text-center py-8 text-muted-foreground text-sm">
+                                                    No products found.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                            <Button onClick={handleAddSlide} disabled={isUploading || !newSlideImage}>
+                                {isUploading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4 mr-2" />
+                                        Save Slide
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Helper Footer */}
-            <div className="flex flex-wrap gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    {t("admin.hero.max_size")}
-                </span>
-                <span className="w-px h-4 bg-white/10" />
-                <span>{t("admin.hero.recommended_size")}</span>
-                <div className="ml-auto">
-                    {t("admin.hero.slides_configured").replace("{count}", items.length.toString())}
-                </div>
+            {/* Slides Table */}
+            <div className="rounded-2xl border border-border/50 bg-background/50 overflow-hidden">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                            <TableHead className="w-[100px]">Image</TableHead>
+                            <TableHead>{t("admin.hero.title_label")}</TableHead>
+                            <TableHead className="hidden md:table-cell">{t("admin.hero.subtitle_label")}</TableHead>
+                            <TableHead className="hidden sm:table-cell">Details</TableHead>
+                            <TableHead className="w-[100px]">Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {items.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                                    No slides configured yet. Add one above!
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            items.map((item) => (
+                                <TableRow
+                                    key={item.id}
+                                    className={`group transition-colors ${draggedItem?.id === item.id ? 'opacity-50 bg-muted' : ''}`}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, item)}
+                                    onDragOver={(e) => handleDragOver(e, item)}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <div className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-foreground">
+                                                <GripVertical className="w-4 h-4" />
+                                            </div>
+                                            <div className="w-20 aspect-video rounded-lg bg-muted relative overflow-hidden border">
+                                                {item.image_url ? (
+                                                    <Image src={item.image_url} alt={item.title} fill className="object-cover pointer-events-none" />
+                                                ) : (
+                                                    <ImageIcon className="w-4 h-4 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        {item.title}
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                                        {item.subtitle}
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                        {item.link ? (
+                                            <Badge variant="outline" className="gap-1 font-normal">
+                                                <ExternalLink className="w-3 h-3" />
+                                                {getLinkedProductTitle(item.link) || "Product"}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground italic">No link</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant={item.is_active ? "default" : "secondary"}
+                                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                                            onClick={() => handleToggleActive(item)}
+                                        >
+                                            {item.is_active ? "Active" : "Inactive"}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                        onClick={() => {
+                                                            setEditingItem(item)
+                                                            setEditLink(item.link || "")
+                                                        }}
+                                                    >
+                                                        <MoreHorizontal className="w-4 h-4" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent>
+                                                    <DialogHeader>
+                                                        <DialogTitle>Edit Slide</DialogTitle>
+                                                    </DialogHeader>
+                                                    <div className="space-y-4 py-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium">Title</label>
+                                                            <Input
+                                                                value={editingItem?.title || ""}
+                                                                onChange={(e) => setEditingItem(prev => prev ? { ...prev, title: e.target.value } : null)}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium">Subtitle</label>
+                                                            <Input
+                                                                value={editingItem?.subtitle || ""}
+                                                                onChange={(e) => setEditingItem(prev => prev ? { ...prev, subtitle: e.target.value } : null)}
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium">Link (Product ID)</label>
+                                                            <div className="flex gap-2">
+                                                                <Input
+                                                                    value={editLink}
+                                                                    onChange={(e) => setEditLink(e.target.value)}
+                                                                    placeholder="/product/..."
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-muted-foreground">
+                                                                Enter /product/ID or use the main dashboard to copy a link.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <DialogFooter>
+                                                        <Button onClick={handleSaveEdit}>Save Changes</Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-red-500/50 hover:text-red-600 hover:bg-red-500/10"
+                                                onClick={() => handleDeleteSlide(item.id)}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
             </div>
         </div>
     )

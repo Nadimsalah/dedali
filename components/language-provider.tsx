@@ -303,7 +303,7 @@ const translations = {
         "admin.sidebar.delivery_men": "Logisticiens",
         "admin.sidebar.shipping": "Livraison",
         "admin.sidebar.analytics": "Analytique",
-        "admin.sidebar.hero_carousel": "Carrousel Hero",
+        "admin.sidebar.hero_carousel": "Promo",
         "admin.sidebar.whatsapp_leads": "Leads WhatsApp",
         "admin.sidebar.contact_messages": "Messages de contact",
         "admin.sidebar.career_applications": "Candidatures",
@@ -311,7 +311,7 @@ const translations = {
         "admin.sidebar.logout": "Déconnexion",
 
         // Admin Hero
-        "admin.hero.title": "Carrousel Hero",
+        "admin.hero.title": "Promo",
         "admin.hero.subtitle": "Personnalisez le curseur de votre page d'accueil. Les images de haute qualité (16:9 ou 4:3) fonctionnent le mieux. Liez les diapositives aux produits pour stimuler les ventes. Important : Assurez-vous d'activer les diapositives pour qu'elles apparaissent dans la boutique.",
         "admin.hero.add_slide": "Ajouter une Diapositive",
         "admin.hero.refresh": "Actualiser",

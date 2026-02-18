@@ -19,7 +19,11 @@ import {
     Eye,
     EyeOff,
     Sparkles,
-    Users
+    Users,
+    Link as LinkIcon,
+    Truck,
+    Copy,
+    ExternalLink
 } from "lucide-react"
 import { toast } from "sonner"
 import { getAdminSettings, updateAdminSettings } from "@/lib/supabase-api"
@@ -38,10 +42,18 @@ export default function SettingsPage() {
     const [testing, setTesting] = useState(false)
     const [showPin, setShowPin] = useState(false)
     const [activeTab, setActiveTab] = useState("general")
+    const [origin, setOrigin] = useState("")
 
     useEffect(() => {
+        setOrigin(window.location.origin)
         loadSettings()
     }, [])
+
+    const handleCopy = (path: string) => {
+        const url = `${origin}${path}`
+        navigator.clipboard.writeText(url)
+        toast.success("Link copied to clipboard")
+    }
 
     async function loadSettings() {
         setLoading(true)
@@ -604,6 +616,90 @@ export default function SettingsPage() {
                                                     placeholder="Instructions for account managers..."
                                                 />
                                                 <p className="text-[10px] text-muted-foreground ml-1">{t("admin.settings.team.guidance_desc")}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Login Links Section */}
+                                <div className="glass rounded-3xl p-8 border-white/20 shadow-xl space-y-8">
+                                    <div className="flex items-center gap-3 border-b border-border/10 pb-4">
+                                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                                            <LinkIcon className="w-5 h-5 text-purple-500" />
+                                        </div>
+                                        <h3 className="font-bold text-lg">System Login Links</h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {/* Reseller / Manager */}
+                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4 group hover:bg-white/10 transition-all">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform"><Users className="w-4 h-4" /></div>
+                                                    <div>
+                                                        <p className="text-sm font-bold">Reseller / Manager</p>
+                                                        <p className="text-[10px] text-muted-foreground">Standard Dashboard Access</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="flex-1 p-2.5 rounded-xl bg-black/20 text-xs font-mono text-muted-foreground truncate border border-white/5">
+                                                    {origin}/login
+                                                </code>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => handleCopy("/login")}>
+                                                    <Copy className="w-4 h-4" />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => window.open(`${origin}/login`, '_blank')}>
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Logistics */}
+                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4 group hover:bg-white/10 transition-all">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500 group-hover:scale-110 transition-transform"><Truck className="w-4 h-4" /></div>
+                                                    <div>
+                                                        <p className="text-sm font-bold">Logistics / Delivery</p>
+                                                        <p className="text-[10px] text-muted-foreground">Driver App Access</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="flex-1 p-2.5 rounded-xl bg-black/20 text-xs font-mono text-muted-foreground truncate border border-white/5">
+                                                    {origin}/logistique/login
+                                                </code>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => handleCopy("/logistique/login")}>
+                                                    <Copy className="w-4 h-4" />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => window.open(`${origin}/logistique/login`, '_blank')}>
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Admin */}
+                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4 group hover:bg-white/10 transition-all">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-red-500/10 rounded-lg text-red-500 group-hover:scale-110 transition-transform"><Shield className="w-4 h-4" /></div>
+                                                    <div>
+                                                        <p className="text-sm font-bold">Admin Portal</p>
+                                                        <p className="text-[10px] text-muted-foreground">Super Admin Access</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <code className="flex-1 p-2.5 rounded-xl bg-black/20 text-xs font-mono text-muted-foreground truncate border border-white/5">
+                                                    {origin}/admin/login
+                                                </code>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => handleCopy("/admin/login")}>
+                                                    <Copy className="w-4 h-4" />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => window.open(`${origin}/admin/login`, '_blank')}>
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>

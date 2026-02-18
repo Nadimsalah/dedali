@@ -1000,7 +1000,7 @@ export async function getHeroCarouselItems(admin = false): Promise<HeroCarouselI
  */
 export async function updateHeroCarouselItem(
     id: string,
-    updates: Partial<Pick<HeroCarouselItem, 'title' | 'subtitle' | 'image_url' | 'is_active' | 'link'>>
+    updates: Partial<Pick<HeroCarouselItem, 'title' | 'subtitle' | 'image_url' | 'is_active' | 'link' | 'position'>>
 ): Promise<{ success: boolean; error?: string }> {
     const { error } = await supabase
         .from('hero_carousel')
