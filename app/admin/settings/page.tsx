@@ -554,9 +554,9 @@ export default function SettingsPage() {
                                                     type={showPin ? "text" : "password"}
                                                     value={settings.admin_pin || ""}
                                                     onChange={(e) => handleChange("admin_pin", e.target.value)}
-                                                    className="rounded-2xl h-14 bg-black/20 border-white/10 text-center text-3xl tracking-[1.5rem] font-mono focus:border-red-500/40"
-                                                    maxLength={6}
-                                                    placeholder="XXXXXX"
+                                                    className="rounded-2xl h-14 bg-black/20 border-white/10 text-center text-3xl tracking-widest font-mono focus:border-red-500/40"
+                                                    maxLength={12}
+                                                    placeholder="PIN"
                                                 />
                                                 <button
                                                     type="button"

@@ -4,10 +4,9 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Delete, ArrowRight, Lock } from "lucide-react"
+import { Delete, ArrowRight, Lock, Check } from "lucide-react"
+import { verifyAdminPin } from "@/app/actions/auth"
 import { toast } from "sonner"
-
-const ADMIN_PIN = "20008808"
 
 export default function AdminLoginPage() {
     const [pin, setPin] = useState("")
@@ -15,7 +14,7 @@ export default function AdminLoginPage() {
     const router = useRouter()
 
     const handleNumClick = (num: string) => {
-        if (pin.length < 8) {
+        if (pin.length < 12) {
             setPin((prev) => prev + num)
         }
     }
@@ -25,12 +24,19 @@ export default function AdminLoginPage() {
     }
 
     const handleSubmit = async () => {
+        if (pin.length < 4) {
+            toast.error("PIN too short")
+            return
+        }
+
         setIsLoading(true)
 
         // Simulate network delay for effect
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        if (pin === ADMIN_PIN) {
+        const isValid = await verifyAdminPin(pin)
+
+        if (isValid) {
             // Set session cookie
             document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Strict" // 1 day expiry
             toast.success("Access Granted")
@@ -39,15 +45,8 @@ export default function AdminLoginPage() {
             toast.error("Invalid PIN")
             setPin("")
             setIsLoading(false)
-            // Shake animation could be added here
         }
     }
-
-    useEffect(() => {
-        if (pin.length === 8) {
-            handleSubmit()
-        }
-    }, [pin])
 
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -65,12 +64,12 @@ export default function AdminLoginPage() {
                             <Lock className="w-8 h-8 text-primary" />
                         </div>
                         <h1 className="text-2xl font-bold text-foreground">Admin Access</h1>
-                        <p className="text-sm text-muted-foreground">Enter your secure 8-digit PIN</p>
+                        <p className="text-sm text-muted-foreground">Enter your secure PIN</p>
                     </div>
 
                     {/* PIN Display */}
                     <div className="mb-8 flex justify-center gap-3 h-12 items-center">
-                        {[...Array(8)].map((_, i) => (
+                        {[...Array(Math.max(4, pin.length + (pin.length < 12 ? 1 : 0)))].map((_, i) => (
                             <div
                                 key={i}
                                 className={`w-3 h-3 rounded-full transition-all duration-300 ${i < pin.length
@@ -92,9 +91,13 @@ export default function AdminLoginPage() {
                                 {num}
                             </button>
                         ))}
-                        <div className="flex items-center justify-center">
-                            {/* Empty spacer */}
-                        </div>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isLoading || pin.length < 4}
+                            className="h-16 w-16 mx-auto rounded-full hover:bg-green-500/10 hover:text-green-500 active:scale-95 transition-all flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                            <Check className="w-8 h-8" />
+                        </button>
                         <button
                             onClick={() => handleNumClick("0")}
                             className="h-16 w-16 mx-auto rounded-full glass hover:bg-primary/10 hover:text-primary hover:scale-105 active:scale-95 transition-all text-xl font-bold flex items-center justify-center"
