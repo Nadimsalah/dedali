@@ -407,7 +407,7 @@ export default function HomePage() {
     loadData()
   }, [])
 
-  const headerCategories =
+  const headerCategories: { id: string, name: string, slug: string, name_ar?: string }[] =
     categories.length > 0
       ? categories
       : ([
@@ -419,7 +419,9 @@ export default function HomePage() {
         { slug: 'accessories', name: 'Accessories', name_ar: 'إكسسوارات' }
       ] as const).map((cat) => ({
         id: cat.slug,
-        ...cat
+        name: cat.name,
+        slug: cat.slug,
+        name_ar: cat.name_ar
       }))
 
   const allCategories = ["All", ...headerCategories.filter(c => c && c.slug).map(c => c.slug)]
@@ -513,6 +515,27 @@ export default function HomePage() {
                 className={"h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"}
               />
             </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-6 xl:gap-8 absolute left-1/2 -translate-x-1/2">
+              <Link
+                href="/#shop"
+                onClick={() => setSelectedCategory("All")}
+                className={`text-sm font-medium transition-colors hover:text-primary ${selectedCategory === "All" ? "text-primary" : "text-muted-foreground"}`}
+              >
+                {t('section.all_categories')}
+              </Link>
+              {headerCategories.slice(0, 6).map((cat) => (
+                <Link
+                  key={cat.id}
+                  href="/#shop"
+                  onClick={() => setSelectedCategory('slug' in cat ? cat.slug : cat.id)}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${selectedCategory === ('slug' in cat ? cat.slug : cat.id) ? "text-primary" : "text-muted-foreground"}`}
+                >
+                  {getCategoryLabel('slug' in cat ? cat.slug : cat.id)}
+                </Link>
+              ))}
+            </nav>
             {/* Right Actions */}
             <div className="flex items-center gap-1 sm:gap-2 ml-auto">
               <Link href="/search">
@@ -674,11 +697,11 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-16 sm:py-20 lg:py-28">
+      <section className="relative py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
+              <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-foreground leading-tight text-balance">
                 {language === 'ar' ? (
                   settings.hero_title_ar || settings.hero_title || (
                     <>

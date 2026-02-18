@@ -83,7 +83,7 @@ export function ModernHeroCarousel({ items }: HeroCarouselProps) {
                                             </p>
                                         )}
                                         {item.title && (
-                                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
+                                            <h2 className="text-3xl sm:text-4xl lg:text-4xl font-bold text-white leading-tight">
                                                 {item.title}
                                             </h2>
                                         )}
@@ -95,7 +95,7 @@ export function ModernHeroCarousel({ items }: HeroCarouselProps) {
                         return (
                             <div
                                 key={index}
-                                className="flex-[0_0_100%] min-w-0 relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-square xl:aspect-[4/3]"
+                                className="flex-[0_0_100%] min-w-0 relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-[16/10] xl:aspect-[16/10]"
                             >
                                 {item.link ? (
                                     <Link href={item.link} className="block w-full h-full relative cursor-pointer" draggable={false}>
