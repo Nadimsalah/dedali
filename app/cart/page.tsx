@@ -17,9 +17,10 @@ import {
   ShieldCheck,
   Truck,
   Trash2,
+  Tag,
 } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
-import { getCurrentUserRole, getCurrentResellerTier, getShippingSettings, ShippingSetting, ResellerTier } from "@/lib/supabase-api"
+import { getCurrentUserRole, getCurrentResellerTier, ResellerTier } from "@/lib/supabase-api"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -42,8 +43,6 @@ export default function CartPage() {
   const { t, language } = useLanguage()
   const [userRole, setUserRole] = useState<string | null>(null)
   const [resellerTier, setResellerTier] = useState<ResellerTier>(null)
-  const [shippingSettings, setShippingSettings] = useState<ShippingSetting[]>([])
-
   useEffect(() => {
     const fetchData = async () => {
       const [role, tier] = await Promise.all([
@@ -52,9 +51,6 @@ export default function CartPage() {
       ])
       setUserRole(role)
       setResellerTier(tier)
-
-      const shipping = await getShippingSettings()
-      setShippingSettings(shipping)
     }
     fetchData()
   }, [])
@@ -66,27 +62,8 @@ export default function CartPage() {
     const price = (isResellerAccount && item.resellerPrice) ? item.resellerPrice : item.price
     return sum + price * item.quantity
   }, 0)
-  // Get current shipping rule
-  const currentShippingRule = shippingSettings.find(s => s.role === (isResellerAccount ? 'reseller' : 'retail'))
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
-
   const discount = promoApplied ? subtotal * 0.2 : 0
-
-  let shipping = 50 // Default
-  if (currentShippingRule) {
-    const isFreeAmount = currentShippingRule.free_shipping_threshold > 0 && subtotal >= currentShippingRule.free_shipping_threshold
-    const isFreeItems = currentShippingRule.free_shipping_min_items > 0 && totalItems >= currentShippingRule.free_shipping_min_items
-
-    if (isFreeAmount || isFreeItems) {
-      shipping = 0
-    } else {
-      shipping = currentShippingRule.base_price
-    }
-  } else {
-    shipping = subtotal > 750 ? 0 : 50
-  }
-
-  const total = subtotal - discount + shipping
+  const total = subtotal - discount
 
   const applyPromo = () => {
     if (promoCode.toUpperCase() === "ARGAN20") {
@@ -304,10 +281,7 @@ export default function CartPage() {
                       <span className="font-medium">-{t('common.currency')} {formatPrice(discount)}</span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-foreground/80">
-                    <span>{t('cart.shipping')}</span>
-                    <span className="font-medium">{shipping === 0 ? t('cart.free') : `${t('common.currency')} ${formatPrice(shipping)}`}</span>
-                  </div>
+
                 </div>
 
                 <Separator />

@@ -598,30 +598,6 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
 
-                                        {/* Logistics */}
-                                        <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4 group hover:bg-white/10 transition-all">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500 group-hover:scale-110 transition-transform"><Truck className="w-4 h-4" /></div>
-                                                    <div>
-                                                        <p className="text-sm font-bold">Logistics / Delivery</p>
-                                                        <p className="text-[10px] text-muted-foreground">Driver App Access</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <code className="flex-1 p-2.5 rounded-xl bg-black/20 text-xs font-mono text-muted-foreground truncate border border-white/5">
-                                                    {origin}/logistique/login
-                                                </code>
-                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => handleCopy("/logistique/login")}>
-                                                    <Copy className="w-4 h-4" />
-                                                </Button>
-                                                <Button size="icon" variant="ghost" className="h-9 w-9 rounded-lg hover:bg-white/10" onClick={() => window.open(`${origin}/logistique/login`, '_blank')}>
-                                                    <ExternalLink className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-
                                         {/* Admin */}
                                         <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4 group hover:bg-white/10 transition-all">
                                             <div className="flex items-center justify-between">
