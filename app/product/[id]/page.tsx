@@ -438,11 +438,10 @@ export default function ProductPage() {
             </Accordion>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               {[
                 { icon: Truck, text: t('cart.trust.shipping') },
                 { icon: ShieldCheck, text: t('cart.trust.secure') },
-                { icon: RotateCcw, text: t('cart.trust.returns') },
               ].map((item, idx) => (
                 <div key={idx} className="glass-subtle p-6 rounded-3xl text-center hover:bg-white/5 transition-colors">
                   <item.icon className="w-8 h-8 mx-auto mb-3 text-primary" />
