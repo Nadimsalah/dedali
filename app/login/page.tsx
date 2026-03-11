@@ -50,15 +50,9 @@ export default function LoginPage() {
                 } else if (normalizedRole === 'ADMIN') {
                     router.push('/admin/dashboard')
                 } else if (normalizedRole === 'ACCOUNT_MANAGER') {
-                    toast.error("Veuillez utiliser l'Espace Commercial pour vous connecter.")
-                    await supabase.auth.signOut()
-                    setIsLoading(false)
-                    return
+                    router.push('/manager/resellers')
                 } else if (normalizedRole === 'DELIVERY_MAN') {
-                    toast.error("Veuillez utiliser l'Espace Logisticien pour vous connecter.")
-                    await supabase.auth.signOut()
-                    setIsLoading(false)
-                    return
+                    router.push('/logistique/dashboard')
                 } else {
                     router.push('/')
                 }
@@ -171,7 +165,7 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full h-12 rounded-xl text-lg font-semibold shadow-lg shadow-primary/20" disabled={isLoading}>
+                        <Button type="submit" className="w-full h-12 rounded-xl text-lg font-semibold shadow-lg shadow-primary/20" disabled={isLoading} suppressHydrationWarning>
                             {isLoading ? (
                                 <>
                                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />

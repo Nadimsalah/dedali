@@ -526,9 +526,16 @@ export default function HomePage() {
                 </Button>
               </Link>
 
-              <Link href={user ? "/reseller/dashboard" : "/login"}>
+              <Link href={
+                !user ? "/login" :
+                  userRole === 'ACCOUNT_MANAGER' ? "/manager/resellers" :
+                    userRole === 'ADMIN' ? "/admin/dashboard" :
+                      userRole === 'DELIVERY_MAN' ? "/logistique/dashboard" :
+                        (userRole === 'RESELLER' || userRole === 'RESELLER_PENDING') ? "/reseller/dashboard" :
+                          "/"
+              }>
                 <Button variant="ghost" size="icon" className="hidden sm:flex rounded-full hover:bg-primary/5 hover:text-primary transition-all">
-                  <User className="w-5 h-5" />
+                  {user && userRole && userRole !== 'customer' ? <LayoutDashboard className="w-5 h-5" /> : <User className="w-5 h-5" />}
                 </Button>
               </Link>
 
@@ -663,10 +670,20 @@ export default function HomePage() {
                           {language === 'en' ? '🇺🇸 EN' : '🇫🇷 FR'}
                         </Button>
                         <SheetClose asChild>
-                          <Link href={userRole === 'reseller' ? "/reseller/dashboard" : "/login"} className="w-full">
+                          <Link
+                            href={
+                              !userRole || userRole === 'customer' ? "/login" :
+                                userRole === 'ACCOUNT_MANAGER' ? "/manager/resellers" :
+                                  userRole === 'ADMIN' ? "/admin/dashboard" :
+                                    userRole === 'DELIVERY_MAN' ? "/logistique/dashboard" :
+                                      (userRole === 'RESELLER' || userRole === 'RESELLER_PENDING') ? "/reseller/dashboard" :
+                                        "/login"
+                            }
+                            className="w-full"
+                          >
                             <Button variant="outline" className="w-full h-12 rounded-full bg-primary/10 border-primary/20 hover:bg-primary hover:text-white transition-colors">
-                              {userRole === 'reseller' ? <LayoutDashboard className="w-4 h-4 mx-2" /> : <User className="w-4 h-4 mx-2" />}
-                              {userRole === 'reseller'
+                              {userRole && userRole !== 'customer' ? <LayoutDashboard className="w-4 h-4 mx-2" /> : <User className="w-4 h-4 mx-2" />}
+                              {userRole && userRole !== 'customer'
                                 ? (language === 'ar' ? "لوحة التحكم" : "Dashboard")
                                 : (language === 'ar' ? "دخول / تسجيل" : "Login / Register")
                               }

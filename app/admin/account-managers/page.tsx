@@ -124,12 +124,16 @@ export default function AccountManagersPage() {
     const [newPasswordInput, setNewPasswordInput] = useState("")
     const [isResettingPassword, setIsResettingPassword] = useState(false)
 
-    // Assignment Modal
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
     const [selectedManager, setSelectedManager] = useState<AccountManager | null>(null)
     const [isAssigning, setIsAssigning] = useState(false)
     const [assigningId, setAssigningId] = useState<string | null>(null)
     const [resellerSearchQuery, setResellerSearchQuery] = useState("")
+
+    const handleOpenAssign = (manager: AccountManager) => {
+        setSelectedManager(manager)
+        setIsAssignModalOpen(true)
+    }
 
     useEffect(() => {
         loadData()
@@ -622,93 +626,13 @@ export default function AccountManagersPage() {
                                         </div>
                                     </div>
 
-                                    <Dialog open={isAssignModalOpen && selectedManager?.id === m.id} onOpenChange={(open) => {
-                                        setIsAssignModalOpen(open)
-                                        if (open) setSelectedManager(m)
-                                    }}>
-                                        <DialogTrigger asChild>
-                                            <Button className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all text-sm">
+                                            <Button
+                                                onClick={() => handleOpenAssign(m)}
+                                                className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all text-sm"
+                                            >
                                                 <LinkIcon className="w-4 h-4 mr-2" />
                                                 {t("account_managers.manage_assignments")}
                                             </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="glass-strong border-white/10 rounded-3xl max-w-2xl max-h-[80vh] overflow-y-auto">
-                                            <DialogHeader>
-                                                <DialogTitle className="text-2xl font-black">{t("account_managers.assign_resellers")} - {m.name}</DialogTitle>
-                                                <DialogDescription>{t("account_managers.select_resellers")}</DialogDescription>
-                                            </DialogHeader>
-
-                                            <div className="mt-4 relative">
-                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                                <Input
-                                                    placeholder={t("account_managers.find_reseller")}
-                                                    value={resellerSearchQuery}
-                                                    onChange={(e) => setResellerSearchQuery(e.target.value)}
-                                                    className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-primary transition-all"
-                                                />
-                                            </div>
-
-                                            <div className="py-6 space-y-3">
-                                                {resellers
-                                                    .filter(r =>
-                                                        r.company_name.toLowerCase().includes(resellerSearchQuery.toLowerCase()) ||
-                                                        r.name.toLowerCase().includes(resellerSearchQuery.toLowerCase())
-                                                    )
-                                                    .map((r) => (
-                                                        <div key={r.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/item ${r.id === '00000000-0000-0000-0000-000000000001' ? 'bg-violet-500/10 border-violet-500/20 hover:border-violet-500/40' : 'bg-white/5 border-white/5 hover:border-white/10'}`}>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${r.id === '00000000-0000-0000-0000-000000000001' ? 'bg-violet-500/20 text-violet-400' : r.assigned_to_id === m.id ? 'bg-primary/20 text-primary' : 'bg-white/10 text-muted-foreground'}`}>
-                                                                    {r.id === '00000000-0000-0000-0000-000000000001'
-                                                                        ? <Globe className="w-5 h-5" />
-                                                                        : <Briefcase className="w-5 h-5" />
-                                                                    }
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <p className="font-bold text-foreground text-sm">{r.company_name}</p>
-                                                                        {r.id === '00000000-0000-0000-0000-000000000001' && (
-                                                                            <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-violet-500/20 text-violet-400 border border-violet-500/30">Digital</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className="text-xs text-muted-foreground">{r.name}</p>
-                                                                </div>
-                                                            </div>
-                                                            {r.assigned_to_id === m.id ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">{t("account_managers.active")}</Badge>
-                                                                    <Button
-                                                                        size="icon"
-                                                                        variant="ghost"
-                                                                        disabled={isAssigning}
-                                                                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                                                        onClick={() => handleAssignReseller(r.id)}
-                                                                        title={t("account_managers.unassign")}
-                                                                    >
-                                                                        {assigningId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
-                                                                    </Button>
-                                                                </div>
-                                                            ) : (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="ghost"
-                                                                    disabled={isAssigning}
-                                                                    className="rounded-lg h-8 px-3 text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
-                                                                    onClick={() => handleAssignReseller(r.id, m.id)}
-                                                                >
-                                                                    {assigningId === r.id ? (
-                                                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                                                    ) : (
-                                                                        <PlusCircle className="w-3 h-3 mr-1.5" />
-                                                                    )}
-                                                                    {r.assigned_to_id ? t("account_managers.reassign") : t("account_managers.assign")}
-                                                                </Button>
-                                                            )
-                                                            }
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
                                 </div>
                             ))
                         ) : (
@@ -789,11 +713,13 @@ export default function AccountManagersPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-lg text-primary hover:bg-primary/10"
-                                                            onClick={() => {
-                                                                setSelectedManager(m)
-                                                                setIsAssignModalOpen(true)
+                                                            className="h-9 w-9 rounded-lg text-primary hover:bg-primary/10 hover:scale-110 active:scale-95 transition-all shadow-sm border border-primary/5"
+                                                            onClick={(e) => {
+                                                                e.preventDefault()
+                                                                e.stopPropagation()
+                                                                handleOpenAssign(m)
                                                             }}
+                                                            title={t("account_managers.manage_assignments")}
                                                         >
                                                             <LinkIcon className="w-4 h-4" />
                                                         </Button>
@@ -838,6 +764,86 @@ export default function AccountManagersPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Assignment Modal (Global) */}
+                <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+                    <DialogContent className="glass-strong border-white/10 rounded-3xl max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black">{t("account_managers.assign_resellers")} - {selectedManager?.name}</DialogTitle>
+                            <DialogDescription>{t("account_managers.select_resellers")}</DialogDescription>
+                        </DialogHeader>
+
+                        <div className="mt-4 relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder={t("account_managers.find_reseller")}
+                                value={resellerSearchQuery}
+                                onChange={(e) => setResellerSearchQuery(e.target.value)}
+                                className="pl-11 h-12 rounded-2xl bg-white/5 border-white/10 focus:bg-white/10 focus:border-primary transition-all"
+                            />
+                        </div>
+
+                        <div className="py-6 space-y-3">
+                            {resellers
+                                .filter(r =>
+                                    r.company_name.toLowerCase().includes(resellerSearchQuery.toLowerCase()) ||
+                                    r.name.toLowerCase().includes(resellerSearchQuery.toLowerCase())
+                                )
+                                .map((r) => (
+                                    <div key={r.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all group/item ${r.id === '00000000-0000-0000-0000-000000000001' ? 'bg-violet-500/10 border-violet-500/20 hover:border-violet-500/40' : 'bg-white/5 border-white/5 hover:border-white/10'}`}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${r.id === '00000000-0000-0000-0000-000000000001' ? 'bg-violet-500/20 text-violet-400' : r.assigned_to_id === selectedManager?.id ? 'bg-primary/20 text-primary' : 'bg-white/10 text-muted-foreground'}`}>
+                                                {r.id === '00000000-0000-0000-0000-000000000001'
+                                                    ? <Globe className="w-5 h-5" />
+                                                    : <Briefcase className="w-5 h-5" />
+                                                }
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-foreground text-sm">{r.company_name}</p>
+                                                    {r.id === '00000000-0000-0000-0000-000000000001' && (
+                                                        <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-violet-500/20 text-violet-400 border border-violet-500/30">Digital</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">{r.name}</p>
+                                            </div>
+                                        </div>
+                                        {r.assigned_to_id === selectedManager?.id ? (
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">{t("account_managers.active")}</Badge>
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    disabled={isAssigning}
+                                                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                                    onClick={() => handleAssignReseller(r.id)}
+                                                    title={t("account_managers.unassign")}
+                                                >
+                                                    {assigningId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlink className="w-4 h-4" />}
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                disabled={isAssigning}
+                                                className="rounded-lg h-8 px-3 text-xs font-bold hover:bg-primary/10 hover:text-primary transition-colors"
+                                                onClick={() => handleAssignReseller(r.id, selectedManager?.id)}
+                                            >
+                                                {assigningId === r.id ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <PlusCircle className="w-3 h-3 mr-1.5" />
+                                                )}
+                                                {r.assigned_to_id ? t("account_managers.reassign") : t("account_managers.assign")}
+                                            </Button>
+                                        )
+                                        }
+                                    </div>
+                                ))}
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Edit Goal Dialog */}
                 <Dialog open={isGoalModalOpen} onOpenChange={setIsGoalModalOpen}>

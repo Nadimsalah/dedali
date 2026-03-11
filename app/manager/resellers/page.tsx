@@ -59,7 +59,7 @@ export default function MyClientsPage() {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) {
                 setLoading(false)
-                router.push("/login")
+                router.push("/manager/login")
                 return
             }
 

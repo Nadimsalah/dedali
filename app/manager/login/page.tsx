@@ -26,9 +26,24 @@ export default function CommercialLoginPage() {
             })
 
             if (result.data?.user) {
-                toast.success("Connexion réussie")
-                router.push('/manager/resellers')
-                router.refresh()
+                // Fetch role for redirect
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', result.data.user.id)
+                    .single()
+
+                const role = profile?.role?.toUpperCase()
+
+                if (role === 'ACCOUNT_MANAGER' || role === 'ADMIN') {
+                    toast.success("Connexion réussie")
+                    router.push('/manager/resellers')
+                    router.refresh()
+                } else {
+                    toast.error("Veuillez utiliser l'espace client pour vous connecter.")
+                    await supabase.auth.signOut()
+                    setIsLoading(false)
+                }
             }
         } catch (error: any) {
             const msg = error.message === "Invalid login credentials"

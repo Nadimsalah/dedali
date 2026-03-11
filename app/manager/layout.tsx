@@ -22,7 +22,7 @@ export default function AccountManagerLayout({
                 const { data: { user } } = await supabase.auth.getUser()
 
                 if (!user) {
-                    router.push("/login")
+                    router.push("/manager/login")
                     return
                 }
 
