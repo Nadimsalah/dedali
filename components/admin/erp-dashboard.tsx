@@ -7,7 +7,8 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-const API_BASE = "http://localhost:3002"
+const API_BASE = "/api/erp"
+
 
 // --- Types ---
 interface Article {
