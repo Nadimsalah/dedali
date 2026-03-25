@@ -4,12 +4,10 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { DashboardStats } from "@/components/admin/dashboard-stats"
 import { RecentOrders } from "@/components/admin/recent-orders"
 import { Notifications } from "@/components/admin/notifications"
+import { ErpDashboard } from "@/components/admin/erp-dashboard"
 import { useLanguage } from "@/components/language-provider"
-import { Search, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Sparkles } from "lucide-react"
 import { PushNotificationManager } from "@/components/admin/push-notification-manager"
-import { AdminSearch } from "@/components/admin/admin-search"
 
 export default function AdminDashboard() {
     const { t } = useLanguage()
@@ -36,9 +34,6 @@ export default function AdminDashboard() {
                             <p className="text-xs text-muted-foreground">{t("dashboard.admin.overview")}</p>
                         </div>
                     </div>
-
-
-
                     <div className="flex items-center gap-3">
                         <Notifications />
                     </div>
@@ -47,15 +42,19 @@ export default function AdminDashboard() {
                 {/* Bento Grid Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-
-
-                    {/* Top Row: Stats (Spawn across all columns) */}
+                    {/* Top Row: Stats */}
                     <DashboardStats />
 
-                    {/* Bottom Row: Recent Orders (Full Width) */}
+                    {/* Recent Orders */}
                     <div className="lg:col-span-4 min-h-[400px]">
                         <RecentOrders />
                     </div>
+
+                    {/* WaveSoft ERP Live Dashboard */}
+                    <div className="lg:col-span-4">
+                        <ErpDashboard />
+                    </div>
+
                 </div>
             </main>
         </div>
