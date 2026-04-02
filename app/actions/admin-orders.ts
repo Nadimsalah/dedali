@@ -346,7 +346,7 @@ export async function updateOrderItemsAdmin(
             await supabaseAdmin.from('order_internal_notes').insert({
                 order_id: orderId,
                 author_id: actorId || null,
-                note: 'Order products were updated based on your request.',
+                note: 'Les produits de la commande ont ete modifies selon votre demande.',
             })
         } catch (noteErr: any) {
             console.warn('[Admin Action] Order note insert failed (non-critical):', noteErr)

@@ -39,6 +39,10 @@ const FRENCH_STATUS_LABELS: Record<string, string> = {
     cancelled: "Annulee",
 }
 
+const LEGACY_NOTE_TRANSLATIONS: Record<string, string> = {
+    "Order products were updated based on your request.": "Les produits de la commande ont ete modifies selon votre demande.",
+}
+
 export default function ResellerOrderDetailsPage() {
     const { language } = useLanguage()
     const isArabic = language === "ar"
@@ -93,6 +97,11 @@ export default function ResellerOrderDetailsPage() {
 
     const formatDateTime = (value: string) =>
         new Date(value).toLocaleString(isArabic ? "ar" : "fr-FR")
+
+    const getLocalizedNote = (note: string) => {
+        if (isArabic) return note
+        return LEGACY_NOTE_TRANSLATIONS[note] || note
+    }
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -325,7 +334,7 @@ export default function ResellerOrderDetailsPage() {
                                 <div className="space-y-3 text-left">
                                     {order.notes.map((note: any) => (
                                         <div key={note.id} className="rounded-2xl bg-white/70 border border-amber-100 p-4">
-                                            <p className="text-sm font-medium text-gray-900">{note.note}</p>
+                                            <p className="text-sm font-medium text-gray-900">{getLocalizedNote(note.note)}</p>
                                             <p className="text-xs text-amber-700 mt-2">
                                                 {note.author?.name || "Admin"} - {formatDateTime(note.created_at)}
                                             </p>
