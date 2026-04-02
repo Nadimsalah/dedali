@@ -133,7 +133,7 @@ export function ErpDashboard() {
         <WifiOff className="w-10 h-10 text-red-400" />
         <div>
           <h3 className="text-lg font-bold text-foreground">Middleware WaveSoft hors ligne</h3>
-          <p className="text-sm text-muted-foreground mt-1">Vérifiez que le middleware tourne sur <code className="text-primary bg-primary/10 px-1 rounded">http://localhost:3002</code></p>
+          <p className="text-sm text-muted-foreground mt-1">L'API de proxy Next.js n'a pas pu joindre le middleware ERP. Vérifiez les logs du serveur Next.js ou la variable d'environnement <code className="text-primary bg-primary/10 px-1 rounded">ERP_MIDDLEWARE_URL</code>.</p>
         </div>
         <Button variant="outline" onClick={loadCatalog} className="gap-2"><RefreshCw className="w-4 h-4" /> Réessayer</Button>
       </div>

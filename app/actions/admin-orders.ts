@@ -2,6 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { notifyOrderStatusChange } from '@/lib/order-notifications'
 
 export async function updateOrderStatusAdmin(orderId: string, status: string, actorId?: string | null, deliveryManId?: string) {
     console.log(`[Admin Action] Updating order ${orderId} to status: ${status} by ${actorId || 'system'}`)
@@ -53,7 +54,15 @@ export async function updateOrderStatusAdmin(orderId: string, status: string, ac
 
         console.log('[Admin Action] Update successful. New data:', data)
 
-        // 3. Manually Insert Log (Trusting the provided actorId)
+        // 3. --- WHATSAPP NOTIFICATION ---
+        // Asynchronous (don't block the UI)
+        if (data) {
+            notifyOrderStatusChange(data).catch(err => {
+                console.error('[Admin Action] Notification failed:', err)
+            })
+        }
+
+        // 4. Manually Insert Log (Trusting the provided actorId)
         if (actorId) {
             try {
                 const { error: logError } = await supabaseAdmin.from('order_status_logs').insert({

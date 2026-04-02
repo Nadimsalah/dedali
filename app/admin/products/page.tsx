@@ -24,7 +24,8 @@ import {
     Award,
     Image as ImageIcon,
     Loader2,
-    Save
+    Save,
+    RefreshCw
 } from "lucide-react"
 import { Notifications } from "@/components/admin/notifications"
 import Link from "next/link"
@@ -497,6 +498,51 @@ export default function AdminProductsPage() {
         })
     }
 
+    const [isSyncingCategories, setIsSyncingCategories] = useState(false)
+
+    const handleSyncCategoriesFromERP = async () => {
+        setIsSyncingCategories(true)
+        try {
+            const res = await fetch('/api/erp/categories');
+            if (!res.ok) throw new Error("Failed to fetch from ERP");
+            const json = await res.json();
+            const erpCategories: string[] = json.data || [];
+            if (erpCategories.length === 0) {
+                toast.info("Aucune catégorie trouvée sur l'ERP.");
+                setIsSyncingCategories(false);
+                return;
+            }
+
+            // Existing Slugs
+            const existingSlugs = new Set(categories.map(c => c.slug));
+            const newCategoriesToInsert: { name: string, slug: string }[] = [];
+
+            const toSlug = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+            erpCategories.forEach(catName => {
+                const slug = toSlug(catName);
+                if (slug && !existingSlugs.has(slug)) {
+                    newCategoriesToInsert.push({ name: catName, slug });
+                    existingSlugs.add(slug);
+                }
+            });
+
+            if (newCategoriesToInsert.length > 0) {
+                const { error } = await supabase.from('categories').insert(newCategoriesToInsert);
+                if (error) throw error;
+                toast.success(`${newCategoriesToInsert.length} catégories importées de l'ERP.`);
+                loadCategories();
+            } else {
+                toast.info("Toutes les catégories de l'ERP sont déjà présentes.");
+            }
+        } catch (error: any) {
+            console.error("ERP sync error:", error);
+            toast.error("Erreur lors de la synchronisation ERP.");
+        } finally {
+            setIsSyncingCategories(false);
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
             {/* Background gradients */}
@@ -547,6 +593,25 @@ export default function AdminProductsPage() {
                                 <>
                                     <Upload className="w-4 h-4 sm:mr-2" />
                                     <span className="hidden sm:inline">{t("admin.products.import_csv")}</span>
+                                </>
+                            )}
+                        </Button>
+
+                        <Button 
+                            variant="outline" 
+                            className="rounded-full h-9 border-amber-500/40 hover:border-amber-500 text-amber-500 hover:bg-amber-500/5"
+                            onClick={handleSyncCategoriesFromERP}
+                            disabled={isSyncingCategories}
+                        >
+                            {isSyncingCategories ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    Sync...
+                                </span>
+                            ) : (
+                                <>
+                                    <RefreshCw className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Sync ERP Catégories</span>
                                 </>
                             )}
                         </Button>

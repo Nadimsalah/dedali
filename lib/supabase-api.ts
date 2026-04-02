@@ -703,11 +703,32 @@ export async function createOrder(data: {
             .eq('id', data.customerId)
             .maybeSingle()
 
-        customer = existingCustomer;
+        if (existingCustomer) {
+            customer = existingCustomer;
+        } else {
+            // Customer record missing but we have an Auth ID - create it now
+            const { data: newCustomer, error: customerError } = await supabase
+                .from('customers')
+                .insert({
+                    id: data.customerId, // Use the Auth ID explicitly
+                    name: data.customer.name,
+                    email: data.customer.email.toLowerCase().trim(),
+                    phone: data.customer.phone,
+                    role: 'customer', // Default, will be checked for reseller status later
+                    status: 'active',
+                    total_orders: 0,
+                    total_spent: 0
+                })
+                .select()
+                .maybeSingle()
+            
+            if (customerError) console.error('Error creating customer from Auth ID:', customerError)
+            customer = newCustomer;
+        }
     }
 
     if (!customer) {
-        // Fallback to email-based check (for guests or missing records)
+        // Fallback to email-based check (only for guests without Auth ID)
         const normalizedEmail = data.customer.email.toLowerCase().trim();
         const { data: emailCustomer } = await supabase
             .from('customers')
@@ -732,9 +753,7 @@ export async function createOrder(data: {
                 .select()
                 .maybeSingle()
 
-            if (customerError) {
-                console.error('Error with customer record:', customerError)
-            }
+            if (customerError) console.error('Error with new guest customer:', customerError)
             customer = newCustomer;
         }
     }
@@ -815,6 +834,7 @@ export async function createOrder(data: {
                 .eq('id', customer.id)
         }
     }
+
 
     return { order }
 }
