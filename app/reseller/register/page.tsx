@@ -18,6 +18,10 @@ export default function ResellerRegisterPage() {
     const [isLoading, setIsLoading] = useState(false)
     const isArabic = language === "ar"
 
+    const [showOtp, setShowOtp] = useState(false)
+    const [otpCode, setOtpCode] = useState("")
+    const [otpToken, setOtpToken] = useState("")
+
     // Form State
     const [formData, setFormData] = useState({
         companyName: "",
@@ -34,19 +38,52 @@ export default function ResellerRegisterPage() {
         setFormData({ ...formData, [e.target.id]: e.target.value })
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSendOTP = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
 
         try {
-            const normalizedEmail = formData.email.trim().toLowerCase()
-            console.log('[Register Debug] Attempting signup:', {
-                email: normalizedEmail,
-                passwordLength: formData.password.length
+            const response = await fetch('/api/whatsapp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: formData.phone })
             })
+            
+            const data = await response.json()
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || "Failed to send OTP via WhatsApp")
+            }
 
-            // 1. Sign up with Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signUp({
+            setOtpToken(data.token)
+            setShowOtp(true)
+            toast.success("Code WhatsApp envoyé avec succès !")
+        } catch (error: any) {
+             toast.error(error.message)
+        } finally {
+             setIsLoading(false)
+        }
+    }
+
+    const handleVerifyAndSignup = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setIsLoading(true)
+
+        try {
+            // 1. Verify OTP Server-side
+            const verifyRes = await fetch('/api/whatsapp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otp: otpCode, token: otpToken })
+            })
+            
+            const verifyData = await verifyRes.json()
+            if (!verifyRes.ok || !verifyData.success) {
+                throw new Error("Code WhatsApp invalide ou expiré.")
+            }
+
+            // 2. Proceed with Signup
+            const normalizedEmail = formData.email.trim().toLowerCase()
+            const { error: authError } = await supabase.auth.signUp({
                 email: normalizedEmail,
                 password: formData.password,
                 options: {
@@ -64,16 +101,8 @@ export default function ResellerRegisterPage() {
 
             if (authError) throw authError
 
-            // Note: Database trigger 'handle_new_user' now automatically creates
-            // profiles, resellers, and customers records atomically.
-            // No manual insert needed here to avoid RLS conflicts.
-
             toast.success(t("reseller.register.success_toast"))
-
-            // Redirect to login while account awaits activation
-            setTimeout(() => {
-                router.push('/login')
-            }, 2000)
+            setTimeout(() => { router.push('/login') }, 2000)
 
         } catch (error: any) {
             toast.error(error?.message || t("reseller.register.error_toast"))
@@ -152,14 +181,15 @@ export default function ResellerRegisterPage() {
                         </div>
 
                         <h2 className="text-3xl font-bold tracking-tight mb-2">
-                            {t("reseller.register.title")}
+                            {showOtp ? "Vérification WhatsApp" : t("reseller.register.title")}
                         </h2>
                         <p className="text-muted-foreground">
-                            {t("reseller.register.subtitle")}
+                            {showOtp ? `Entrez les 6 chiffres que nous avons envoyé au ${formData.phone}` : t("reseller.register.subtitle")}
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {!showOtp ? (
+                    <form onSubmit={handleSendOTP} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Company Info */}
                         <div className="md:col-span-2">
                             <h3 className="text-lg font-semibold mb-4 border-b pb-2">{t("reseller.register.company_info")}</h3>
@@ -246,6 +276,7 @@ export default function ResellerRegisterPage() {
                                     id="phone"
                                     value={formData.phone}
                                     onChange={handleChange}
+                                    placeholder="212600000000"
                                     className={`h-12 rounded-xl bg-white/50 ${isArabic ? "pr-10 pl-3" : "pl-10 pr-3"}`}
                                     required
                                 />
@@ -286,7 +317,7 @@ export default function ResellerRegisterPage() {
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                        {t("reseller.register.submitting")}
+                                        Génération du code WhatsApp...
                                     </>
                                 ) : (
                                     t("reseller.register.create_account")
@@ -301,6 +332,37 @@ export default function ResellerRegisterPage() {
                         </div>
 
                     </form>
+                    ) : (
+                    <form onSubmit={handleVerifyAndSignup} className="grid grid-cols-1 gap-6">
+                        <div className="space-y-4">
+                             <Label htmlFor="otp">Code Sécurisé à 6 chiffres</Label>
+                             <div className="relative">
+                                 <Lock className={`absolute top-3 w-5 h-5 text-muted-foreground ${isArabic ? "right-3" : "left-3"}`} />
+                                 <Input
+                                     id="otp"
+                                     value={otpCode}
+                                     onChange={(e) => setOtpCode(e.target.value)}
+                                     placeholder="ex: 123456"
+                                     className={`h-14 rounded-xl bg-white/50 text-center tracking-widest text-xl font-bold`}
+                                     maxLength={6}
+                                     required
+                                 />
+                             </div>
+                             <p className="text-xs text-muted-foreground text-center">
+                                 Ouvrez WhatsApp et vérifiez les messages pour <b>{formData.phone}</b>
+                             </p>
+                        </div>
+                        
+                        <div className="pt-4 flex gap-3">
+                             <Button type="button" variant="outline" onClick={() => setShowOtp(false)} className="w-1/3 h-14 rounded-xl">
+                                 Retour
+                             </Button>
+                             <Button type="submit" className="w-2/3 h-14 rounded-xl text-lg font-bold shadow-lg shadow-primary/20" disabled={isLoading}>
+                                 {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Vérifier & Valider"}
+                             </Button>
+                        </div>
+                    </form>
+                    )}
                 </div>
             </div>
         </div>

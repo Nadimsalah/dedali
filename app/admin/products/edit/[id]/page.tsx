@@ -315,51 +315,53 @@ export default function EditProductPage() {
 
     const handleSave = async () => {
         setSaving(true)
+        try {
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+            if (sessionError || !sessionData.session?.access_token) {
+                throw new Error("Session admin introuvable. Reconnectez-vous puis reessayez.")
+            }
 
-        const { error } = await supabase
-            .from('products')
-            .update({
-                title,
-                description,
-                category,
-                price: price ? parseFloat(price) : 0,
-                compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
-                reseller_price: resellerPrice ? parseFloat(resellerPrice) * 1.2 : null,
-                partner_price: partnerPrice ? parseFloat(partnerPrice) * 1.2 : null,
-                wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) * 1.2 : null,
-                reseller_min_qty: resellerMinQty ? parseInt(resellerMinQty) : null,
-                partner_min_qty: partnerMinQty ? parseInt(partnerMinQty) : null,
-                wholesaler_min_qty: wholesalerMinQty ? parseInt(wholesalerMinQty) : null,
-                stock: stock ? parseInt(stock) : 0,
-                sku,
-                status,
-                benefits,
-                ingredients,
-                how_to_use: howToUse,
-                images,
-                warehouse_id: selectedWarehouse || null,
-                brand_id: brandId || null
+            const res = await fetch(`/api/admin/products/${productId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${sessionData.session.access_token}`,
+                },
+                body: JSON.stringify({
+                    title,
+                    description,
+                    category,
+                    price: price ? parseFloat(price) : 0,
+                    compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
+                    reseller_price: resellerPrice ? parseFloat(resellerPrice) * 1.2 : null,
+                    partner_price: partnerPrice ? parseFloat(partnerPrice) * 1.2 : null,
+                    wholesaler_price: wholesalerPrice ? parseFloat(wholesalerPrice) * 1.2 : null,
+                    reseller_min_qty: resellerMinQty ? parseInt(resellerMinQty) : null,
+                    partner_min_qty: partnerMinQty ? parseInt(partnerMinQty) : null,
+                    wholesaler_min_qty: wholesalerMinQty ? parseInt(wholesalerMinQty) : null,
+                    stock: stock ? parseInt(stock) : 0,
+                    sku,
+                    status,
+                    benefits,
+                    ingredients,
+                    how_to_use: howToUse,
+                    images,
+                    warehouse_id: selectedWarehouse || null,
+                    brand_id: brandId || null,
+                    selectedRelated,
+                })
             })
-            .eq('id', productId)
 
-        // Update cross-sells
-        // 1. Delete existing
-        await supabase.from('product_cross_sells').delete().eq('product_id', productId)
-        // 2. Insert new
-        if (selectedRelated.length > 0) {
-            const crossSells = selectedRelated.map(id => ({
-                product_id: productId,
-                related_product_id: id
-            }))
-            await supabase.from('product_cross_sells').insert(crossSells)
-        }
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error || 'Erreur lors de la mise a jour du produit')
+            }
 
-        setSaving(false)
-
-        if (error) {
-            alert('Error updating product: ' + error.message)
-        } else {
             router.push('/admin/products')
+        } catch (error: any) {
+            alert(error.message || 'Erreur lors de la mise a jour du produit')
+        } finally {
+            setSaving(false)
         }
     }
 

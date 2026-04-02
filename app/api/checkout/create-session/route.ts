@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createOrder } from "@/lib/supabase-api"
 import { sendPushNotification } from "@/lib/push-notifications"
+import { notifyOrderStatusChange } from "@/lib/order-notifications"
 
 export async function POST(request: Request) {
     try {
@@ -54,6 +55,10 @@ export async function POST(request: Request) {
             url: `/admin/orders/${order.id}`,
             tag: 'new-order'
         }).catch(err => console.error("Push notify failed:", err))
+        
+        // --- WHATSAPP NOTIFICATION ---
+        // (Asynchronous, don't wait for it to return response)
+        notifyOrderStatusChange(order).catch(err => console.error("WhatsApp notify failed:", err))
 
         return NextResponse.json({
             redirectUrl: "/checkout/success",

@@ -73,14 +73,38 @@ export default function ResellerDashboard() {
                     setProfile(customerProfile)
                 }
 
-                // 4. Get Account Manager
+                // 4. Get Additional Reseller Details from 'resellers' table
                 const { data: resellerData } = await supabase
                     .from('resellers')
-                    .select('id')
+                    .select('id, company_name, ice, website, city, phone, status')
                     .eq('user_id', user.id)
                     .maybeSingle()
 
+                // Auth metadata is the ultimate fallback (always written by signUp)
+                const meta = user.user_metadata || {}
+
                 if (resellerData) {
+                    // Merge: resellers table → auth metadata → customerProfile → defaults
+                    setProfile({
+                        ...(customerProfile || {
+                            id: user.id,
+                            name: meta.full_name || user.email || '',
+                            email: user.email || '',
+                            phone: resellerData.phone || meta.phone || null,
+                            role: 'reseller',
+                            status: resellerData.status || 'pending',
+                            total_orders: 0,
+                            total_spent: 0,
+                            created_at: '',
+                            updated_at: ''
+                        }),
+                        company_name: resellerData.company_name || meta.company_name || null,
+                        ice: resellerData.ice || meta.ice || null,
+                        website: resellerData.website || meta.website || null,
+                        city: resellerData.city || meta.city || null
+                    })
+
+                    // Get Account Manager
                     const { data: assignmentData } = await supabase
                         .from('account_manager_assignments')
                         .select('account_manager_id')
@@ -97,11 +121,58 @@ export default function ResellerDashboard() {
 
                         setManager(managerData)
                     }
+                } else if (meta.company_name || meta.ice || meta.city) {
+                    // No reseller row found - still read from auth metadata
+                    setProfile({
+                        ...(customerProfile || {
+                            id: user.id,
+                            name: meta.full_name || user.email || '',
+                            email: user.email || '',
+                            phone: meta.phone || null,
+                            role: 'reseller',
+                            status: 'pending',
+                            total_orders: 0,
+                            total_spent: 0,
+                            created_at: '',
+                            updated_at: ''
+                        }),
+                        company_name: meta.company_name || null,
+                        ice: meta.ice || null,
+                        website: meta.website || null,
+                        city: meta.city || null
+                    })
                 }
 
-                // 5. Get Orders
+                // 6. Get Orders - match by customer_id OR customer_email
                 if (user.id) {
-                    const ordersData = await getCustomerOrders(user.id)
+                    // First try by customer_id
+                    let ordersData = await getCustomerOrders(user.id)
+                    
+                    // If no orders found by ID, try by email
+                    if (ordersData.length === 0 && user.email) {
+                        const { data: emailOrders } = await supabase
+                            .from('orders')
+                            .select('*')
+                            .eq('customer_email', user.email.toLowerCase())
+                            .order('created_at', { ascending: false })
+                        
+                        if (emailOrders && emailOrders.length > 0) {
+                            ordersData = emailOrders
+
+                            // Retroactively link these orders to the user
+                            const unlinkedIds = emailOrders
+                                .filter(o => !o.customer_id)
+                                .map(o => o.id)
+                            
+                            if (unlinkedIds.length > 0) {
+                                await supabase
+                                    .from('orders')
+                                    .update({ customer_id: user.id })
+                                    .in('id', unlinkedIds)
+                            }
+                        }
+                    }
+                    
                     setOrders(ordersData)
                 }
 

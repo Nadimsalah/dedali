@@ -1,84 +1,143 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useLanguage } from "@/components/language-provider"
-import { supabase } from "@/lib/supabase"
-import { getOrderById, type Order, type OrderItem } from "@/lib/supabase-api"
-import {
-    ArrowLeft,
-    Package,
-    Truck,
-    CreditCard,
-    Calendar,
-    MapPin,
-    Phone,
-    Mail,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    Loader2,
-    FileText
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
+import { useLanguage } from "@/components/language-provider"
+import { Button } from "@/components/ui/button"
+import { supabase } from "@/lib/supabase"
 import { formatPrice } from "@/lib/utils"
+import {
+    ArrowLeft,
+    Calendar,
+    CheckCircle2,
+    Clock,
+    CreditCard,
+    FileText,
+    Loader2,
+    Mail,
+    MapPin,
+    Package,
+    Phone,
+    Truck,
+    XCircle,
+} from "lucide-react"
+
+type TimelineStep = {
+    label: string
+    arabic: string
+    icon: typeof CheckCircle2
+    completed: boolean
+}
+
+const FRENCH_STATUS_LABELS: Record<string, string> = {
+    pending: "En attente",
+    processing: "En traitement",
+    shipped: "Expediee",
+    delivered: "Livree",
+    cancelled: "Annulee",
+}
+
+const LEGACY_NOTE_TRANSLATIONS: Record<string, string> = {
+    "Order products were updated based on your request.": "Les produits de la commande ont ete modifies selon votre demande.",
+}
 
 export default function ResellerOrderDetailsPage() {
     const { language } = useLanguage()
     const isArabic = language === "ar"
+    const isFrench = language === "fr"
     const params = useParams()
     const router = useRouter()
     const orderId = params.id as string
 
     const [order, setOrder] = useState<any>(null)
     const [loading, setLoading] = useState(true)
-    const [printType, setPrintType] = useState<'bon_commande' | null>(null)
 
     useEffect(() => {
         async function loadOrder() {
             if (!orderId) return
             setLoading(true)
 
-            const { data: { user } } = await supabase.auth.getUser()
+            const {
+                data: { user },
+            } = await supabase.auth.getUser()
+
             if (!user) {
                 router.push("/login")
                 return
             }
 
-            const data = await getOrderById(orderId)
+            const {
+                data: { session },
+            } = await supabase.auth.getSession()
 
-            if (data && data.customer_id === user.id) {
-                setOrder(data)
-            } else {
+            const res = await fetch(`/api/reseller/orders/${orderId}`, {
+                headers: session?.access_token
+                    ? { Authorization: `Bearer ${session.access_token}` }
+                    : {},
+            })
+
+            if (!res.ok) {
                 console.error("Order not found or access denied")
+                setLoading(false)
+                return
             }
+
+            const json = await res.json()
+            setOrder(json.order)
             setLoading(false)
         }
+
         loadOrder()
     }, [orderId, router])
 
+    const formatDate = (value: string) =>
+        new Date(value).toLocaleDateString(isArabic ? "ar" : "fr-FR")
+
+    const formatDateTime = (value: string) =>
+        new Date(value).toLocaleString(isArabic ? "ar" : "fr-FR")
+
+    const getLocalizedNote = (note: string) => {
+        if (isArabic) return note
+        return LEGACY_NOTE_TRANSLATIONS[note] || note
+    }
+
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
-            case 'pending': return 'bg-yellow-50 text-yellow-600 border-yellow-200'
-            case 'processing': return 'bg-blue-50 text-blue-600 border-blue-200'
-            case 'shipped': return 'bg-purple-50 text-purple-600 border-purple-200'
-            case 'delivered': return 'bg-green-50 text-green-600 border-green-200'
-            case 'cancelled': return 'bg-red-50 text-red-600 border-red-200'
-            default: return 'bg-gray-50 text-gray-600 border-gray-200'
+            case "pending":
+                return "bg-yellow-50 text-yellow-600 border-yellow-200"
+            case "processing":
+                return "bg-blue-50 text-blue-600 border-blue-200"
+            case "shipped":
+                return "bg-purple-50 text-purple-600 border-purple-200"
+            case "delivered":
+                return "bg-green-50 text-green-600 border-green-200"
+            case "cancelled":
+                return "bg-red-50 text-red-600 border-red-200"
+            default:
+                return "bg-gray-50 text-gray-600 border-gray-200"
         }
     }
 
     const getStatusLabel = (status: string) => {
-        if (!isArabic) return status.charAt(0).toUpperCase() + status.slice(1)
+        if (!isArabic) {
+            return FRENCH_STATUS_LABELS[status.toLowerCase()] || status
+        }
+
         switch (status.toLowerCase()) {
-            case 'pending': return 'قيد الانتظار'
-            case 'processing': return 'جاري التنفيذ'
-            case 'shipped': return 'تم الشحن'
-            case 'delivered': return 'تم التوصيل'
-            case 'cancelled': return 'ملغي'
-            default: return status
+            case "pending":
+                return "En attente de traitement"
+            case "processing":
+                return "En cours de preparation"
+            case "shipped":
+                return "Expedie"
+            case "delivered":
+                return "Livre"
+            case "cancelled":
+                return "Annule"
+            default:
+                return status
         }
     }
 
@@ -96,14 +155,16 @@ export default function ResellerOrderDetailsPage() {
                 <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
                     <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        {isArabic ? "طلب غير موجود" : "Order Not Found"}
+                        {isArabic ? "الطلب غير موجود" : "Commande introuvable"}
                     </h2>
                     <p className="text-gray-500 mb-6">
-                        {isArabic ? "لم نتمكن من العثور على هذا الطلب أو لا تملك صلاحية الوصول إليه." : "We couldn't find this order or you don't have permission to view it."}
+                        {isArabic
+                            ? "Nous n'avons pas pu trouver cette commande ou vous n'avez pas l'autorisation de la consulter."
+                            : "Nous n'avons pas trouve cette commande ou vous n'avez pas l'autorisation de la consulter."}
                     </p>
                     <Link href="/reseller/dashboard">
                         <Button className="w-full h-12 rounded-xl">
-                            {isArabic ? "العودة للوحة التحكم" : "Back to Dashboard"}
+                            {isArabic ? "العودة الى لوحة التحكم" : "Retour au tableau de bord"}
                         </Button>
                     </Link>
                 </div>
@@ -111,12 +172,36 @@ export default function ResellerOrderDetailsPage() {
         )
     }
 
-    const isDelivered = order.status.toLowerCase() === 'delivered'
+    const timelineSteps: TimelineStep[] = [
+        {
+            label: "Commande recue",
+            arabic: "Reception de la commande",
+            icon: CheckCircle2,
+            completed: true,
+        },
+        {
+            label: "Preparation en cours",
+            arabic: "Preparation en cours",
+            icon: Loader2,
+            completed: ["processing", "shipped", "delivered"].includes(order.status),
+        },
+        {
+            label: "Expediee",
+            arabic: "Expedition",
+            icon: Truck,
+            completed: ["shipped", "delivered"].includes(order.status),
+        },
+        {
+            label: "Livree",
+            arabic: "Livraison terminee",
+            icon: CheckCircle2,
+            completed: order.status === "delivered",
+        },
+    ]
 
     return (
         <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8 print:p-0 print:bg-white">
             <div className="max-w-4xl mx-auto print:hidden">
-                {/* Header */}
                 <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <Link href="/reseller/dashboard">
@@ -126,7 +211,7 @@ export default function ResellerOrderDetailsPage() {
                         </Link>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                                {isArabic ? "تفاصيل الطلب" : "Order Details"}
+                                {isArabic ? "تفاصيل الطلب" : "Details de la commande"}
                                 <span className="text-primary font-mono text-lg">#{order.order_number}</span>
                             </h1>
                             <div className="flex items-center gap-2 mt-1 text-left">
@@ -136,34 +221,31 @@ export default function ResellerOrderDetailsPage() {
                                 <span className="text-xs text-gray-400">•</span>
                                 <span className="text-xs text-gray-400 flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    {new Date(order.created_at).toLocaleDateString()}
+                                    {formatDate(order.created_at)}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    {/* Bon de Commande Button */}
-                    {!loading && order && order.status.toLowerCase() === 'processing' && (
+                    {!loading && order && order.status.toLowerCase() === "processing" && (
                         <Button
                             onClick={() => {
-                                setPrintType('bon_commande')
                                 setTimeout(() => window.print(), 100)
                             }}
                             className="bg-primary text-white hover:bg-primary/90"
                         >
                             <FileText className="w-4 h-4 mr-2" />
-                            {isArabic ? "بون الطلب" : "Bon de Commande"}
+                            {isArabic ? "Bon de commande" : "Bon de commande"}
                         </Button>
                     )}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Items */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-6 border-b border-gray-50">
                                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                                     <Package className="w-5 h-5 text-gray-400" />
-                                    {isArabic ? "المنتجات" : "Products"}
+                                    {isArabic ? "Produits" : "Produits"}
                                 </h3>
                             </div>
                             <div className="p-6">
@@ -185,11 +267,9 @@ export default function ResellerOrderDetailsPage() {
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0 text-left">
-                                                <h4 className="font-bold text-gray-900 truncate">
-                                                    {item.product_title}
-                                                </h4>
+                                                <h4 className="font-bold text-gray-900 truncate">{item.product_title}</h4>
                                                 <p className="text-sm text-gray-500 mt-1">
-                                                    {isArabic ? `الكمية: ${item.quantity}` : `Quantity: ${item.quantity}`} × {formatPrice(item.price)} MAD
+                                                    {isArabic ? `Quantite : ${item.quantity}` : `Quantite : ${item.quantity}`} x {formatPrice(item.price)} MAD
                                                 </p>
                                                 {item.variant_name && (
                                                     <span className="inline-block mt-2 px-2 py-0.5 bg-gray-50 text-gray-500 text-[10px] font-bold rounded uppercase tracking-wider">
@@ -206,43 +286,37 @@ export default function ResellerOrderDetailsPage() {
 
                                 <div className="mt-8 pt-8 border-t border-gray-50 space-y-3">
                                     <div className="flex justify-between items-center text-gray-500">
-                                        <span>{isArabic ? "المجموع الفرعي" : "Subtotal"}</span>
+                                        <span>{isArabic ? "Sous-total" : "Sous-total"}</span>
                                         <span className="font-medium">{formatPrice(order.subtotal)} MAD</span>
                                     </div>
                                     <div className="flex justify-between items-center text-gray-500">
-                                        <span>{isArabic ? "الشحن" : "Shipping"}</span>
+                                        <span>{isArabic ? "Livraison" : "Livraison"}</span>
                                         <span className="font-medium">{formatPrice(order.shipping_cost)} MAD</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                                        <span className="text-lg font-bold text-gray-900">{isArabic ? "الإجمالي" : "Total Amount"}</span>
+                                        <span className="text-lg font-bold text-gray-900">{isArabic ? "Montant total" : "Montant total"}</span>
                                         <span className="text-2xl font-black text-primary">{formatPrice(order.total)} MAD</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Timeline */}
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-6">
                                 <Clock className="w-5 h-5 text-gray-400" />
-                                {isArabic ? "تتبع الطلب" : "Order Tracking"}
+                                {isArabic ? "Suivi de la commande" : "Suivi de la commande"}
                             </h3>
                             <div className="space-y-8 text-left">
-                                {[
-                                    { label: 'Pending', arabic: 'تم استلام الطلب', icon: CheckCircle2, completed: true },
-                                    { label: 'Processing', arabic: 'جاري التحضير', icon: Loader2, completed: ['processing', 'shipped', 'delivered'].includes(order.status) },
-                                    { label: 'Shipped', arabic: 'تم الشحن', icon: Truck, completed: ['shipped', 'delivered'].includes(order.status) },
-                                    { label: 'Delivered', arabic: 'تم التوصيل', icon: CheckCircle2, completed: order.status === 'delivered' },
-                                ].map((step, idx, arr) => (
+                                {timelineSteps.map((step, idx, arr) => (
                                     <div key={idx} className="flex items-start gap-4 relative">
                                         {idx !== arr.length - 1 && (
-                                            <div className={`absolute left-2.5 top-5 w-0.5 h-10 ${step.completed ? 'bg-primary' : 'bg-gray-100'}`} />
+                                            <div className={`absolute left-2.5 top-5 w-0.5 h-10 ${step.completed ? "bg-primary" : "bg-gray-100"}`} />
                                         )}
-                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 ${step.completed ? 'bg-primary text-white' : 'bg-gray-100 text-gray-300'}`}>
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 z-10 ${step.completed ? "bg-primary text-white" : "bg-gray-100 text-gray-300"}`}>
                                             <step.icon className="w-3 h-3" />
                                         </div>
                                         <div className="flex-1 pt-0.5">
-                                            <p className={`font-bold text-sm ${step.completed ? 'text-gray-900' : 'text-gray-300'}`}>
+                                            <p className={`font-bold text-sm ${step.completed ? "text-gray-900" : "text-gray-300"}`}>
                                                 {isArabic ? step.arabic : step.label}
                                             </p>
                                         </div>
@@ -250,14 +324,31 @@ export default function ResellerOrderDetailsPage() {
                                 ))}
                             </div>
                         </div>
+
+                        {order.notes && order.notes.length > 0 && (
+                            <div className="bg-amber-50 rounded-3xl shadow-sm border border-amber-200 p-6">
+                                <h3 className="font-semibold text-amber-900 flex items-center gap-2 mb-4">
+                                    <FileText className="w-5 h-5 text-amber-600" />
+                                    {isArabic ? "Notes de commande" : "Notes de commande"}
+                                </h3>
+                                <div className="space-y-3 text-left">
+                                    {order.notes.map((note: any) => (
+                                        <div key={note.id} className="rounded-2xl bg-white/70 border border-amber-100 p-4">
+                                            <p className="text-sm font-medium text-gray-900">{getLocalizedNote(note.note)}</p>
+                                            <p className="text-xs text-amber-700 mt-2">
+                                                {note.author?.name || "Admin"} - {formatDateTime(note.created_at)}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Right Column: Address & Payment */}
                     <div className="space-y-6">
-                        {/* Shipping Address */}
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-                                {isArabic ? "عنوان الشحن" : "Shipping Address"}
+                                {isArabic ? "Adresse de livraison" : "Adresse de livraison"}
                             </h4>
                             <div className="flex items-start gap-3 text-left">
                                 <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 shrink-0">
@@ -266,34 +357,36 @@ export default function ResellerOrderDetailsPage() {
                                 <div>
                                     <p className="text-gray-900 font-bold">{order.customer_name}</p>
                                     <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                                        {order.address_line1}<br />
+                                        {order.address_line1}
+                                        <br />
                                         {order.city}, {order.governorate}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Contact Info */}
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-                                {isArabic ? "معلومات الاتصال" : "Contact Information"}
+                                {isArabic ? "Informations de contact" : "Informations de contact"}
                             </h4>
                             <div className="space-y-3 text-left">
+                                {order.account_manager?.name && (
+                                    <div className="text-sm font-semibold text-gray-900">{order.account_manager.name}</div>
+                                )}
                                 <div className="flex items-center gap-3 text-sm text-gray-500">
                                     <Phone className="w-4 h-4" />
-                                    {order.customer_phone}
+                                    {order.account_manager?.phone || order.customer_phone}
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-gray-500">
                                     <Mail className="w-4 h-4" />
-                                    {order.customer_email}
+                                    {order.account_manager?.email || order.customer_email}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Payment Method */}
                         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-                                {isArabic ? "طريقة الدفع" : "Payment Method"}
+                                {isArabic ? "Mode de paiement" : "Mode de paiement"}
                             </h4>
                             <div className="flex items-center gap-3 text-left">
                                 <div className="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center text-green-500 shrink-0">
@@ -301,11 +394,9 @@ export default function ResellerOrderDetailsPage() {
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-gray-900 uppercase">
-                                        {order.payment_method === 'cod' ? (isArabic ? 'الدفع عند الاستلام' : 'Cash on Delivery') : order.payment_method}
+                                        {order.payment_method === "cod" ? "Paiement a la livraison" : order.payment_method}
                                     </p>
-                                    <p className="text-xs text-gray-400 mt-0.5">
-                                        {isArabic ? "فاتورة رسمية للموزعين" : "Official Reseller Invoice"}
-                                    </p>
+                                    <p className="text-xs text-gray-400 mt-0.5">Facture officielle revendeur</p>
                                 </div>
                             </div>
                         </div>
@@ -313,9 +404,7 @@ export default function ResellerOrderDetailsPage() {
                 </div>
             </div>
 
-            {/* Printable "Bon de Commande" Section */}
             <div className="hidden print:block bg-white text-black p-0 min-h-screen font-sans">
-                {/* Header */}
                 <div className="flex justify-between items-start border-b-2 border-gray-900 pb-4 mb-6">
                     <div>
                         <div className="relative w-32 h-9 mb-2">
@@ -335,18 +424,16 @@ export default function ResellerOrderDetailsPage() {
                     <div className="text-right">
                         <h1 className="text-2xl font-black text-gray-900 uppercase">BON DE COMMANDE</h1>
                         <div className="text-sm mt-2">
-                            <p><span className="font-bold">N° Commande:</span> {order.order_number}</p>
-                            <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString('fr-FR')}</p>
+                            <p><span className="font-bold">No Commande:</span> {order.order_number}</p>
+                            <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString("fr-FR")}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Client & Shipping Info */}
                 <div className="grid grid-cols-2 gap-8 mb-8">
                     <div>
                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Client</h3>
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm">
-                            {/* Try to show Reseller Info if available, else Customer Info (which might be the reseller) */}
                             <p className="font-bold text-gray-900">{order.reseller?.company_name || order.customer_name}</p>
                             <p className="text-gray-600">Attn: {order.reseller?.profile?.name || order.customer_name}</p>
                             <p className="text-gray-600">{order.customer_email}</p>
@@ -354,7 +441,7 @@ export default function ResellerOrderDetailsPage() {
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">Adresse de Livraison</h3>
+                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 text-right">Adresse de livraison</h3>
                         <div className="text-sm text-right">
                             <p className="font-bold text-gray-900">{order.customer_name}</p>
                             <p className="text-gray-600">{order.address_line1}</p>
@@ -364,13 +451,12 @@ export default function ResellerOrderDetailsPage() {
                     </div>
                 </div>
 
-                {/* Items Table */}
                 <table className="w-full mb-8 border-collapse">
                     <thead>
                         <tr className="border-b-2 border-gray-900 text-gray-900">
                             <th className="py-2 text-left text-xs font-bold uppercase tracking-wider">Produit</th>
-                            <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">Quantité</th>
-                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Prix Unitaire</th>
+                            <th className="py-2 text-center text-xs font-bold uppercase tracking-wider">Quantite</th>
+                            <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Prix unitaire</th>
                             <th className="py-2 text-right text-xs font-bold uppercase tracking-wider">Total</th>
                         </tr>
                     </thead>
@@ -389,7 +475,6 @@ export default function ResellerOrderDetailsPage() {
                     </tbody>
                 </table>
 
-                {/* Totals */}
                 <div className="flex justify-end mb-12">
                     <div className="w-1/3 space-y-2">
                         <div className="flex justify-between text-sm text-gray-600">
@@ -407,18 +492,16 @@ export default function ResellerOrderDetailsPage() {
                     </div>
                 </div>
 
-                {/* Footer / Signatures */}
                 <div className="flex justify-between items-end pt-8 border-t border-gray-200">
                     <div className="text-xs text-gray-400">
-                        <p>Ce document est généré automatiquement.</p>
+                        <p>Ce document est genere automatiquement.</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cachet et Signature</p>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Cachet et signature</p>
                         <div className="h-16 w-32 border border-gray-200 rounded-lg bg-gray-50"></div>
                     </div>
                 </div>
             </div>
-
         </div>
     )
 }
