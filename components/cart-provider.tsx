@@ -62,14 +62,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 const updatedItems = [...currentItems]
                 const item = updatedItems[existingItemIndex]
                 updatedItems[existingItemIndex].quantity = item.quantity + newItem.quantity
-                toast.success("Cart updated", {
-                    description: `${newItem.name} quantity increased.`,
-                })
                 return updatedItems
             } else {
-                toast.success("Added to cart", {
-                    description: `${newItem.name} added to your cart.`,
-                })
                 return [...currentItems, newItem]
             }
         })

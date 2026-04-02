@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { updateOrderStatusAdmin, getOrderDetailsAdmin } from "@/app/actions/admin-orders"
+import { EditableOrderItem, updateOrderItemsAdmin, updateOrderStatusAdmin, getOrderDetailsAdmin } from "@/app/actions/admin-orders"
 import { getActiveDeliveryMen } from "@/app/actions/logisticiens"
 import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,11 @@ import {
     Truck,
     Search,
     Loader2,
-    CheckCircle2
+    CheckCircle2,
+    Plus,
+    Minus,
+    Trash2,
+    X
 } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
@@ -40,6 +44,26 @@ import {
     DialogFooter
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Product } from "@/lib/supabase-api"
+
+type EditableItem = EditableOrderItem & {
+    warehouse_name?: string | null
+}
+
+type ProductSearchResult = Pick<Product, "id" | "title" | "sku" | "price" | "stock" | "status" | "images">
+
+const mapOrderItemsToEditable = (items: any[] = []): EditableItem[] =>
+    items.map((item: any) => ({
+        id: item.id,
+        product_id: item.product_id,
+        product_title: item.product_title,
+        product_sku: item.product_sku,
+        product_image: item.image_url || item.product_image || null,
+        variant_name: item.variant_name,
+        quantity: Number(item.quantity) || 1,
+        price: Number(item.final_price ?? item.price) || 0,
+        warehouse_name: item.warehouse_name || null,
+    }))
 
 export default function OrderDetailsPage() {
     const { orderId } = useParams()
@@ -53,6 +77,11 @@ export default function OrderDetailsPage() {
     const [newNote, setNewNote] = useState("")
     const [amId, setAmId] = useState<string | null>(null)
     const [printType, setPrintType] = useState<'bon_commande' | null>(null)
+    const [editableItems, setEditableItems] = useState<EditableItem[]>([])
+    const [savingItems, setSavingItems] = useState(false)
+    const [productSearchQuery, setProductSearchQuery] = useState("")
+    const [productResults, setProductResults] = useState<ProductSearchResult[]>([])
+    const [searchingProducts, setSearchingProducts] = useState(false)
 
     // Delivery Assignment
     const [deliveryMen, setDeliveryMen] = useState<any[]>([])
@@ -76,6 +105,7 @@ export default function OrderDetailsPage() {
 
             if (error || !success || !data) throw new Error(error || "Failed to fetch data")
             setOrder(data)
+            setEditableItems(mapOrderItemsToEditable(data.items))
 
         } catch (error: any) {
             toast.error(error.message)
@@ -83,6 +113,37 @@ export default function OrderDetailsPage() {
             setLoading(false)
         }
     }
+
+    useEffect(() => {
+        const q = productSearchQuery.trim()
+        if (q.length < 2) {
+            setProductResults([])
+            setSearchingProducts(false)
+            return
+        }
+
+        const timeoutId = window.setTimeout(async () => {
+            setSearchingProducts(true)
+            const { data, error } = await supabase
+                .from("products")
+                .select("id, title, sku, price, stock, status, images")
+                .or(`title.ilike.%${q}%,sku.ilike.%${q}%`)
+                .order("title")
+                .limit(8)
+
+            if (error) {
+                console.error("[ManagerOrderItemsSearch]", error)
+                toast.error("Impossible de rechercher les produits")
+                setProductResults([])
+            } else {
+                setProductResults((data || []) as ProductSearchResult[])
+            }
+
+            setSearchingProducts(false)
+        }, 300)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [productSearchQuery])
 
 
 
@@ -132,7 +193,7 @@ export default function OrderDetailsPage() {
                     id: `temp-${Date.now()}`,
                     new_status: statusLower,
                     created_at: new Date().toISOString(),
-                    changed_by_user: { name: t("manager.order_details.you_just_now") }
+                    changed_by_user: { name: "Account Manager", role: "ACCOUNT_MANAGER" }
                 }, ...prev.auditLogs]
             }))
             setIsDeliveryModalOpen(false)
@@ -173,6 +234,124 @@ export default function OrderDetailsPage() {
         setTimeout(() => {
             window.print()
         }, 100)
+    }
+    const getTimelineLabel = (log: any) => {
+        if (log.old_status && log.old_status === log.new_status) {
+            return "Produits mis a jour"
+        }
+        return t(`status.${log.new_status}`)
+    }
+    const getTimelineActorLabel = (log: any) => {
+        const role = log.changed_by_user?.role
+        const name = log.changed_by_user?.name
+        if (role === "ADMIN") return "Admin"
+        if (role === "ACCOUNT_MANAGER") return name || "Account Manager"
+        return name || t("manager.order_details.system")
+    }
+
+    const hasUnsavedItemChanges =
+        JSON.stringify(
+            editableItems.map((item) => ({
+                id: item.id || null,
+                product_id: item.product_id,
+                quantity: item.quantity,
+                price: item.price,
+            }))
+        ) !==
+        JSON.stringify(
+            (order?.items || []).map((item: any) => ({
+                id: item.id || null,
+                product_id: item.product_id,
+                quantity: Number(item.quantity) || 1,
+                price: Number(item.final_price ?? item.price) || 0,
+            }))
+        )
+
+    const editableSubtotal = editableItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+    const updateItemQuantity = (index: number, quantity: number) => {
+        setEditableItems((prev) =>
+            prev.map((item, itemIndex) =>
+                itemIndex === index
+                    ? { ...item, quantity: Math.max(1, Number.isFinite(quantity) ? quantity : 1) }
+                    : item
+            )
+        )
+    }
+
+    const removeItem = (index: number) => {
+        setEditableItems((prev) => prev.filter((_, itemIndex) => itemIndex !== index))
+    }
+
+    const addProductToOrder = (product: ProductSearchResult) => {
+        setEditableItems((prev) => {
+            const existingIndex = prev.findIndex((item) => item.product_id === product.id)
+            if (existingIndex >= 0) {
+                return prev.map((item, itemIndex) =>
+                    itemIndex === existingIndex
+                        ? { ...item, quantity: item.quantity + 1 }
+                        : item
+                )
+            }
+
+            return [
+                ...prev,
+                {
+                    product_id: product.id,
+                    product_title: product.title,
+                    product_sku: product.sku || "",
+                    product_image: product.images?.[0] || null,
+                    variant_name: null,
+                    quantity: 1,
+                    price: Number(product.price) || 0,
+                    warehouse_name: null,
+                },
+            ]
+        })
+
+        setProductSearchQuery("")
+        setProductResults([])
+    }
+
+    const resetItemChanges = () => {
+        setEditableItems(mapOrderItemsToEditable(order?.items || []))
+        setProductSearchQuery("")
+        setProductResults([])
+    }
+
+    const saveOrderItems = async () => {
+        if (!order) return
+        if (editableItems.length === 0) {
+            toast.error("La commande doit contenir au moins un produit")
+            return
+        }
+
+        setSavingItems(true)
+        try {
+            const result = await updateOrderItemsAdmin(
+                order.id,
+                editableItems.map((item) => ({
+                    id: item.id,
+                    product_id: item.product_id,
+                    product_title: item.product_title,
+                    product_sku: item.product_sku,
+                    product_image: item.product_image,
+                    variant_name: item.variant_name,
+                    quantity: item.quantity,
+                    price: item.price,
+                })),
+                amId || null
+            )
+
+            if (result.error) throw new Error(result.error)
+
+            toast.success("Produits de la commande mis a jour")
+            await loadData()
+        } catch (error: any) {
+            toast.error(error.message || "Impossible de mettre a jour les produits")
+        } finally {
+            setSavingItems(false)
+        }
     }
 
     if (loading) return (
@@ -306,11 +485,54 @@ export default function OrderDetailsPage() {
                     {/* Items List */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
-                            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                                <h3 className="font-bold text-lg text-slate-900">{t("manager.order_details.items_ordered")}</h3>
-                                <Badge variant="outline" className="rounded-full">{t("manager.order_details.items_count").replace("{count}", order.items.length.toString())}</Badge>
+                            <div className="p-6 border-b border-slate-100 space-y-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-900">{t("manager.order_details.items_ordered")}</h3>
+                                        <p className="text-sm text-slate-500">Ajoutez des produits, retirez-les ou modifiez les quantites de la commande.</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge variant="outline" className="rounded-full">{editableItems.length} articles</Badge>
+                                        {hasUnsavedItemChanges && <Badge className="rounded-full bg-amber-100 text-amber-700 hover:bg-amber-100">Modifications non enregistrees</Badge>}
+                                        <Button variant="outline" className="rounded-xl" onClick={resetItemChanges} disabled={!hasUnsavedItemChanges || savingItems}><X className="w-4 h-4 mr-2" />Annuler</Button>
+                                        <Button className="rounded-xl bg-slate-900 hover:bg-slate-800" onClick={saveOrderItems} disabled={!hasUnsavedItemChanges || savingItems || editableItems.length === 0}>{savingItems ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}Enregistrer</Button>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <Input value={productSearchQuery} onChange={(e) => setProductSearchQuery(e.target.value)} placeholder="Ajouter un produit par nom ou SKU..." className="pl-10 h-11 rounded-2xl border-slate-200" />
+                                    </div>
+                                    {productSearchQuery.trim().length >= 2 && (
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 overflow-hidden">
+                                            {searchingProducts ? (
+                                                <div className="p-4 text-sm text-slate-500 flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Recherche des produits...</div>
+                                            ) : productResults.length > 0 ? (
+                                                <div className="max-h-72 overflow-y-auto">
+                                                    {productResults.map((product) => (
+                                                        <button key={product.id} type="button" onClick={() => addProductToOrder(product)} className="w-full flex items-center gap-3 p-3 text-left border-b border-slate-200/70 last:border-b-0 hover:bg-white transition-colors">
+                                                            <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-white border border-slate-200 flex-shrink-0">
+                                                                {product.images?.[0] ? <Image src={product.images[0]} alt={product.title} fill className="object-cover" /> : <div className="h-full w-full flex items-center justify-center text-slate-300"><Package className="w-5 h-5" /></div>}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-semibold text-slate-900 truncate">{product.title}</p>
+                                                                <p className="text-xs text-slate-500 truncate">SKU: {product.sku || "Sans SKU"} • Stock: {product.stock}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-bold text-slate-900">MAD {formatPrice(product.price)}</p>
+                                                                <span className="text-xs text-primary font-medium">Ajouter</span>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 text-sm text-slate-500">Aucun produit trouve pour cette recherche.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className="divide-y divide-slate-50">
+                            <div className="hidden divide-y divide-slate-50">
                                 {order.items.map((item: any) => (
                                     <div key={item.id} className="p-6 flex items-center gap-6 hover:bg-slate-50/50 transition-colors">
                                         <div className="w-20 h-20 rounded-2xl bg-slate-100 flex-shrink-0 border border-slate-200/60 overflow-hidden relative group">
@@ -336,6 +558,49 @@ export default function OrderDetailsPage() {
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                            <div className="divide-y divide-slate-50">
+                                {editableItems.length > 0 ? editableItems.map((item: any, index: number) => {
+                                    const lineTotal = item.price * item.quantity
+                                    return (
+                                        <div key={`${item.id || item.product_id}-${index}`} className="p-6 flex flex-col gap-4 hover:bg-slate-50/50 transition-colors sm:flex-row sm:items-center sm:gap-6">
+                                            <div className="w-20 h-20 rounded-2xl bg-slate-100 flex-shrink-0 border border-slate-200/60 overflow-hidden relative group">
+                                                {item.product_image ? (
+                                                    <Image src={item.product_image} alt={item.product_title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold bg-slate-50">{t("manager.order_details.img")}</div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-slate-900 truncate text-base mb-1">{item.product_title}</h4>
+                                                <p className="text-sm text-slate-500 mb-1">{item.variant_name || t("manager.order_details.standard_option")}</p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-lg text-xs">SKU: {item.product_sku || "Sans SKU"}</Badge>
+                                                    {item.warehouse_name && <span className="text-[10px] bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded-md font-medium">Entrepot: {item.warehouse_name}</span>}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4 sm:justify-end">
+                                                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1">
+                                                    <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => updateItemQuantity(index, item.quantity - 1)} disabled={item.quantity <= 1}><Minus className="w-4 h-4" /></Button>
+                                                    <Input type="number" min={1} value={item.quantity} onChange={(e) => updateItemQuantity(index, Number(e.target.value))} className="h-8 w-16 border-0 bg-transparent text-center font-semibold [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                                                    <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-lg" onClick={() => updateItemQuantity(index, item.quantity + 1)}><Plus className="w-4 h-4" /></Button>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-lg text-slate-900">MAD {formatPrice(lineTotal)}</p>
+                                                    <p className="text-xs text-slate-400 font-medium">MAD {formatPrice(item.price)} {t("manager.order_details.each")}</p>
+                                                </div>
+                                                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-50" onClick={() => removeItem(index)}><Trash2 className="w-4 h-4" /></Button>
+                                            </div>
+                                        </div>
+                                    )
+                                }) : (
+                                    <div className="p-8 text-center text-slate-500">Aucun produit dans la commande. Ajoutez-en un avant d&apos;enregistrer.</div>
+                                )}
+                            </div>
+                            <div className="p-6 border-t border-slate-100 bg-slate-50/40">
+                                <div className="flex justify-between text-sm text-slate-500"><span>Sous-total</span><span>MAD {formatPrice(editableSubtotal)}</span></div>
+                                <div className="flex justify-between text-sm text-slate-500 mt-2"><span>Livraison</span><span>MAD {formatPrice(order.shipping_cost)}</span></div>
+                                <div className="flex justify-between text-lg font-black text-slate-900 mt-4 pt-4 border-t border-slate-200"><span>Total</span><span>MAD {formatPrice(editableSubtotal + (order.shipping_cost || 0))}</span></div>
                             </div>
                         </div>
                     </div>
@@ -421,7 +686,7 @@ export default function OrderDetailsPage() {
                                 {order.auditLogs && order.auditLogs.map((log: any, idx: number) => (
                                     <div key={log.id} className="relative pl-6">
                                         <div className={`absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${idx === 0 ? 'bg-primary' : 'bg-slate-200'}`} />
-                                        <p className="text-xs font-bold text-slate-900 capitalize mb-0.5">{t(`status.${log.new_status}`)}</p>
+                                        <p className="text-xs font-bold text-slate-900 capitalize mb-0.5">{getTimelineLabel(log)}</p>
                                         {log.new_status === 'cancelled' && order.delivery_failed_reason && (
                                             <p className="text-[10px] text-red-500 font-medium mb-0.5">
                                                 {t("manager.order_details.reason")} {order.delivery_failed_reason}
@@ -431,7 +696,7 @@ export default function OrderDetailsPage() {
                                             {new Date(log.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                         <p className="text-[10px] text-slate-400">
-                                            {t("manager.order_details.by")} {log.changed_by_user?.name || t("manager.order_details.system")}
+                                            {t("manager.order_details.by")} {getTimelineActorLabel(log)}
                                         </p>
                                     </div>
                                 ))}

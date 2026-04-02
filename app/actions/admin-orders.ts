@@ -2,7 +2,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
-import { notifyOrderStatusChange } from '@/lib/order-notifications'
+import { notifyOrderStatusChange, notifyOrderItemsUpdated } from '@/lib/order-notifications'
 
 export async function updateOrderStatusAdmin(orderId: string, status: string, actorId?: string | null, deliveryManId?: string) {
     console.log(`[Admin Action] Updating order ${orderId} to status: ${status} by ${actorId || 'system'}`)
@@ -138,7 +138,7 @@ export async function getOrderDetailsAdmin(orderId: string) {
         // Fetch Logs
         const { data: logs, error: logsError } = await supabaseAdmin
             .from('order_status_logs')
-            .select('*, changed_by_user:profiles(name)')
+            .select('*, changed_by_user:profiles(name, role)')
             .eq('order_id', orderId)
             .order('created_at', { ascending: false })
 
@@ -246,5 +246,137 @@ export async function getOrderDetailsAdmin(orderId: string) {
     } catch (e: any) {
         console.error('[Admin Action] Error fetching order details:', e)
         return { error: e.message || 'Failed to fetch order details' }
+    }
+}
+
+export interface EditableOrderItem {
+    id?: string          // existing order_item id (undefined = new)
+    product_id: string
+    product_title: string
+    product_sku: string
+    product_image: string | null
+    variant_name: string | null
+    quantity: number
+    price: number        // unit price
+}
+
+export async function updateOrderItemsAdmin(
+    orderId: string,
+    newItems: EditableOrderItem[],
+    actorId?: string | null
+) {
+    console.log(`[Admin Action] Editing items for order ${orderId} by ${actorId || 'system'}`)
+
+    if (!orderId) return { error: 'Order ID is required' }
+    if (!newItems || newItems.length === 0) return { error: 'At least one item is required' }
+
+    try {
+        // 1. Get existing items
+        const { data: existingItems, error: fetchErr } = await supabaseAdmin
+            .from('order_items')
+            .select('id')
+            .eq('order_id', orderId)
+
+        if (fetchErr) throw fetchErr
+
+        const existingIds = new Set((existingItems || []).map((i: any) => i.id))
+        const newIds = new Set(newItems.filter(i => i.id).map(i => i.id!))
+
+        // 2. Delete removed items
+        const idsToDelete = [...existingIds].filter(id => !newIds.has(id))
+        if (idsToDelete.length > 0) {
+            const { error: delErr } = await supabaseAdmin
+                .from('order_items')
+                .delete()
+                .in('id', idsToDelete)
+            if (delErr) throw delErr
+        }
+
+        // 3. Upsert all current items
+        for (const item of newItems) {
+            const subtotal = item.price * item.quantity
+            if (item.id && existingIds.has(item.id)) {
+                // Update existing
+                const { error: updErr } = await supabaseAdmin
+                    .from('order_items')
+                    .update({ quantity: item.quantity, price: item.price, subtotal })
+                    .eq('id', item.id)
+                if (updErr) throw updErr
+            } else {
+                // Insert new
+                const { error: insErr } = await supabaseAdmin
+                    .from('order_items')
+                    .insert({
+                        order_id: orderId,
+                        product_id: item.product_id,
+                        product_title: item.product_title,
+                        product_sku: item.product_sku,
+                        product_image: item.product_image,
+                        variant_name: item.variant_name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        subtotal
+                    })
+                if (insErr) throw insErr
+            }
+        }
+
+        // 4. Recalculate totals
+        const newSubtotal = newItems.reduce((acc, i) => acc + i.price * i.quantity, 0)
+
+        const { data: currentOrder, error: orderFetchErr } = await supabaseAdmin
+            .from('orders')
+            .select('shipping_cost')
+            .eq('id', orderId)
+            .single()
+        if (orderFetchErr) throw orderFetchErr
+
+        const newTotal = newSubtotal + (currentOrder?.shipping_cost || 0)
+
+        const { data: updatedOrder, error: orderUpdErr } = await supabaseAdmin
+            .from('orders')
+            .update({ subtotal: newSubtotal, total: newTotal, updated_at: new Date().toISOString() })
+            .eq('id', orderId)
+            .select()
+            .single()
+        if (orderUpdErr) throw orderUpdErr
+
+        // 5. Add reseller-facing note so the change is visible on the order page.
+        try {
+            await supabaseAdmin.from('order_internal_notes').insert({
+                order_id: orderId,
+                author_id: actorId || null,
+                note: 'Order products were updated based on your request.',
+            })
+        } catch (noteErr: any) {
+            console.warn('[Admin Action] Order note insert failed (non-critical):', noteErr)
+        }
+
+        // 6. Insert audit log for the edit
+        if (actorId) {
+            try {
+                await supabaseAdmin.from('order_status_logs').insert({
+                    order_id: orderId,
+                    changed_by: actorId,
+                    old_status: updatedOrder.status,
+                    new_status: updatedOrder.status,
+                })
+            } catch (logErr: any) {
+                console.warn('[Admin Action] Audit log insert failed (non-critical):', logErr)
+            }
+        }
+
+        // 7. Notify reseller via WhatsApp (non-blocking)
+        notifyOrderItemsUpdated(updatedOrder).catch((err: any) =>
+            console.error('[Admin Action] Order update notification failed:', err)
+        )
+
+        revalidatePath(`/admin/orders/${orderId}`)
+        revalidatePath(`/reseller/orders/${orderId}`)
+
+        return { success: true, newSubtotal, newTotal }
+    } catch (e: any) {
+        console.error('[Admin Action] Error updating order items:', e)
+        return { error: e.message || 'Failed to update order items' }
     }
 }

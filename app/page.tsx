@@ -21,6 +21,7 @@ import {
   Search,
   ShoppingBag,
   ShoppingCart,
+  Minus,
   Menu,
   Star,
   Truck,
@@ -36,6 +37,8 @@ import {
   X,
   User,
   LayoutDashboard,
+  Plus,
+  Trash2,
 } from "lucide-react"
 
 import {
@@ -111,10 +114,33 @@ function CartCount() {
 }
 
 // Product Card Component
-function ProductCard({ product, userRole, resellerTier }: { product: Product, userRole?: string | null, resellerTier?: ResellerTier }) {
+function ProductCard({ product, userRole, resellerTier, onOpenCart }: { product: Product, userRole?: string | null, resellerTier?: ResellerTier, onOpenCart: () => void }) {
   const { t, language } = useLanguage()
+  const { addItem } = useCart()
   const isArabic = language === 'ar'
   const rating = 5 // Default rating since it's not in DB yet
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    addItem({
+      id: product.id,
+      name: product.title,
+      nameAr: product.title_ar || undefined,
+      price: userRole === 'RESELLER' || userRole === 'RESELLER_PENDING'
+        ? ((resellerTier === 'wholesaler' ? product.wholesaler_price : resellerTier === 'partner' ? product.partner_price : product.reseller_price) || product.price)
+        : product.price,
+      image: product.images?.[0] || "/placeholder.svg",
+      quantity: 1,
+      inStock: product.stock > 0,
+      stock: product.stock,
+      resellerPrice: product.reseller_price ?? null,
+    })
+
+    onOpenCart()
+  }
+
   return (
     <Link href={`/product/${product.id}`} className="group glass rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-3 xl:p-4 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 block">
       <div className="aspect-square bg-gradient-to-br from-secondary to-muted rounded-xl sm:rounded-2xl mb-3 sm:mb-4 flex items-center justify-center overflow-hidden relative">
@@ -187,6 +213,8 @@ function ProductCard({ product, userRole, resellerTier }: { product: Product, us
               "w-9 h-9 rounded-full",
               product.stock <= 0 && "bg-muted text-muted-foreground opacity-70"
             )}
+            onClick={handleAddToCart}
+            disabled={product.stock <= 0}
           >
             <ShoppingCart className="w-4 h-4" />
           </Button>
@@ -348,10 +376,12 @@ function HeroCarousel({ products }: { products: Product[] }) {
 }
 
 export default function HomePage() {
+  const { items: cartItems, cartCount, removeItem, updateQuantity, isInitialized } = useCart()
   const [isScrolled, setIsScrolled] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [visibleProducts, setVisibleProducts] = useState(10)
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const { t, language, toggleLanguage, dir } = useLanguage()
   const [user, setUser] = useState<any>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -381,6 +411,7 @@ export default function HomePage() {
   const [categories, setCategories] = useState<{ id: string, name: string, slug: string, name_ar?: string }[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [settings, setSettings] = useState<Record<string, string>>({})
+  const cartSubtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   // Fetch data from Supabase
   useEffect(() => {
@@ -539,14 +570,87 @@ export default function HomePage() {
                 </Button>
               </Link>
 
-              <Link href="/cart">
-                <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/5 hover:text-primary transition-all group">
-                  <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-semibold group-hover:scale-110 transition-transform">
-                    <CartCount />
-                  </span>
-                </Button>
-              </Link>
+              <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/5 hover:text-primary transition-all group">
+                    <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-semibold group-hover:scale-110 transition-transform">
+                        <CartCount />
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:w-[420px] p-0 border-l border-border/50">
+                  <div className="flex h-full flex-col bg-background">
+                    <div className="border-b border-border/50 px-6 py-5">
+                      <SheetTitle className="text-left text-xl font-bold">{t('cart.shopping_cart')}</SheetTitle>
+                      <SheetDescription className="text-left mt-1">
+                        {cartCount} {t('cart.items')}
+                      </SheetDescription>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                      {!isInitialized ? (
+                        <div className="text-sm text-muted-foreground">Loading cart...</div>
+                      ) : cartItems.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center">
+                          <div className="w-16 h-16 rounded-full bg-secondary/60 flex items-center justify-center mb-4">
+                            <ShoppingBag className="w-7 h-7 text-muted-foreground" />
+                          </div>
+                          <p className="font-semibold text-foreground">{t('cart.your_cart_empty')}</p>
+                          <p className="text-sm text-muted-foreground mt-2">{t('cart.empty_desc')}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {cartItems.map((item) => (
+                            <div key={`${item.id}-${item.size || 'default'}`} className="rounded-2xl border border-border/60 bg-card p-4">
+                              <div className="flex gap-3">
+                                <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-secondary/50 flex-shrink-0">
+                                  <Image src={item.image} alt={item.name} fill className="object-cover" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm text-foreground line-clamp-2">{language === 'ar' && item.nameAr ? item.nameAr : item.name}</p>
+                                  <p className="text-sm font-bold text-foreground mt-1">MAD {formatPrice(item.price)}</p>
+                                  <div className="mt-3 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2 rounded-xl border border-border bg-background p-1">
+                                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => item.quantity === 1 ? removeItem(item.id, item.size) : updateQuantity(item.id, item.quantity - 1, item.size)}>
+                                        <Minus className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <span className="w-6 text-center text-sm font-semibold">{item.quantity}</span>
+                                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => updateQuantity(item.id, item.quantity + 1, item.size)} disabled={item.quantity >= item.stock}>
+                                        <Plus className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => removeItem(item.id, item.size)}>
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="border-t border-border/50 px-6 py-5 space-y-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t('cart.total')}</span>
+                        <span className="text-lg font-bold text-foreground">MAD {formatPrice(cartSubtotal)}</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        <Link href={cartItems.length > 0 ? "/checkout" : "#"} onClick={() => cartItems.length > 0 && setIsCartOpen(false)}>
+                          <Button className="w-full rounded-xl h-11" disabled={cartItems.length === 0}>
+                            Pay now
+                          </Button>
+                        </Link>
+                        <Button variant="outline" className="w-full rounded-xl h-11" onClick={() => setIsCartOpen(false)}>
+                          Continue shopping
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
 
 
               {/* Mobile Menu */}
@@ -817,6 +921,7 @@ export default function HomePage() {
                   product={product}
                   userRole={userRole}
                   resellerTier={resellerTier}
+                  onOpenCart={() => setIsCartOpen(true)}
                 />
               ))
             )}

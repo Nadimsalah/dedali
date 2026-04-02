@@ -127,3 +127,23 @@ export async function notifyOrderStatusChange(orderData: any) {
         }
     }
 }
+
+export async function notifyOrderItemsUpdated(orderData: any) {
+    if (!orderData || !orderData.customer_phone) {
+        console.log("[OrderNotify] Missing order data or phone for item update notification");
+        return;
+    }
+
+    const orderNum = orderData.order_number;
+    const phone = orderData.customer_phone;
+
+    const msg = `✏️ Bonne nouvelle ! Votre commande *${orderNum}* a été mise à jour selon votre demande.\n\nConsultez votre tableau de bord pour voir les articles révisés et le nouveau total.`;
+
+    try {
+        console.log(`[OrderNotify] Sending item-update notification for ${orderNum}...`);
+        const textRes = await sendWhatsAppMessage(phone, msg);
+        console.log(`[OrderNotify] Item-update result:`, textRes.success ? "Success" : "Failed: " + textRes.error);
+    } catch (err) {
+        console.error("[OrderNotify] Error sending item-update notification:", err);
+    }
+}

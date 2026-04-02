@@ -649,6 +649,7 @@ export async function getOrderById(id: string) {
         .select(`
       *,
       order_items (*),
+      notes:order_internal_notes (*, author:profiles(name)),
       reseller:resellers (*, profile:profiles(name))
     `)
         .eq('id', id)
@@ -661,6 +662,12 @@ export async function getOrderById(id: string) {
 
     return data as (Order & {
         order_items: OrderItem[],
+        notes?: {
+            id: string
+            note: string
+            created_at: string
+            author?: { name?: string | null }
+        }[],
         reseller?: {
             id: string,
             company_name: string,

@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useLanguage } from "@/components/language-provider"
 import { supabase } from "@/lib/supabase"
-import { getOrderById, type Order, type OrderItem } from "@/lib/supabase-api"
 import {
     ArrowLeft,
     Package,
@@ -47,13 +46,21 @@ export default function ResellerOrderDetailsPage() {
                 return
             }
 
-            const data = await getOrderById(orderId)
+            const { data: { session } } = await supabase.auth.getSession()
+            const res = await fetch(`/api/reseller/orders/${orderId}`, {
+                headers: session?.access_token
+                    ? { Authorization: `Bearer ${session.access_token}` }
+                    : {}
+            })
 
-            if (data && data.customer_id === user.id) {
-                setOrder(data)
-            } else {
+            if (!res.ok) {
                 console.error("Order not found or access denied")
+                setLoading(false)
+                return
             }
+
+            const json = await res.json()
+            setOrder(json.order)
             setLoading(false)
         }
         loadOrder()
@@ -250,8 +257,26 @@ export default function ResellerOrderDetailsPage() {
                                 ))}
                             </div>
                         </div>
-                    </div>
 
+                        {order.notes && order.notes.length > 0 && (
+                            <div className="bg-amber-50 rounded-3xl shadow-sm border border-amber-200 p-6">
+                                <h3 className="font-semibold text-amber-900 flex items-center gap-2 mb-4">
+                                    <FileText className="w-5 h-5 text-amber-600" />
+                                    {isArabic ? "Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø¹Ù„Ù‰ Ø§Ù„Ø·Ù„Ø¨" : "Order Notes"}
+                                </h3>
+                                <div className="space-y-3 text-left">
+                                    {order.notes.map((note: any) => (
+                                        <div key={note.id} className="rounded-2xl bg-white/70 border border-amber-100 p-4">
+                                            <p className="text-sm font-medium text-gray-900">{note.note}</p>
+                                            <p className="text-xs text-amber-700 mt-2">
+                                                {note.author?.name || "Admin"} • {new Date(note.created_at).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     {/* Right Column: Address & Payment */}
                     <div className="space-y-6">
                         {/* Shipping Address */}
@@ -279,13 +304,18 @@ export default function ResellerOrderDetailsPage() {
                                 {isArabic ? "معلومات الاتصال" : "Contact Information"}
                             </h4>
                             <div className="space-y-3 text-left">
+                                {order.account_manager?.name && (
+                                    <div className="text-sm font-semibold text-gray-900">
+                                        {order.account_manager.name}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-3 text-sm text-gray-500">
                                     <Phone className="w-4 h-4" />
-                                    {order.customer_phone}
+                                    {order.account_manager?.phone || order.customer_phone}
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-gray-500">
                                     <Mail className="w-4 h-4" />
-                                    {order.customer_email}
+                                    {order.account_manager?.email || order.customer_email}
                                 </div>
                             </div>
                         </div>
