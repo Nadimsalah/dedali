@@ -1,0 +1,96 @@
+npm warn Unknown project config "always-auth". This will stop working in the next major version of npm.
+npm warn using --force Recommended protections disabled.
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ⨯ ./app/admin/orders/[id]/page.tsx:192:20
+Parsing ecmascript source code failed
+[0m [90m 190 |[39m                         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 191 |[39m                     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+[31m[1m>[22m[39m[90m 192 |[39m             [33m<[39m[33m/[39m[33mmain[39m[33m>[39m
+ [90m     |[39m                    [31m[1m^[22m[39m
+[31m[1m>[22m[39m[90m 193 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 194 |[39m     )
+ [90m 195 |[39m }
+ [90m 196 |[39m[0m
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./app/admin/orders/[id]/page.tsx [Client Component Browser]
+    ./app/admin/orders/[id]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/admin/orders/[id]/page.tsx [Client Component SSR]
+    ./app/admin/orders/[id]/page.tsx [Server Component]
+
+
+ ⨯ ./app/admin/orders/[id]/page.tsx:228:20
+Parsing ecmascript source code failed
+[0m [90m 226 |[39m                     [33m<[39m[33m/[39m[33mDialogContent[39m[33m>[39m
+ [90m 227 |[39m                 [33m<[39m[33m/[39m[33mDialog[39m[33m>[39m
+[31m[1m>[22m[39m[90m 228 |[39m             [33m<[39m[33m/[39m[33mmain[39m[33m>[39m
+ [90m     |[39m                    [31m[1m^[22m[39m
+[31m[1m>[22m[39m[90m 229 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 230 |[39m     )
+ [90m 231 |[39m }
+ [90m 232 |[39m[0m
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./app/admin/orders/[id]/page.tsx [Client Component Browser]
+    ./app/admin/orders/[id]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/admin/orders/[id]/page.tsx [Client Component SSR]
+    ./app/admin/orders/[id]/page.tsx [Server Component]
+
+
+Warning: a dynamic page path "/admin/orders/[id]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+Warning: a dynamic page path "/manager/orders/[orderId]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__5fab35f4._.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+[OrderNotify] PDF processing failed: TypeError: doc.autoTable is not a function
+    at generateOrderPDFBuffer (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__5fab35f4._.js:400:9)
+    at notifyOrderStatusChange (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__5fab35f4._.js:550:197)
+C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__d462b5a1._.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+[OrderNotify] PDF processing failed: TypeError: doc.autoTable is not a function
+    at generateOrderPDFBuffer (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__d462b5a1._.js:400:9)
+    at notifyOrderStatusChange (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__d462b5a1._.js:550:197)
+Warning: a dynamic page path "/admin/orders/[id]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+Warning: a dynamic page path "/manager/orders/[orderId]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+Warning: a dynamic page path "/admin/orders/[id]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+Warning: a dynamic page path "/manager/orders/[orderId]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+C:\Users\dell\Downloads\dedali-main\dedali-main\node_modules\next\dist\compiled\next-server\app-route-turbo.runtime.dev.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\[root-of-the-server]__919edfdb._.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+C:\Users\dell\Downloads\dedali-main\dedali-main\node_modules\next\dist\server\lib\trace\tracer.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+Error: Route "/api/erp/commandes/status/[trsId]" used `params.trsId`. `params` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at GET (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\[root-of-the-server]__919edfdb._.js:56:78)
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+Warning: a dynamic page path "/admin/orders/[id]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+Warning: a dynamic page path "/manager/orders/[orderId]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__d462b5a1._.js: Invalid source map. Only conformant source maps can be used to find the original code. Cause: Error: sourceMapURL could not be parsed
+[OrderNotify] PDF processing failed: TypeError: doc.autoTable is not a function
+    at generateOrderPDFBuffer (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__d462b5a1._.js:400:9)
+    at notifyOrderStatusChange (C:\Users\dell\Downloads\dedali-main\dedali-main\.next\dev\server\chunks\ssr\[root-of-the-server]__d462b5a1._.js:550:197)
+Warning: a dynamic page path "/admin/orders/[id]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+Warning: a dynamic page path "/manager/orders/[orderId]" was passed to "revalidatePath", but the "type" parameter is missing. This has no effect by default, see more info here https://nextjs.org/docs/app/api-reference/functions/revalidatePath
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload when ./components/cart-provider.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
