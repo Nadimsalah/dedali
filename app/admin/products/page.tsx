@@ -119,6 +119,7 @@ export default function AdminProductsPage() {
     const { t, setLanguage } = useLanguage()
     const [activeTab, setActiveTab] = useState("Tous")
     const [searchQuery, setSearchQuery] = useState("")
+    const [sourceFilter, setSourceFilter] = useState<"all" | "woo" | "native">("all")
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [categories, setCategories] = useState<{ id: string, name: string, slug: string, name_ar?: string }[]>([])
@@ -205,7 +206,7 @@ export default function AdminProductsPage() {
         setLoading(true)
         const { data, error } = await supabase
             .from('products')
-            .select('*, brand:brands!products_brand_id_fkey(*)')
+            .select('*, brand:brands!products_brand_id_fkey(*), woo_id')
             .order('created_at', { ascending: false })
 
         if (error) {
@@ -244,7 +245,12 @@ export default function AdminProductsPage() {
     const filteredProducts = products.filter(product => {
         const matchesTab = activeTab === "Tous" || product.category === activeTab
         const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase())
-        return matchesTab && matchesSearch
+        const wooId = (product as any).woo_id
+        const matchesSource =
+            sourceFilter === "all" ||
+            (sourceFilter === "woo" && !!wooId) ||
+            (sourceFilter === "native" && !wooId)
+        return matchesTab && matchesSearch && matchesSource
     })
 
     const getStockStatus = (stock: number) => {
@@ -817,6 +823,32 @@ export default function AdminProductsPage() {
                         </div>
                     </div>
 
+                        {/* Source Filter */}
+                        <div className="flex items-center gap-2 px-1 pt-1">
+                            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Source:</span>
+                            {(["all", "woo", "native"] as const).map(src => (
+                                <button
+                                    key={src}
+                                    onClick={() => setSourceFilter(src)}
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all border ${
+                                        sourceFilter === src
+                                            ? src === "woo"
+                                                ? "bg-purple-500 text-white border-purple-500"
+                                                : src === "native"
+                                                    ? "bg-blue-500 text-white border-blue-500"
+                                                    : "bg-primary text-primary-foreground border-primary"
+                                            : "bg-white/5 border-white/10 text-muted-foreground hover:border-white/20"
+                                    }`}
+                                >
+                                    {src === "all" ? "Tous" : src === "woo" ? "🟣 WooCommerce" : "🔵 Dedali"}
+                                </button>
+                            ))}
+                            <span className="ml-auto text-[10px] text-muted-foreground">
+                                {filteredProducts.filter(p => !!(p as any).woo_id).length} WC · {filteredProducts.filter(p => !(p as any).woo_id).length} Natifs
+                            </span>
+                        </div>
+                    </div>
+
                     {/* Products Grid/List */}
                     <div className="glass-strong rounded-3xl overflow-hidden min-h-[500px] flex flex-col">
                         {/* Mobile Card View */}
@@ -849,7 +881,14 @@ export default function AdminProductsPage() {
                                                         {getStockStatus(product.stock)}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-xs text-muted-foreground mt-0.5">{product.category}</p>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <p className="text-xs text-muted-foreground">{product.category}</p>
+                                                    {(product as any).woo_id && (
+                                                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                                                            🟣 WC #{(product as any).woo_id}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="flex justify-between items-end mt-2">
@@ -916,9 +955,16 @@ export default function AdminProductsPage() {
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold text-foreground text-sm">{product.title}</p>
-                                                            <p className="text-xs text-muted-foreground md:hidden">
-                                                                {t("admin.products.qty")}: {product.stock}
-                                                            </p>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <p className="text-xs text-muted-foreground md:hidden">
+                                                                    {t("admin.products.qty")}: {product.stock}
+                                                                </p>
+                                                                {(product as any).woo_id && (
+                                                                    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/20">
+                                                                        🟣 WC #{(product as any).woo_id}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
