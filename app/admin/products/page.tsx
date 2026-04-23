@@ -824,7 +824,7 @@ export default function AdminProductsPage() {
                     </div>
 
                         {/* Source Filter */}
-                        <div className="flex items-center gap-2 px-1 pt-1">
+                        <div className="flex items-center gap-2 px-1 pt-1 pb-3">
                             <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Source:</span>
                             {(["all", "woo", "native"] as const).map(src => (
                                 <button
@@ -847,7 +847,6 @@ export default function AdminProductsPage() {
                                 {filteredProducts.filter(p => !!(p as any).woo_id).length} WC · {filteredProducts.filter(p => !(p as any).woo_id).length} Natifs
                             </span>
                         </div>
-                    </div>
 
                     {/* Products Grid/List */}
                     <div className="glass-strong rounded-3xl overflow-hidden min-h-[500px] flex flex-col">
