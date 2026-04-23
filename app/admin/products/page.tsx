@@ -549,6 +549,27 @@ export default function AdminProductsPage() {
         }
     }
 
+    const [isSyncingWoo, setIsSyncingWoo] = useState(false)
+
+    const handleSyncFromWooCommerce = async () => {
+        setIsSyncingWoo(true)
+        try {
+            // Read keys from env (they are server-side, so pass empty to use server env)
+            const res = await fetch('/api/woo/sync-products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+            const json = await res.json()
+            if (!res.ok || json.error) {
+                toast.error(`Sync WooCommerce: ${json.error || 'Erreur inconnue'}`)
+            } else {
+                toast.success(`✅ Sync WooCommerce: ${json.updated} mis à jour, ${json.inserted} insérés (${json.total_woo_products} produits WC)`)
+                loadProducts()
+            }
+        } catch (err: any) {
+            toast.error(`Sync WooCommerce: ${err.message}`)
+        } finally {
+            setIsSyncingWoo(false)
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
             {/* Background gradients */}
@@ -618,6 +639,25 @@ export default function AdminProductsPage() {
                                 <>
                                     <RefreshCw className="w-4 h-4 sm:mr-2" />
                                     <span className="hidden sm:inline">Sync ERP Catégories</span>
+                                </>
+                            )}
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="rounded-full h-9 border-purple-500/40 hover:border-purple-500 text-purple-400 hover:bg-purple-500/5"
+                            onClick={handleSyncFromWooCommerce}
+                            disabled={isSyncingWoo}
+                        >
+                            {isSyncingWoo ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    Sync WC...
+                                </span>
+                            ) : (
+                                <>
+                                    <RefreshCw className="w-4 h-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">🟣 Sync WooCommerce</span>
                                 </>
                             )}
                         </Button>
