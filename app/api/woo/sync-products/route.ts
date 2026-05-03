@@ -135,12 +135,21 @@ export async function POST(request: Request) {
       }
     }
 
+    if (errors.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: `Sync errors: ${errors.join(' | ')}`,
+        total_woo_products: allWooProducts.length,
+        updated,
+        inserted
+      }, { status: 400 });
+    }
+
     return NextResponse.json({
       success: true,
       total_woo_products: allWooProducts.length,
       updated,
       inserted,
-      errors: errors.length > 0 ? errors : undefined,
     });
 
   } catch (err: any) {
