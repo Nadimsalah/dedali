@@ -87,22 +87,31 @@ export async function POST(request: Request) {
       const match = (wooSku && skuMap.get(wooSku)) || (wooTitle && titleMap.get(wooTitle));
 
       if (match) {
-        // Update woo_id if not already set
-        if (!match.woo_id || match.woo_id !== woo.id) {
-          const { error } = await supabase
-            .from('products')
-            .update({ woo_id: woo.id })
-            .eq('id', match.id);
+        console.log("Found match for", wooTitle, "match id:", match.id);
+        // Update product details and woo_id
+        const price = parseFloat(woo.regular_price || woo.price || '0') || 0;
+        const updateData = {
+          woo_id: woo.id,
+          price,
+          stock: woo.stock_quantity ?? 0,
+          status: woo.status === 'publish' ? 'active' : 'draft',
+        };
 
-          if (error) {
-            errors.push(`Failed to update ${match.id}: ${error.message}`);
-          } else {
-            updated++;
-            // Update local map so future lookups are accurate
-            match.woo_id = woo.id;
-          }
+        const { error } = await supabase
+          .from('products')
+          .update(updateData)
+          .eq('id', match.id);
+
+        if (error) {
+          console.error("Update error for match", match.id, error);
+          errors.push(`Failed to update ${match.id}: ${error.message}`);
+        } else {
+          updated++;
+          match.woo_id = woo.id;
+          console.log("Successfully updated match. Updated count is now", updated);
         }
       } else {
+        console.log("No match found for", wooTitle, wooSku);
         // Insert as new product
         const price = parseFloat(woo.regular_price || woo.price || '0') || 0;
         const newProduct = {
