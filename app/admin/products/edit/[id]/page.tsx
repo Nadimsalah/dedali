@@ -316,21 +316,13 @@ export default function EditProductPage() {
     const handleSave = async () => {
         setSaving(true)
         try {
-            const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-            if (sessionError || !sessionData.session?.access_token) {
-                throw new Error("Session admin introuvable. Reconnectez-vous puis reessayez.")
-            }
-
-            const res = await fetch(`/api/admin/products/${productId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${sessionData.session.access_token}`,
-                },
-                body: JSON.stringify({
+            // Update product directly via Supabase client
+            const { error: productError } = await supabase
+                .from('products')
+                .update({
                     title,
-                    description,
-                    category,
+                    description: description || null,
+                    category: category || null,
                     price: price ? parseFloat(price) : 0,
                     compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
                     reseller_price: resellerPrice ? parseFloat(resellerPrice) * 1.2 : null,
@@ -340,26 +332,44 @@ export default function EditProductPage() {
                     partner_min_qty: partnerMinQty ? parseInt(partnerMinQty) : null,
                     wholesaler_min_qty: wholesalerMinQty ? parseInt(wholesalerMinQty) : null,
                     stock: stock ? parseInt(stock) : 0,
-                    sku,
+                    sku: sku || null,
                     status,
                     benefits,
-                    ingredients,
-                    how_to_use: howToUse,
+                    ingredients: ingredients || null,
+                    how_to_use: howToUse || null,
                     images,
                     warehouse_id: selectedWarehouse || null,
                     brand_id: brandId || null,
-                    selectedRelated,
+                    updated_at: new Date().toISOString(),
                 })
-            })
+                .eq('id', productId)
 
-            const data = await res.json()
-            if (!res.ok) {
-                throw new Error(data.error || 'Erreur lors de la mise a jour du produit')
+            if (productError) {
+                throw new Error(productError.message || 'Erreur lors de la mise à jour du produit')
+            }
+
+            // Update cross-sells
+            await supabase
+                .from('product_cross_sells')
+                .delete()
+                .eq('product_id', productId)
+
+            if (selectedRelated.length > 0) {
+                const crossSells = selectedRelated.map((relatedProductId: string) => ({
+                    product_id: productId,
+                    related_product_id: relatedProductId,
+                }))
+                const { error: crossSellError } = await supabase
+                    .from('product_cross_sells')
+                    .insert(crossSells)
+                if (crossSellError) {
+                    console.warn('Cross-sell update failed:', crossSellError.message)
+                }
             }
 
             router.push('/admin/products')
         } catch (error: any) {
-            alert(error.message || 'Erreur lors de la mise a jour du produit')
+            alert(error.message || 'Erreur lors de la mise à jour du produit')
         } finally {
             setSaving(false)
         }

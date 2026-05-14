@@ -306,6 +306,9 @@ export default function NewProductPage() {
                 .from('products')
                 .insert({
                     title,
+                    description: description || null,
+                    category: category || null,
+                    sku: sku || null,
                     price: parseFloat(price),
                     compare_at_price: compareAtPrice ? parseFloat(compareAtPrice) : null,
                     reseller_price: resellerPrice ? parseFloat(resellerPrice) * 1.2 : null,
