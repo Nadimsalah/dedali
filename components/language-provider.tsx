@@ -362,6 +362,7 @@ const translations = {
         "admin.sidebar.career_applications": "Candidatures",
         "admin.sidebar.settings": "Paramètres",
         "admin.sidebar.brands": "Marques",
+        "admin.sidebar.data_entry": "Saisie de données",
         "admin.sidebar.logout": "Déconnexion",
 
         // Admin Hero
@@ -1183,6 +1184,7 @@ const translations = {
         "admin.sidebar.career_applications": "Applications",
         "admin.sidebar.settings": "Settings",
         "admin.sidebar.brands": "Brands",
+        "admin.sidebar.data_entry": "Data Entry",
         "admin.sidebar.logout": "Logout",
 
         // Admin Hero
@@ -1309,6 +1311,7 @@ const translations = {
         "success.thank_you": "شكراً لك",
         "success.order_confirmed": "تم تأكيد طلبك",
         "admin.sidebar.brands": "العلامات التجارية",
+        "admin.sidebar.data_entry": "إدخال البيانات",
     }
 }
 

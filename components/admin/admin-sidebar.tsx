@@ -21,6 +21,7 @@ import {
     Truck,
     Shield,
     Award,
+    Database,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
@@ -35,6 +36,7 @@ const menuItems = [
     { icon: Shield, key: "admin.sidebar.account_managers", href: "/admin/account-managers" },
     { icon: Truck, key: "admin.sidebar.delivery_men", href: "/admin/logisticiens" },
     { icon: Truck, key: "admin.sidebar.shipping", href: "/admin/shipping" },
+    // { icon: Database, key: "admin.sidebar.data_entry", href: "/admin/data-entry" },
 
     { icon: ImageIcon, key: "admin.sidebar.hero_carousel", href: "/admin/hero-carousel" },
     // CRM / Marketing
