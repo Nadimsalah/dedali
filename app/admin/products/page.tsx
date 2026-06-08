@@ -204,16 +204,41 @@ export default function AdminProductsPage() {
 
     async function loadProducts() {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('products')
-            .select('*, brand:brands!products_brand_id_fkey(*), woo_id')
-            .order('created_at', { ascending: false })
+        let allProducts: Product[] = []
+        let page = 0
+        const pageSize = 1000
+        let hasMore = true
+        let fetchError = null
 
-        if (error) {
-            console.error("Error loading products:", error)
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*, brand:brands!products_brand_id_fkey(*), woo_id')
+                .order('created_at', { ascending: false })
+                .range(page * pageSize, (page + 1) * pageSize - 1)
+
+            if (error) {
+                console.error("Error loading products batch:", error)
+                fetchError = error
+                hasMore = false
+            } else {
+                if (data && data.length > 0) {
+                    allProducts = [...allProducts, ...data as Product[]]
+                    if (data.length < pageSize) {
+                        hasMore = false
+                    } else {
+                        page++
+                    }
+                } else {
+                    hasMore = false
+                }
+            }
+        }
+
+        if (fetchError && allProducts.length === 0) {
             setProducts([])
         } else {
-            setProducts((data || []) as Product[])
+            setProducts(allProducts)
         }
         setLoading(false)
     }
@@ -810,25 +835,41 @@ export default function AdminProductsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
                         <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.total_products")}</span>
-                        <span className="text-xl font-bold text-foreground mt-1">{products.length}</span>
+                        {loading ? (
+                            <div className="h-7 w-16 bg-white/10 animate-pulse rounded-lg mt-1" />
+                        ) : (
+                            <span className="text-xl font-bold text-foreground mt-1">{products.length}</span>
+                        )}
                     </div>
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
                         <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.total_inventory")}</span>
-                        <span className="text-xl font-bold text-foreground mt-1">
-                            {products.reduce((acc, curr) => acc + curr.stock, 0).toLocaleString('en-US')}
-                        </span>
+                        {loading ? (
+                            <div className="h-7 w-24 bg-white/10 animate-pulse rounded-lg mt-1" />
+                        ) : (
+                            <span className="text-xl font-bold text-foreground mt-1">
+                                {products.reduce((acc, curr) => acc + curr.stock, 0).toLocaleString('en-US')}
+                            </span>
+                        )}
                     </div>
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
                         <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.low_stock")}</span>
-                        <span className="text-xl font-bold text-orange-500 mt-1">
-                            {products.filter(p => p.stock < 10 && p.stock > 0).length}
-                        </span>
+                        {loading ? (
+                            <div className="h-7 w-12 bg-white/10 animate-pulse rounded-lg mt-1" />
+                        ) : (
+                            <span className="text-xl font-bold text-orange-500 mt-1">
+                                {products.filter(p => p.stock < 10 && p.stock > 0).length}
+                            </span>
+                        )}
                     </div>
                     <div className="glass-strong rounded-2xl p-4 flex flex-col">
                         <span className="text-sm text-muted-foreground font-medium">{t("admin.products.stats.out_of_stock")}</span>
-                        <span className="text-xl font-bold text-red-500 mt-1">
-                            {products.filter(p => p.stock === 0).length}
-                        </span>
+                        {loading ? (
+                            <div className="h-7 w-12 bg-white/10 animate-pulse rounded-lg mt-1" />
+                        ) : (
+                            <span className="text-xl font-bold text-red-500 mt-1">
+                                {products.filter(p => p.stock === 0).length}
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -892,7 +933,29 @@ export default function AdminProductsPage() {
                     <div className="glass-strong rounded-3xl overflow-hidden min-h-[500px] flex flex-col">
                         {/* Mobile Card View */}
                         <div className="md:hidden space-y-4 p-4">
-                            {filteredProducts.length > 0 ? (
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/5 flex gap-4 animate-pulse">
+                                        {/* Image placeholder */}
+                                        <div className="h-20 w-20 bg-white/10 rounded-lg flex-shrink-0" />
+                                        {/* Info placeholder */}
+                                        <div className="flex-1 space-y-3">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="h-4 bg-white/10 rounded w-2/3" />
+                                                <div className="h-5 bg-white/10 rounded w-16" />
+                                            </div>
+                                            <div className="h-3 bg-white/10 rounded w-1/3" />
+                                            <div className="flex justify-between items-end mt-4">
+                                                <div className="h-5 bg-white/10 rounded w-20" />
+                                                <div className="flex gap-2">
+                                                    <div className="h-8 w-8 bg-white/10 rounded-lg" />
+                                                    <div className="h-8 w-8 bg-white/10 rounded-lg" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : filteredProducts.length > 0 ? (
                                 filteredProducts.map((product) => (
                                     <div key={product.id} className="bg-white/5 rounded-xl p-4 border border-white/5 flex gap-4">
                                         {/* Image */}
@@ -973,7 +1036,45 @@ export default function AdminProductsPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
-                                    {filteredProducts.length > 0 ? (
+                                    {loading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <tr key={i} className="animate-pulse">
+                                                <td className="py-4 pl-4 sm:pl-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-12 w-12 bg-white/10 rounded-lg flex-shrink-0" />
+                                                        <div className="space-y-2 flex-1">
+                                                            <div className="h-4 bg-white/10 rounded w-2/3" />
+                                                            <div className="h-3 bg-white/10 rounded w-1/3" />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-8 w-8 bg-white/10 rounded-md" />
+                                                        <div className="h-3 bg-white/10 rounded w-16" />
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-4 hidden sm:table-cell">
+                                                    <div className="h-4 bg-white/10 rounded w-20" />
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <div className="h-4 bg-white/10 rounded w-16" />
+                                                </td>
+                                                <td className="py-4 px-4 hidden md:table-cell">
+                                                    <div className="h-4 bg-white/10 rounded w-12" />
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <div className="h-6 bg-white/10 rounded-full w-20" />
+                                                </td>
+                                                <td className="py-4 pr-6 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <div className="h-8 w-8 bg-white/10 rounded-lg" />
+                                                        <div className="h-8 w-8 bg-white/10 rounded-lg" />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : filteredProducts.length > 0 ? (
                                         filteredProducts.map((product) => (
                                             <tr key={product.id} className="group hover:bg-white/5 transition-colors">
                                                 <td className="py-4 pl-4 sm:pl-6">

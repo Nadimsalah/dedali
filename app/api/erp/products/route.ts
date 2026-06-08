@@ -16,13 +16,32 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('id, title, title_ar, sku, category, price, reseller_price, stock, status, sales_count, created_at, partner_price')
-      .order('created_at', { ascending: false });
+    const products: any[] = [];
+    let erpPage = 0;
+    const erpPageSize = 1000;
+    let erpHasMore = true;
 
-    if (error) {
-      throw error;
+    while (erpHasMore) {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, title, title_ar, sku, category, price, reseller_price, stock, status, sales_count, created_at, partner_price')
+        .order('created_at', { ascending: false })
+        .range(erpPage * erpPageSize, (erpPage + 1) * erpPageSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        products.push(...data);
+        if (data.length < erpPageSize) {
+          erpHasMore = false;
+        } else {
+          erpPage++;
+        }
+      } else {
+        erpHasMore = false;
+      }
     }
 
     return NextResponse.json({

@@ -61,12 +61,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'No products found in WooCommerce', updated: 0, inserted: 0 });
     }
 
-    // 2. Get all Supabase products (id + sku + woo_id)
-    const { data: supabaseProducts, error: spErr } = await supabase
-      .from('products')
-      .select('id, sku, woo_id, title');
-
-    if (spErr) throw spErr;
+    // 2. Get all Supabase products (id + sku + woo_id) using pagination to bypass the 1000-row limit
+    const supabaseProducts: any[] = [];
+    let spPage = 0;
+    const spPageSize = 1000;
+    let spHasMore = true;
+    while (spHasMore) {
+      const { data, error: spErr } = await supabase
+        .from('products')
+        .select('id, sku, woo_id, title')
+        .range(spPage * spPageSize, (spPage + 1) * spPageSize - 1);
+      
+      if (spErr) throw spErr;
+      if (data && data.length > 0) {
+        supabaseProducts.push(...data);
+        if (data.length < spPageSize) {
+          spHasMore = false;
+        } else {
+          spPage++;
+        }
+      } else {
+        spHasMore = false;
+      }
+    }
 
     const skuMap = new Map<string, any>(); // sku → supabase row
     const titleMap = new Map<string, any>(); // normalized title → supabase row
