@@ -4,12 +4,91 @@ import { useState, useEffect, useRef } from "react"
 import { useLanguage } from "@/components/language-provider"
 import { supabase } from "@/lib/supabase"
 import { getProducts, type Product } from "@/lib/supabase-api"
-import { formatPrice } from "@/lib/utils"
+import { cn, formatPrice } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, ArrowRight, X, ChevronLeft, Loader2, ShoppingBag } from "lucide-react"
+
+// Product Card component specifically styled for search results
+function SearchProductCard({ product, resellerTier, t }: { product: Product, resellerTier: string | null, t: (key: string) => string }) {
+    const [isImageLoading, setIsImageLoading] = useState(true)
+    return (
+        <Link
+            key={product.id}
+            href={`/product/${product.id}`}
+            className="group glass-liquid rounded-[2.5rem] p-4 sm:p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 border border-white/10 hover:border-primary/20 bg-white/5 hover:bg-white/10 flex flex-col h-full overflow-hidden relative"
+        >
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="aspect-square rounded-3xl overflow-hidden mb-6 relative bg-secondary/10">
+                <Image
+                    src={product.images?.[0] || "/placeholder.svg"}
+                    alt={product.title}
+                    fill
+                    className={cn(
+                        "object-cover group-hover:scale-110 transition-transform duration-700 transition-all duration-300",
+                        isImageLoading ? "scale-95 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
+                    )}
+                    onLoad={() => setIsImageLoading(false)}
+                />
+                {isImageLoading && (
+                    <div className="absolute inset-0 bg-secondary/30 animate-pulse flex items-center justify-center">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-3 relative z-10 flex flex-col flex-1">
+                <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-base sm:text-lg leading-tight line-clamp-2 min-h-[2.5rem]">
+                    {product.title}
+                </h3>
+                <div className="flex items-center justify-between gap-2 pt-2 mt-auto">
+                    <div className="flex flex-row flex-wrap items-baseline gap-x-2">
+                        {(() => {
+                            const tier = resellerTier || 'reseller'
+                            const tierPrice = resellerTier ? (
+                                tier === 'wholesaler' ? product.wholesaler_price :
+                                    tier === 'partner' ? product.partner_price :
+                                        product.reseller_price
+                            ) : null
+
+                            if (tierPrice) {
+                                return (
+                                    <>
+                                        <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
+                                            {t("common.currency")} {formatPrice(tierPrice / 1.2)} <span className="text-[10px] font-normal text-muted-foreground">HT</span>
+                                        </span>
+                                        <span className="text-xs text-muted-foreground line-through opacity-70 whitespace-nowrap">
+                                            {t("common.currency")} {formatPrice(product.price)} <span className="text-[10px]">TTC</span>
+                                        </span>
+                                    </>
+                                )
+                            }
+
+                            return (
+                                <>
+                                    <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
+                                        {t("common.currency")} {formatPrice(product.price)} <span className="text-[10px] font-normal text-muted-foreground">TTC</span>
+                                    </span>
+                                    {(product.compare_at_price ?? 0) > 0 && (
+                                        <span className="text-xs text-muted-foreground line-through opacity-70 whitespace-nowrap">
+                                            {t("common.currency")} {formatPrice(product.compare_at_price || 0)}
+                                        </span>
+                                    )}
+                                </>
+                            )
+                        })()}
+                    </div>
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-black/5 group-hover:shadow-primary/40 flex-shrink-0">
+                        <ShoppingBag className="w-5 h-5 sm:w-6 h-6" />
+                    </div>
+                </div>
+            </div>
+        </Link>
+    )
+}
 
 // Simple best-sellers grid: reuse products API and show top products when no search query
 function BestSellersGrid() {
@@ -17,6 +96,7 @@ function BestSellersGrid() {
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(false)
     const [resellerTier, setResellerTier] = useState<string | null>(null)
+    const [visibleProducts, setVisibleProducts] = useState(12)
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -29,7 +109,7 @@ function BestSellersGrid() {
         async function load() {
             try {
                 setLoading(true)
-                const data = await getProducts({ status: "active", limit: 8 })
+                const data = await getProducts({ status: "active" }) // Removed limit to load all
                 if (mounted) {
                     setProducts(data)
                 }
@@ -65,70 +145,29 @@ function BestSellersGrid() {
     }
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8">
-            {products.map((product) => (
-                <Link
-                    key={product.id}
-                    href={`/product/${product.id}`}
-                    className="group glass-liquid rounded-[2.5rem] p-4 sm:p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 border border-white/10 hover:border-primary/20 bg-white/5 hover:bg-white/10 flex flex-col h-full overflow-hidden relative"
-                >
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="aspect-square rounded-3xl overflow-hidden mb-6 relative">
-                        <Image
-                            src={product.images?.[0] || "/placeholder.svg"}
-                            alt={product.title}
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                    </div>
-                    <div className="space-y-3 relative z-10">
-                        <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-base sm:text-lg leading-tight line-clamp-2">
-                            {product.title}
-                        </h3>
-                        <div className="flex items-center justify-between gap-2 pt-2">
-                            <div className="flex flex-row flex-wrap items-baseline gap-x-2">
-                                {(() => {
-                                    const tier = resellerTier || 'reseller'
-                                    const tierPrice = resellerTier ? (
-                                        tier === 'wholesaler' ? product.wholesaler_price :
-                                            tier === 'partner' ? product.partner_price :
-                                                product.reseller_price
-                                    ) : null
-
-                                    if (tierPrice) {
-                                        return (
-                                            <>
-                                                <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
-                                                    {t("common.currency")} {formatPrice(tierPrice / 1.2)} <span className="text-[10px] font-normal text-muted-foreground">HT</span>
-                                                </span>
-                                                <span className="text-xs text-muted-foreground line-through opacity-70 whitespace-nowrap">
-                                                    {t("common.currency")} {formatPrice(product.price)} <span className="text-[10px]">TTC</span>
-                                                </span>
-                                            </>
-                                        )
-                                    }
-
-                                    return (
-                                        <>
-                                            <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
-                                                {t("common.currency")} {formatPrice(product.price)} <span className="text-[10px] font-normal text-muted-foreground">TTC</span>
-                                            </span>
-                                            {(product.compare_at_price ?? 0) > 0 && (
-                                                <span className="text-xs text-muted-foreground line-through opacity-70 whitespace-nowrap">
-                                                    {t("common.currency")} {formatPrice(product.compare_at_price || 0)}
-                                                </span>
-                                            )}
-                                        </>
-                                    )
-                                })()}
-                            </div>
-                            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-black/5 group-hover:shadow-primary/40">
-                                <ShoppingBag className="w-5 h-5 sm:w-6 h-6" />
-                            </div>
-                        </div>
-                    </div>
-                </Link>
-            ))}
+        <div className="space-y-10">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8">
+                {products.slice(0, visibleProducts).map((product) => (
+                    <SearchProductCard
+                        key={product.id}
+                        product={product}
+                        resellerTier={resellerTier}
+                        t={t}
+                    />
+                ))}
+            </div>
+            {visibleProducts < products.length && (
+                <div className="text-center mt-10">
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        className="rounded-full bg-transparent"
+                        onClick={() => setVisibleProducts(prev => prev + 12)}
+                    >
+                        {t('section.load_more')} <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                </div>
+            )}
         </div>
     )
 }
@@ -140,6 +179,7 @@ export default function SearchPage() {
     const [loading, setLoading] = useState(false)
     const [isSearching, setIsSearching] = useState(false)
     const [resellerTier, setResellerTier] = useState<string | null>(null)
+    const [visibleResults, setVisibleResults] = useState(12)
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
@@ -162,6 +202,7 @@ export default function SearchPage() {
                 try {
                     const data = await getProducts({ search: query })
                     setResults(data)
+                    setVisibleResults(12) // Reset pagination on new search
                 } catch (error) {
                     console.error("Search failed:", error)
                 } finally {
@@ -232,78 +273,29 @@ export default function SearchPage() {
                         <p className="text-muted-foreground animate-pulse font-medium">Recherche en cours...</p>
                     </div>
                 ) : results.length > 0 ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        {results.map((product) => (
-                            <Link
-                                key={product.id}
-                                href={`/product/${product.id}`}
-                                className="group glass-liquid rounded-[2.5rem] p-4 sm:p-6 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 border border-white/10 hover:border-primary/20 bg-white/5 hover:bg-white/10 flex flex-col h-full overflow-hidden relative"
-                            >
-                                {/* Glow Effect */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                                <div className="aspect-square rounded-3xl overflow-hidden mb-6 relative">
-                                    <Image
-                                        src={product.images[0] || "/placeholder.svg"}
-                                        alt={product.title}
-                                        fill
-                                        className="object-cover group-hover:scale-110 transition-transform duration-700"
-                                    />
-                                    {(product.compare_at_price ?? 0) > product.price && (
-                                        <div className="absolute top-4 left-4 bg-primary/95 text-primary-foreground text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg">
-                                            -{Math.round((((product.compare_at_price ?? 0) - product.price) / (product.compare_at_price ?? 1)) * 100)}%
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-3 relative z-10">
-                                    <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-base sm:text-lg leading-tight line-clamp-2">
-                                        {product.title}
-                                    </h3>
-                                    <div className="flex items-center justify-between gap-2 pt-2">
-                                        <div className="flex flex-row flex-wrap items-baseline gap-x-2">
-                                            {(() => {
-                                                const tier = resellerTier || 'reseller'
-                                                const tierPrice = resellerTier ? (
-                                                    tier === 'wholesaler' ? product.wholesaler_price :
-                                                        tier === 'partner' ? product.partner_price :
-                                                            product.reseller_price
-                                                ) : null
-
-                                                if (tierPrice) {
-                                                    return (
-                                                        <>
-                                                            <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
-                                                                {t('common.currency')} {formatPrice(tierPrice / 1.2)} <span className="text-[10px] font-normal text-muted-foreground">HT</span>
-                                                            </span>
-                                                            <span className="text-xs text-muted-foreground line-through opacity-70 whitespace-nowrap">
-                                                                {t('common.currency')} {formatPrice(product.price)} <span className="text-[10px]">TTC</span>
-                                                            </span>
-                                                        </>
-                                                    )
-                                                }
-
-                                                return (
-                                                    <>
-                                                        <span className="text-xs sm:text-sm font-bold text-primary whitespace-nowrap">
-                                                            {t('common.currency')} {formatPrice(product.price)} <span className="text-[10px] font-normal text-muted-foreground">TTC</span>
-                                                        </span>
-                                                        {(product.compare_at_price ?? 0) > 0 && (
-                                                            <span className="text-xs text-muted-foreground line-through opacity-70 whitespace-nowrap">
-                                                                {t('common.currency')} {formatPrice(product.compare_at_price || 0)}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                )
-                                            })()}
-                                        </div>
-                                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 group-hover:bg-primary flex items-center justify-center text-primary group-hover:text-white transition-all duration-500 shadow-lg shadow-black/5 group-hover:shadow-primary/40">
-                                            <ShoppingBag className="w-5 h-5 sm:w-6 h-6" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
+                    <div className="space-y-10">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            {results.slice(0, visibleResults).map((product) => (
+                                <SearchProductCard
+                                    key={product.id}
+                                    product={product}
+                                    resellerTier={resellerTier}
+                                    t={t}
+                                />
+                            ))}
+                        </div>
+                        {visibleResults < results.length && (
+                            <div className="text-center mt-10">
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="rounded-full bg-transparent"
+                                    onClick={() => setVisibleResults(prev => prev + 12)}
+                                >
+                                    {t('section.load_more')} <ArrowRight className="w-4 h-4 ml-2" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 ) : query && !loading ? (
                     <div className="text-center py-20 animate-in fade-in duration-500">

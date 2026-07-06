@@ -31,6 +31,7 @@ const menuItems = [
     { icon: LayoutDashboard, key: "admin.sidebar.dashboard", href: "/admin/dashboard" },
     { icon: ShoppingBag, key: "admin.sidebar.orders", href: "/admin/orders" },
     { icon: Package, key: "admin.sidebar.products", href: "/admin/products" },
+    { icon: Database, key: "admin.sidebar.data_excel", href: "/admin/data-excel" },
     { icon: Users, key: "admin.sidebar.customers", href: "/admin/customers" },
     { icon: Briefcase, key: "admin.sidebar.resellers", href: "/admin/resellers" },
     { icon: Shield, key: "admin.sidebar.account_managers", href: "/admin/account-managers" },

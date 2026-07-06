@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useCart } from "@/components/cart-provider"
 import { useLanguage } from "@/components/language-provider"
 import { getProducts, getHeroCarouselItems, getCategories, getBrands, getAdminSettings, getCurrentUserRole, getCurrentResellerTier, type Product, type Brand, ResellerTier } from "@/lib/supabase-api"
@@ -39,6 +39,8 @@ import {
   LayoutDashboard,
   Plus,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 
 import {
@@ -117,6 +119,7 @@ function CartCount() {
 function ProductCard({ product, userRole, resellerTier, onOpenCart }: { product: Product, userRole?: string | null, resellerTier?: ResellerTier, onOpenCart: () => void }) {
   const { t, language } = useLanguage()
   const { addItem } = useCart()
+  const [isImageLoading, setIsImageLoading] = useState(true)
   const isArabic = language === 'ar'
   const rating = 5 // Default rating since it's not in DB yet
 
@@ -145,12 +148,23 @@ function ProductCard({ product, userRole, resellerTier, onOpenCart }: { product:
     <Link href={`/product/${product.id}`} className="group glass rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-3 xl:p-4 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 block">
       <div className="aspect-square bg-gradient-to-br from-secondary to-muted rounded-xl sm:rounded-2xl mb-3 sm:mb-4 flex items-center justify-center overflow-hidden relative">
         {product.images && product.images.length > 0 ? (
-          <Image
-            src={product.images[0]}
-            alt={isArabic && product.title_ar ? product.title_ar : product.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <>
+            <Image
+              src={product.images[0]}
+              alt={isArabic && product.title_ar ? product.title_ar : product.title}
+              fill
+              className={cn(
+                "object-cover group-hover:scale-105 transition-transform duration-500 transition-all duration-300",
+                isImageLoading ? "scale-95 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
+              )}
+              onLoad={() => setIsImageLoading(false)}
+            />
+            {isImageLoading && (
+              <div className="absolute inset-0 bg-secondary/30 animate-pulse flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </>
         ) : (
           <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
             <Sparkles className="w-5 h-5 sm:w-8 sm:h-8 text-primary" />
@@ -388,6 +402,62 @@ export default function HomePage() {
   const [resellerTier, setResellerTier] = useState<ResellerTier>(null)
   const [shippingEnabled, setShippingEnabled] = useState(true)
 
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [categories, setCategories] = useState<{ id: string, name: string, slug: string, name_ar?: string }[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [settings, setSettings] = useState<Record<string, string>>({})
+  const [metadataLoaded, setMetadataLoaded] = useState(false)
+  const cartSubtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  const categoryScrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const checkScroll = () => {
+    const el = categoryScrollRef.current
+    if (el) {
+      const scrollLeft = el.scrollLeft
+      const scrollWidth = el.scrollWidth
+      const clientWidth = el.clientWidth
+      
+      const scrollable = scrollWidth > clientWidth
+      if (!scrollable) {
+        setCanScrollLeft(false)
+        setCanScrollRight(false)
+        return
+      }
+      
+      if (dir === 'rtl') {
+        const isRightmost = scrollLeft === 0 || Math.abs(scrollLeft) < 5
+        const isLeftmost = Math.abs(scrollLeft) + clientWidth >= scrollWidth - 5
+        setCanScrollLeft(!isLeftmost)
+        setCanScrollRight(!isRightmost)
+      } else {
+        setCanScrollLeft(scrollLeft > 5)
+        setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5)
+      }
+    }
+  }
+
+  useEffect(() => {
+    const el = categoryScrollRef.current
+    if (el) {
+      checkScroll()
+      el.addEventListener("scroll", checkScroll)
+      window.addEventListener("resize", checkScroll)
+      return () => {
+        el.removeEventListener("scroll", checkScroll)
+        window.removeEventListener("resize", checkScroll)
+      }
+    }
+  }, [categories])
+
+  useEffect(() => {
+    const timer = setTimeout(checkScroll, 300)
+    return () => clearTimeout(timer)
+  }, [categories])
+
   // Cart context is now available but we need to create a client component wrapper 
   // or accept that HomePage is a client component (which it already is: "use client" is missing but useState implies it)
   // Let's check imports to see if "use client" is needed or if it's already there
@@ -406,20 +476,11 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [categories, setCategories] = useState<{ id: string, name: string, slug: string, name_ar?: string }[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [settings, setSettings] = useState<Record<string, string>>({})
-  const cartSubtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-  // Fetch data from Supabase
+  // 1. Fetch metadata once on mount
   useEffect(() => {
-    async function loadData() {
-      setLoading(true)
+    async function loadMetadata() {
       try {
-        const [productsData, categoriesData, settingsData, userData, roleData, tierData, brandsData] = await Promise.all([
-          getProducts({ status: 'active', limit: 50 }),
+        const [categoriesData, settingsData, userData, roleData, tierData, brandsData] = await Promise.all([
           getCategories(),
           getAdminSettings(),
           supabase.auth.getSession(),
@@ -428,7 +489,6 @@ export default function HomePage() {
           getBrands()
         ])
 
-        setProducts(productsData || [])
         setCategories(categoriesData || [])
         setSettings(settingsData || {})
         setUser(userData.data.session?.user || null)
@@ -436,19 +496,37 @@ export default function HomePage() {
         setResellerTier(tierData)
         setBrands(brandsData || [])
         setShippingEnabled(settingsData.shipping_enabled !== 'false')
+        setMetadataLoaded(true)
       } catch (e) {
-        console.error("Failed to load home page data", e)
-        // Ensure UI doesn't break
-        setProducts([])
+        console.error("Failed to load home page metadata", e)
         setCategories([])
         setSettings({})
         setUser(null)
+      }
+    }
+    loadMetadata()
+  }, [])
+
+  // 2. Fetch products whenever selectedCategory changes
+  useEffect(() => {
+    async function loadProducts() {
+      setLoading(true)
+      try {
+        const filters: any = { status: 'active' }
+        if (selectedCategory !== "All") {
+          filters.category = selectedCategory
+        }
+        const productsData = await getProducts(filters)
+        setProducts(productsData || [])
+      } catch (e) {
+        console.error("Failed to load products for category", selectedCategory, e)
+        setProducts([])
       } finally {
         setLoading(false)
       }
     }
-    loadData()
-  }, [])
+    loadProducts()
+  }, [selectedCategory])
 
   const headerCategories: { id: string, name: string, slug: string, name_ar?: string }[] =
     categories.length > 0
@@ -889,24 +967,65 @@ export default function HomePage() {
               {t('section.best_sellers_desc')}
             </p>
           </div>
-          <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-3 mb-10 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
-            {allCategories.map((cat) => (
-              <div key={cat} className="flex-shrink-0">
+          <div className="relative max-w-5xl mx-auto mb-10 group/scroller">
+            {/* Left Scroll Button */}
+            {canScrollLeft && (
+              <div className="absolute left-0 top-0 bottom-4 w-16 bg-gradient-to-r from-background via-background/80 to-transparent z-10 flex items-center justify-start pointer-events-none">
                 <Button
-                  variant={selectedCategory === cat ? "default" : "outline"}
-                  className={`rounded-full px-6 transition-all duration-300 ${selectedCategory === cat
-                    ? "shadow-lg shadow-primary/25 scale-105"
-                    : "hover:scale-105"
-                    }`}
+                  variant="outline"
+                  size="icon"
+                  className="w-9 h-9 rounded-full bg-background/90 shadow-md pointer-events-auto border-border/40 hover:scale-105 hover:bg-background transition-all active:scale-95"
                   onClick={() => {
-                    setSelectedCategory(cat)
-                    setVisibleProducts(10) // Reset visible count on switch
+                    const scrollAmount = dir === 'rtl' ? 200 : -200
+                    categoryScrollRef.current?.scrollBy({ left: scrollAmount, behavior: "smooth" })
                   }}
                 >
-                  {getCategoryLabel(cat)}
+                  <ChevronLeft className="w-5 h-5 text-foreground" />
                 </Button>
               </div>
-            ))}
+            )}
+
+            {/* Scroll Container */}
+            <div
+              ref={categoryScrollRef}
+              className="flex flex-nowrap overflow-x-auto no-scrollbar gap-3 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 justify-start overflow-y-hidden"
+              onScroll={checkScroll}
+            >
+              {allCategories.map((cat) => (
+                <div key={cat} className="flex-shrink-0">
+                  <Button
+                    variant={selectedCategory === cat ? "default" : "outline"}
+                    className={`rounded-full px-6 transition-all duration-300 ${selectedCategory === cat
+                      ? "shadow-lg shadow-primary/25 scale-105"
+                      : "hover:scale-105"
+                      }`}
+                    onClick={() => {
+                      setSelectedCategory(cat)
+                      setVisibleProducts(10) // Reset visible count on switch
+                    }}
+                  >
+                    {getCategoryLabel(cat)}
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Right Scroll Button */}
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-background via-background/80 to-transparent z-10 flex items-center justify-end pointer-events-none">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="w-9 h-9 rounded-full bg-background/90 shadow-md pointer-events-auto border-border/40 hover:scale-105 hover:bg-background transition-all active:scale-95"
+                  onClick={() => {
+                    const scrollAmount = dir === 'rtl' ? -200 : 200
+                    categoryScrollRef.current?.scrollBy({ left: scrollAmount, behavior: "smooth" })
+                  }}
+                >
+                  <ChevronRight className="w-5 h-5 text-foreground" />
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6 lg:gap-5 xl:gap-6 animate-in fade-in duration-500">
