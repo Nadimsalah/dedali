@@ -394,6 +394,7 @@ export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [visibleProducts, setVisibleProducts] = useState(10)
+  const [isBrandsExpanded, setIsBrandsExpanded] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [isCartOpen, setIsCartOpen] = useState(false)
   const { t, language, toggleLanguage, dir } = useLanguage()
@@ -1080,15 +1081,21 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 sm:gap-4 md:gap-6">
-              {brands.map((brand) => (
+              {brands.map((brand, index) => (
                 <Link
                   key={brand.id}
                   href={`/brand/${brand.slug}`}
-                  className="group relative glass rounded-2xl p-4 sm:p-5 flex items-center justify-center aspect-square transition-all duration-700 hover:shadow-[0_20px_40px_-20px_rgba(var(--primary-rgb),0.3)] hover:-translate-y-1 border border-white/5 hover:border-primary/20 bg-secondary/5"
+                  className={cn(
+                    "group relative glass rounded-2xl p-4 sm:p-5 flex items-center justify-center aspect-square transition-all duration-700 hover:shadow-[0_20px_40px_-20px_rgba(var(--primary-rgb),0.3)] hover:-translate-y-1 border border-white/5 hover:border-primary/20 bg-secondary/5",
+                    index >= 8 && !isBrandsExpanded && "max-sm:hidden",
+                    index >= 12 && !isBrandsExpanded && "sm:max-lg:hidden",
+                    index >= 16 && !isBrandsExpanded && "lg:max-xl:hidden",
+                    index >= 20 && !isBrandsExpanded && "xl:hidden"
+                  )}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl" />
 
-                  <div className="relative w-full h-full flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110">
+                  <div className="relative w-full h-full flex items-center justify-center transition-all duration-1000 group-hover:scale-110">
                     {brand.logo ? (
                       <Image
                         src={brand.logo}
@@ -1111,6 +1118,25 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
+
+            {!isBrandsExpanded && (
+              <div className="flex justify-center mt-12">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className={cn(
+                    "rounded-full bg-transparent",
+                    brands.length <= 8 && "hidden",
+                    brands.length <= 12 && "sm:hidden",
+                    brands.length <= 16 && "lg:hidden",
+                    brands.length <= 20 && "xl:hidden"
+                  )}
+                  onClick={() => setIsBrandsExpanded(true)}
+                >
+                  {t('section.load_more')} <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       )}
