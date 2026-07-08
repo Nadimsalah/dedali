@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { getProducts, getBrandBySlug, type Product, Brand } from "@/lib/supabase-api"
-import { formatPrice } from "@/lib/utils"
+import { getProducts, getBrandBySlug, getCategories, type Product, Brand } from "@/lib/supabase-api"
+import { cn, formatPrice } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,8 @@ export default function BrandPage() {
     const { t } = useLanguage()
     const [brand, setBrand] = useState<Brand | null>(null)
     const [products, setProducts] = useState<Product[]>([])
+    const [categories, setCategories] = useState<{ id: string, name: string, slug: string, name_ar?: string }[]>([])
+    const [selectedCategory, setSelectedCategory] = useState<string>("All")
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -29,13 +31,14 @@ export default function BrandPage() {
             console.log("Brand found:", brandData)
 
             if (brandData) {
-                console.log("Fetching products for brand ID:", brandData.id)
-                const productsData = await getProducts({
-                    brand_id: brandData.id
-                    // status: 'active' - Removed to show all linked products
-                })
-                console.log("Products found:", productsData?.length || 0, productsData)
-                setProducts(productsData)
+                console.log("Fetching products & categories for brand ID:", brandData.id)
+                const [productsData, categoriesData] = await Promise.all([
+                    getProducts({ brand_id: brandData.id }),
+                    getCategories()
+                ])
+                console.log("Products found:", productsData?.length || 0)
+                setProducts(productsData || [])
+                setCategories(categoriesData || [])
             }
             setLoading(false)
         }
@@ -43,6 +46,30 @@ export default function BrandPage() {
             loadData()
         }
     }, [slug])
+
+    const languageInfo = useLanguage()
+    const language = languageInfo?.language || 'fr'
+    const isArabic = language === 'ar'
+
+    // Extract unique category slugs from products
+    const uniqueCategorySlugs = Array.from(new Set(products.map(p => p.category))).filter(Boolean)
+    const brandCategories = uniqueCategorySlugs.map(catSlug => {
+        const catObj = categories.find(c => c.slug === catSlug)
+        return {
+            slug: catSlug,
+            name: catObj ? catObj.name : catSlug.charAt(0).toUpperCase() + catSlug.slice(1),
+            name_ar: catObj?.name_ar || undefined
+        }
+    })
+
+    const getCategoryProductCount = (catSlug: string) => {
+        if (catSlug === "All") return products.length
+        return products.filter(p => p.category === catSlug).length
+    }
+
+    const filteredProducts = selectedCategory === "All"
+        ? products
+        : products.filter(p => p.category === selectedCategory)
 
     if (loading) {
         return (
@@ -134,6 +161,50 @@ export default function BrandPage() {
                     </Link>
                 </div>
 
+                {products.length > 0 && brandCategories.length > 0 && (
+                    <div className="flex flex-wrap gap-2.5 mb-10 pb-4 border-b border-white/5">
+                        <Button
+                            variant={selectedCategory === "All" ? "default" : "outline"}
+                            className={cn(
+                                "rounded-full px-5 py-2 text-sm transition-all duration-300 hover:scale-105",
+                                selectedCategory === "All"
+                                    ? "shadow-lg shadow-primary/25 font-bold"
+                                    : "hover:bg-secondary/10"
+                            )}
+                            onClick={() => setSelectedCategory("All")}
+                        >
+                            {t('section.all_categories') || 'Tout'}
+                            <span className={cn(
+                                "ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                selectedCategory === "All" ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                            )}>
+                                {products.length}
+                            </span>
+                        </Button>
+                        {brandCategories.map((cat) => (
+                            <Button
+                                key={cat.slug}
+                                variant={selectedCategory === cat.slug ? "default" : "outline"}
+                                className={cn(
+                                    "rounded-full px-5 py-2 text-sm transition-all duration-300 hover:scale-105",
+                                    selectedCategory === cat.slug
+                                        ? "shadow-lg shadow-primary/25 font-bold"
+                                        : "hover:bg-secondary/10"
+                                )}
+                                onClick={() => setSelectedCategory(cat.slug)}
+                            >
+                                {isArabic && cat.name_ar ? cat.name_ar : cat.name}
+                                <span className={cn(
+                                    "ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                    selectedCategory === cat.slug ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                                )}>
+                                    {getCategoryProductCount(cat.slug)}
+                                </span>
+                            </Button>
+                        ))}
+                    </div>
+                )}
+
                 {products.length === 0 ? (
                     <div className="text-center py-20 bg-secondary/10 rounded-[3rem] border border-dashed border-white/10">
                         <ShoppingBag className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
@@ -142,7 +213,7 @@ export default function BrandPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
-                        {products.map((product) => (
+                        {filteredProducts.map((product) => (
                             <Link
                                 key={product.id}
                                 href={`/product/${product.id}`}
