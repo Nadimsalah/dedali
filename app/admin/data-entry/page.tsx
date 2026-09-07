@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import Papa from "papaparse"
+import * as XLSX from "xlsx"
 import { supabase } from "@/lib/supabase"
 
 interface CSVProduct {
@@ -67,6 +68,7 @@ export default function DataEntryPage() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     
     const [isGenerating, setIsGenerating] = useState(false)
+    const [generatingProgress, setGeneratingProgress] = useState({ done: 0, total: 0 })
     const [isSaving, setIsSaving] = useState(false)
     const [activeDetailId, setActiveDetailId] = useState<string | null>(null)
     const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null)
@@ -96,64 +98,164 @@ export default function DataEntryPage() {
         fetchResources()
     }, [])
 
-    // Process and parse CSV file
-    const processCSVFile = (file: File) => {
-        if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-            toast.error("Veuillez sélectionner un fichier au format CSV.")
+    // Process and parse CSV / XLSX file
+    const processFile = (file: File) => {
+        const isXlsx = file.name.endsWith(".xlsx") || file.name.endsWith(".xls")
+        const isCsv = file.type === "text/csv" || file.name.endsWith(".csv")
+
+        if (!isXlsx && !isCsv) {
+            toast.error("Veuillez sélectionner un fichier CSV ou Excel (.xlsx / .xls).")
             return
         }
 
         setSelectedFile(file)
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                // Flexible header mapper helper
-                const findVal = (row: any, keywords: string[]) => {
-                    const matchKey = Object.keys(row).find(k => 
-                        keywords.some(kw => k.toLowerCase().trim() === kw.toLowerCase())
-                    )
-                    return matchKey ? row[matchKey]?.trim() : ""
-                }
-
-                const products: CSVProduct[] = results.data.map((row: any, idx) => {
-                    const artcode = findVal(row, ["artcode", "sku", "reference", "code"])
-                    const artdesignation = findVal(row, ["artdesignation", "name", "title", "designation", "nom"])
-                    const artcollection = findVal(row, ["artcollection", "brand", "marque", "collection"])
-                    const priceHt = findVal(row, ["prix ht p", "reseller price ht", "price ht", "prix ht", "prix"])
-                    const stock = findVal(row, ["stock", "qty", "quantite"])
-
-                    return {
-                        id: `csv-${idx}-${Date.now()}`,
-                        artcode: artcode || `SKU-G-${idx}`,
-                        artdesignation: artdesignation || "Produit sans nom",
-                        artcollection: artcollection || "Generique",
-                        price_ht: priceHt || "",
-                        stock: stock || "",
-                        status: "pending"
-                    }
+        // Fuzzy column finder: checks if the key CONTAINS any keyword (case-insensitive)
+        const findVal = (row: any, keywords: string[]) => {
+            const keys = Object.keys(row)
+            const matchKey = keys.find(k => {
+                const kl = k.toLowerCase().replace(/[\s_\-\.]/g, "")
+                return keywords.some(kw => {
+                    const kwl = kw.toLowerCase().replace(/[\s_\-\.]/g, "")
+                    return kl === kwl || kl.includes(kwl) || kwl.includes(kl)
                 })
+            })
+            return matchKey ? String(row[matchKey] ?? "").trim() : ""
+        }
 
-                if (products.length === 0) {
-                    toast.error("Le fichier CSV semble vide ou corrompu.")
-                    setSelectedFile(null)
-                    return
-                }
-
-                setCsvProducts(products)
-                // Select all products by default
-                setSelectedIds(new Set(products.map(p => p.id)))
-                if (products.length > 0) {
-                    setActiveDetailId(products[0].id)
-                }
-                toast.success(`${products.length} produits importés depuis le CSV. Prêt pour la génération IA !`)
-            },
-            error: (error) => {
-                console.error("CSV Parse error:", error)
-                toast.error(`Erreur d'analyse du CSV : ${error.message}`)
+        const mapRows = (rows: any[]) => {
+            if (rows.length === 0) {
+                toast.error("Le fichier semble vide.")
+                setSelectedFile(null)
+                return
             }
-        })
+
+            // Log detected columns for debugging
+            const detectedCols = Object.keys(rows[0])
+            console.log("📄 Colonnes détectées dans le fichier:", detectedCols)
+
+            const products: CSVProduct[] = rows.map((row: any, idx) => {
+                // --- Column mapping with wide fuzzy aliases ---
+                const artcode = findVal(row, [
+                    "artcode", "art_code", "codearticle", "code_article", "codart",
+                    "sku", "ref", "reference", "référence", "refprod", "itemcode",
+                    "code", "id", "articleid", "productid", "codprod"
+                ])
+                const artdesignation = findVal(row, [
+                    "artdesignation", "designation", "désignation",
+                    "libelle", "libellé", "name", "nom", "titre", "title",
+                    "description", "intitule", "intitulé",
+                    "produit", "article", "product", "productname", "articlename"
+                ])
+                const artcollection = findVal(row, [
+                    "artcollection", "marque", "brand", "collection",
+                    "fabricant", "fournisseur", "supplier",
+                    "sous famille par marque", "sousfamille", "sous famille",
+                    "famille", "family", "categorie", "catégorie", "category"
+                ])
+                const priceRaw = findVal(row, [
+                    "prix ht p", "prixhtp", "resellerpriceht", "reseller price ht",
+                    "price ht", "prixht", "prix ht", "ht", "pv ht", "pvht",
+                    "prix", "price", "tarif", "cout", "coût", "montant",
+                    "unit price", "unitprice", "selling price"
+                ])
+                const stockRaw = findVal(row, [
+                    "stock", "qty", "quantite", "quantité", "qte", "qté",
+                    "quantity", "inventory", "disponible", "dispo", "qtyonhand"
+                ])
+
+                // Sanitize price: remove spaces, commas, currency symbols
+                const sanitizeNum = (v: string) =>
+                    v.replace(/[^\d.,]/g, "").replace(/,/g, ".")
+
+                const cost = parseFloat(sanitizeNum(priceRaw)) || 0
+                const costStr = cost > 0 ? cost.toFixed(2) : ""
+
+                return {
+                    id: `file-${idx}-${Date.now()}`,
+                    artcode: artcode || `SKU-${idx + 1}`,
+                    artdesignation: artdesignation || "Produit sans nom",
+                    artcollection: artcollection || "Generique",
+                    price_ht: costStr,
+                    stock: stockRaw || "",
+                    status: "pending" as const,
+                    // Pre-compute all price tiers from the cost price
+                    reseller_price: costStr,
+                    partner_price: cost > 0 ? (cost * 0.95).toFixed(2) : "",
+                    wholesaler_price: cost > 0 ? (cost * 0.90).toFixed(2) : "",
+                    price: cost > 0 ? (cost * 1.20).toFixed(2) : "",
+                }
+            })
+
+            const mapped = products.filter(p => p.artdesignation !== "Produit sans nom" || p.artcode !== `SKU-${products.indexOf(p) + 1}`)
+            const unmappedCount = products.length - mapped.length
+
+            setCsvProducts(products)
+            setSelectedIds(new Set(products.map(p => p.id)))
+            if (products.length > 0) setActiveDetailId(products[0].id)
+
+            if (unmappedCount > 0) {
+                toast.warning(`⚠️ ${products.length} produits chargés mais ${unmappedCount} lignes sans données reconnues. Vérifiez les colonnes dans la console (F12).`, { duration: 8000 })
+            } else {
+                toast.success(`✅ ${products.length} produits importés depuis le fichier. Prêt pour la génération IA !`)
+            }
+        }
+
+        if (isXlsx) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target?.result as ArrayBuffer)
+                    const workbook = XLSX.read(data, { type: "array" })
+                    const sheetName = workbook.SheetNames[0]
+
+                    // Read as raw array to auto-detect the real header row
+                    const rawRows: any[][] = XLSX.utils.sheet_to_json(
+                        workbook.Sheets[sheetName],
+                        { defval: "", header: 1 }
+                    ) as any[][]
+
+                    // Find the first row where at least 3 cells are non-empty strings
+                    // (this skips title rows, merged cells, blank rows at the top)
+                    let headerRowIdx = 0
+                    for (let i = 0; i < Math.min(rawRows.length, 20); i++) {
+                        const nonEmpty = rawRows[i].filter(c => typeof c === "string" && c.trim().length > 1)
+                        if (nonEmpty.length >= 3) {
+                            headerRowIdx = i
+                            break
+                        }
+                    }
+
+                    const headers: string[] = rawRows[headerRowIdx].map(h => String(h ?? "").trim())
+                    console.log("📄 En-têtes détectées à la ligne", headerRowIdx, ":", headers)
+
+                    // Convert data rows (after header) to objects
+                    const objectRows = rawRows.slice(headerRowIdx + 1)
+                        .filter(row => row.some(cell => cell !== "" && cell !== null && cell !== undefined))
+                        .map(row => {
+                            const obj: any = {}
+                            headers.forEach((h, i) => { obj[h] = row[i] ?? "" })
+                            return obj
+                        })
+
+                    mapRows(objectRows)
+                } catch (err: any) {
+                    console.error("XLSX Parse error:", err)
+                    toast.error(`Erreur d'analyse du fichier Excel : ${err.message}`)
+                }
+            }
+            reader.readAsArrayBuffer(file)
+        } else {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => mapRows(results.data as any[]),
+                error: (error) => {
+                    console.error("CSV Parse error:", error)
+                    toast.error(`Erreur d'analyse du CSV : ${error.message}`)
+                }
+            })
+        }
     }
 
     // Handlers
@@ -181,7 +283,7 @@ export default function DataEntryPage() {
         setSelectedIds(next)
     }
 
-    // Call AI Generation API
+    // Call AI Generation API — batches of 10 to respect TPM rate limits
     const handleGenerateAI = async () => {
         const pendingIds = csvProducts
             .filter(p => selectedIds.has(p.id) && (p.status === "pending" || p.status === "error"))
@@ -193,11 +295,12 @@ export default function DataEntryPage() {
         }
 
         setIsGenerating(true)
-        
+        setGeneratingProgress({ done: 0, total: pendingIds.length })
+
         // Mark selected as generating in UI
         setCsvProducts(prev => prev.map(p => pendingIds.includes(p.id) ? { ...p, status: "generating" } : p))
 
-        const batchToGenerate = csvProducts.filter(p => pendingIds.includes(p.id)).map(p => ({
+        const allToGenerate = csvProducts.filter(p => pendingIds.includes(p.id)).map(p => ({
             artcode: p.artcode,
             artdesignation: p.artdesignation,
             artcollection: p.artcollection,
@@ -205,56 +308,99 @@ export default function DataEntryPage() {
             stock: p.stock
         }))
 
+        // Split into chunks of 10
+        const CHUNK_SIZE = 10
+        const chunks: typeof allToGenerate[] = []
+        for (let i = 0; i < allToGenerate.length; i += CHUNK_SIZE) {
+            chunks.push(allToGenerate.slice(i, i + CHUNK_SIZE))
+        }
+
+        let totalSuccess = 0
+        let totalFallback = 0
+        let lastFallbackError = ""
+        let doneCount = 0
+
         try {
-            const res = await fetch("/api/admin/products/generate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ products: batchToGenerate })
-            })
+            for (let ci = 0; ci < chunks.length; ci++) {
+                const chunk = chunks[ci]
 
-            if (!res.ok) {
-                const errData = await res.json()
-                throw new Error(errData.error || "Generation endpoint failed")
-            }
-
-            const data = await res.json()
-            const generatedList: any[] = data.products || []
-
-            setCsvProducts(prev => prev.map(p => {
-                const match = generatedList.find(g => g.sku === p.artcode)
-                if (match) {
-                    return {
-                        ...p,
-                        status: match.success ? "generated" : "error",
-                        title: match.title,
-                        description: match.description,
-                        benefits: match.benefits,
-                        technicalSpecs: match.technicalSpecs,
-                        category: match.category,
-                        productType: match.productType,
-                        images: match.images,
-                        isFallback: match.isFallback,
-                        error: match.error
+                // Retry loop for 429 errors
+                let retries = 0
+                let res: Response | null = null
+                while (retries < 5) {
+                    res = await fetch("/api/admin/products/generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ products: chunk })
+                    })
+                    if (res.status === 429) {
+                        const waitMs = 2000 * (retries + 1)
+                        console.warn(`Rate limited (429), retrying in ${waitMs}ms...`)
+                        await new Promise(r => setTimeout(r, waitMs))
+                        retries++
+                    } else {
+                        break
                     }
                 }
-                return p
-            }))
 
-            const successCount = generatedList.filter(g => g.success).length
-            const fallbackCount = generatedList.filter(g => g.isFallback).length
-            
-            if (fallbackCount > 0) {
-                toast.warning(`Votre clé OpenAI a dépassé son quota (crédits épuisés). Didali a utilisé le générateur local de secours pour ${fallbackCount} fiches produits.`, { duration: 10000 })
+                if (!res || !res.ok) {
+                    const errData = res ? await res.json() : { error: "Network error" }
+                    throw new Error(errData.error || "Generation endpoint failed")
+                }
+
+                const data = await res.json()
+                const generatedList: any[] = data.products || []
+
+                // Apply results for this chunk immediately
+                setCsvProducts(prev => prev.map(p => {
+                    const match = generatedList.find(g => g.sku === p.artcode)
+                    if (match) {
+                        // Preserve the price data from the original file row
+                        return {
+                            ...p,
+                            status: match.success ? "generated" : "error",
+                            title: match.title,
+                            description: match.description,
+                            benefits: match.benefits,
+                            technicalSpecs: match.technicalSpecs,
+                            category: match.category,
+                            productType: match.productType,
+                            images: match.images,
+                            isFallback: match.isFallback,
+                            error: match.error
+                            // price_ht, stock, reseller_price, partner_price, wholesaler_price, price
+                            // are already on p from file load — intentionally NOT overwritten
+                        }
+                    }
+                    return p
+                }))
+
+                totalSuccess += generatedList.filter(g => g.success && !g.isFallback).length
+                const fallbacks = generatedList.filter(g => g.isFallback)
+                totalFallback += fallbacks.length
+                if (fallbacks.length > 0) lastFallbackError = fallbacks[0].error || "Erreur API OpenAI"
+
+                doneCount += chunk.length
+                setGeneratingProgress({ done: doneCount, total: pendingIds.length })
+
+                // Pause between batches (skip pause after last batch)
+                if (ci < chunks.length - 1) {
+                    await new Promise(r => setTimeout(r, 1500))
+                }
+            }
+
+            if (totalFallback > 0) {
+                toast.warning(`⚠️ ${totalFallback} produit(s) ont utilisé le générateur local. Erreur OpenAI : ${lastFallbackError}`, { duration: 10000 })
             } else {
-                toast.success(`${successCount} fiches produits générées avec succès par l'IA !`)
+                toast.success(`✅ ${totalSuccess} fiches produits générées avec succès par l'IA !`)
             }
         } catch (err: any) {
             console.error("AI Generation failure:", err)
             toast.error(`Échec de la génération : ${err.message || err}`)
-            // Reset state back to pending on fail
             setCsvProducts(prev => prev.map(p => p.status === "generating" ? { ...p, status: "error", error: err.message } : p))
         } finally {
             setIsGenerating(false)
+            setGeneratingProgress({ done: 0, total: 0 })
         }
     }
 
@@ -1108,7 +1254,9 @@ export default function DataEntryPage() {
                                     ) : (
                                         <Sparkles className="w-3.5 h-3.5" />
                                     )}
-                                    {isGenerating ? "Génération..." : "Générer avec l'IA"}
+                                    {isGenerating && generatingProgress.total > 0
+                                        ? `Génération ${generatingProgress.done}/${generatingProgress.total}...`
+                                        : isGenerating ? "Génération..." : "Générer avec l'IA"}
                                 </Button>
 
                                 <Button
@@ -1148,7 +1296,7 @@ export default function DataEntryPage() {
                                 onDrop={e => {
                                     e.preventDefault()
                                     const file = e.dataTransfer.files?.[0]
-                                    if (file) processCSVFile(file)
+                                    if (file) processFile(file)
                                 }}
                                 onClick={() => fileInputRef.current?.click()}
                                 className="w-full py-16 px-6 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50/20 hover:border-primary/50 hover:bg-slate-50/50 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group"
@@ -1158,9 +1306,9 @@ export default function DataEntryPage() {
                                     ref={fileInputRef}
                                     onChange={e => {
                                         const file = e.target.files?.[0]
-                                        if (file) processCSVFile(file)
+                                        if (file) processFile(file)
                                     }}
-                                    accept=".csv"
+                                    accept=".csv,.xlsx,.xls"
                                     className="hidden"
                                 />
 
@@ -1169,7 +1317,7 @@ export default function DataEntryPage() {
                                 </div>
 
                                 <h3 className="text-lg font-black text-slate-800 tracking-tight mb-2">
-                                    Importer votre catalogue produits CSV
+                                    Importer votre catalogue produits (CSV ou Excel)
                                 </h3>
                                 <p className="text-slate-400 text-xs font-semibold max-w-xs leading-relaxed uppercase tracking-wider">
                                     Glissez-déposez votre fichier ici, ou cliquez pour parcourir
@@ -1178,7 +1326,7 @@ export default function DataEntryPage() {
 
                             <div className="mt-8 flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                 <Info className="w-4 h-4 text-slate-300" />
-                                <span>Colonnes mappées : artcode, artdesignation, artcollection, PRIX HT P, stock</span>
+                                <span>Formats acceptés : .csv, .xlsx, .xls — Colonnes : artcode, artdesignation, artcollection, PRIX HT P, stock</span>
                             </div>
                         </div>
                     ) : (

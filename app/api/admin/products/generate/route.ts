@@ -1,76 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
-import { supabase } from "@/lib/supabase"
 
 export const maxDuration = 60 // Allow longer processing for concurrent API calls
 
-// Helper function to search, download, and upload the actual real-world product image from the web
-async function fetchAndUploadProductImage(brand: string, name: string): Promise<string> {
-    try {
-        // Clean name: keep first 5-6 words to avoid long bloated titles
-        const cleanName = name.split(" ").slice(0, 6).join(" ");
-        const query = `${brand} ${cleanName}`;
-        console.log(`[Image Crawler] Searching image for: "${query}"`);
-        
-        const searchUrl = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}`;
-        const response = await fetch(searchUrl, {
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-        });
-        const html = await response.text();
-        
-        // Extract Bing CDN high-quality OIP thumbnails
-        const turlRegex = /&quot;turl&quot;:&quot;(https?:\/\/ts\d\.mm\.bing\.net\/th\?id=OIP\.[^&"]+)/g;
-        let match;
-        const urls: string[] = [];
-        while ((match = turlRegex.exec(html)) !== null) {
-            if (match[1]) {
-                urls.push(match[1]);
-            }
-        }
-        
-        if (urls.length > 0) {
-            const webImageUrl = urls[0];
-            console.log(`[Image Crawler] Found web image: ${webImageUrl}. Downloading and uploading to Supabase...`);
-            
-            // Download binary buffer
-            const imageFetch = await fetch(webImageUrl, {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                }
-            });
-            if (!imageFetch.ok) throw new Error(`HTTP error ${imageFetch.status}`);
-            
-            const imageBlob = await imageFetch.blob();
-            const arrayBuffer = await imageBlob.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            
-            const fileName = `products/web-${Date.now()}-${Math.floor(Math.random() * 1000)}.png`;
-            
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from("product-images")
-                .upload(fileName, buffer, {
-                    contentType: "image/png",
-                    upsert: true
-                });
-                
-            if (!uploadError) {
-                const { data: { publicUrl } } = supabase.storage
-                    .from("product-images")
-                    .getPublicUrl(fileName);
-                console.log(`[Image Crawler] Successfully uploaded to Supabase: ${publicUrl}`);
-                return publicUrl;
-            } else {
-                console.error("❌ Supabase storage upload failure for web image:", uploadError);
-                return webImageUrl; // Fallback to hotlink URL
-            }
-        }
-    } catch (error: any) {
-        console.error("❌ Image Crawler failure:", error.message || error);
-    }
-    return "/placeholder.png"; // Fallback to local placeholder
-}
+
 
 export async function POST(req: NextRequest) {
     try {
@@ -114,7 +47,7 @@ You must return a JSON object with EXACTLY the following structure:
 Do not include any extra text. Return ONLY the raw JSON string.`
 
             try {
-                // 1. Concurrent GPT text details generation
+                // GPT text generation only — no image fetching
                 const completion = await openai.chat.completions.create({
                     model: "gpt-4o-mini",
                     messages: [
@@ -127,23 +60,19 @@ Do not include any extra text. Return ONLY the raw JSON string.`
                 const jsonText = completion.choices[0]?.message?.content || "{}"
                 const aiData = JSON.parse(jsonText)
 
-                // 2. Fetch the actual product image from the web (FAST, FREE, accurate)
-                const finalTitle = aiData.title || artdesignation
-                const generatedImageUrl = await fetchAndUploadProductImage(artcollection, finalTitle)
-
                 return {
                     sku: artcode,
                     originalName: artdesignation,
                     brand: artcollection,
                     price_ht: p.price_ht || 0,
                     stock: p.stock || 0,
-                    title: finalTitle,
+                    title: aiData.title || artdesignation,
                     description: aiData.description || "",
                     benefits: aiData.benefits || [],
                     technicalSpecs: aiData.technicalSpecs || [],
                     productType: aiData.productType || "",
                     category: aiData.category || "Accessoires",
-                    images: [generatedImageUrl],
+                    images: [],
                     status: "generated",
                     success: true,
                     isFallback: false
